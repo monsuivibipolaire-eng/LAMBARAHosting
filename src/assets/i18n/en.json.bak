@@ -51,7 +51,6 @@
     "PORT": "Home Port",
     "STATUS": "Status",
     "ACTIVE": "Active",
-    "MAINTENANCE": "Maintenance",
     "INACTIVE": "Inactive",
     "NO_BOAT_SELECTED": "No boat is selected",
     "NO_BOAT_SELECTED_DETAILS": "Please select a boat from the 'Boats' page first.",
@@ -93,10 +92,12 @@
     "SUCCESS_ADD": "Sailor added successfully.",
     "SUCCESS_UPDATE": "Sailor updated successfully.",
     "SUCCESS_DELETE": "Sailor deleted successfully.",
-    "CAPITAINE": "Captain",
-    "SECOND": "Second-in-command",
-    "MECANICIEN": "Mechanic",
-    "MATELOT": "Sailor",
+    "FUNCTION_TYPE": {
+      "CAPITAINE": "Captain",
+      "SECOND": "Second-in-command",
+      "MECANICIEN": "Mechanic",
+      "MATELOT": "Sailor"
+    },
     "PLACEHOLDER": {
       "LASTNAME": "Enter last name",
       "FIRSTNAME": "Enter first name",
@@ -104,60 +105,13 @@
     }
   },
   "SORTIES": {
-    "TITLE": "Sea Trips",
-    "ADD": "Add Trip",
-    "EDIT": "Edit Trip",
-    "DETAILSTITLE": "Trip Details",
-    "DESTINATION": "Destination",
-    "DATEDEPART": "Departure Date",
-    "DATERETOUR": "Return Date",
-    "STATUT": "Status",
-    "STATUS": {
-      "EN-COURS": "Ongoing",
-      "TERMINEE": "Completed",
-      "ANNULEE": "Cancelled"
-    },
-    "GENERALINFO": "General Information",
-    "OBSERVATIONS": "Observations",
-    "MANAGE": "Manage Trip",
-    "NOSORTIES": "No trips recorded for this boat.",
-    "SELECTSORTIES": "Select Sea Trips"
+    "TITLE": "Sea Trips"
   },
   "EXPENSES": {
-    "TITLE": "Expenses",
-    "ADD": "Add Expense",
-    "EDIT": "Edit Expense",
-    "TYPE": "Expense Type",
-    "AMOUNT": "Amount",
-    "DATE": "Date",
-    "DESCRIPTION": "Description",
-    "NOEXPENSE": "No expenses recorded for this trip.",
-    "TYPES": {
-      "FUEL": "Fuel",
-      "ICE": "Ice",
-      "OIL_CHANGE": "Oil Change",
-      "CREW_CNSS": "Crew CNSS",
-      "CREW_BONUS": "Crew Bonus",
-      "FOOD": "Food",
-      "VMS": "VMS",
-      "MISC": "Miscellaneous"
-    },
-    "SUCCESS_ADD": "Expense added successfully",
-    "SUCCESS_UPDATE": "Expense updated successfully"
+    "TITLE": "Expenses"
   },
   "POINTAGE": {
-    "TITLE": "Crew Attendance",
-    "CREW": "Manage Attendance",
-    "PRESENT": "Present",
-    "ABSENT": "Absent",
-    "NOCREW": "No sailors are assigned to this boat.",
-    "OBSERVATIONS": "Observations",
-    "ADDOBS": "Add an observation...",
-    "TOTAL": "Total",
-    "SUCCESS_PRESENCE": "Presence recorded",
-    "SUCCESS_ABSENCE": "Absence recorded",
-    "SUCCESS_OBS": "Observations updated",
-    "ERROR_ADD": "Error while saving attendance"
+    "TITLE": "Crew Attendance"
   },
   "AVANCES": {
     "TITLE": "Salary Advances",
@@ -179,44 +133,13 @@
     "DELETE_CONFIRM_ITEM": "the advance of {{amount}} TND for {{name}}"
   },
   "SALAIRES": {
-    "TITLE": "Salary Calculation",
-    "CALCULER": "Calculate Salaries",
-    "REVENU_TOTAL": "Total Revenue",
-    "TOTAL_DEPENSES": "Total Expenses",
-    "BENEFICE_NET": "Net Profit",
-    "PART_PROPRIETAIRE": "Owner's Share (50%)",
-    "PART_EQUIPAGE": "Crew's Share (50%)",
-    "DEDUCTIONS": "Deductions from crew share",
-    "NUITS": "Nights",
-    "MARINS": "Sailors",
-    "MONTANT_A_PARTAGER": "Net Amount to Share",
-    "DETAILS_PAR_MARIN": "Details per Sailor",
-    "SALAIRE_BASE": "Base Salary (from share)",
-    "PRIME_NUITS": "Night Bonus",
-    "SALAIRE_NET": "Net Salary",
-    "DEJA_PAYE": "Already Paid",
-    "RESTE_A_PAYER": "Remaining to be Paid",
-    "PAYER": "Pay",
-    "PAYE": "Paid",
-    "ERROR_NO_SORTIE": "Please select at least one trip",
-    "ERROR_NO_PARTS": "The sum of sailor shares is 0. Please define shares in the 'Sailors' section for each boat.",
-    "CALCUL_SUCCESS_TITLE": "Calculation complete!",
-    "PAYMENT_SUCCESS": "Payment recorded!",
-    "PAYMENT_MODAL_TITLE": "Payment for {{name}}",
-    "PAYMENT_MODAL_LABEL": "Amount to pay (Remaining: {{amount}} TND)"
+    "TITLE": "Salary Calculation"
   },
   "VENTES": {
-    "TITLE": "Sales Management",
-    "ADD_INVOICE": "New Invoice",
-    "ADD_INVOICE_FOR_TRIP": "Add an invoice for this trip",
-    "NO_INVOICES_FOR_TRIP": "No invoices recorded for this trip",
-    "TRIP_TOTAL": "Total sales for the trip",
-    "GENERAL_TOTAL": "Grand total of sales",
-    "NO_TRIPS_AVAILABLE": "No sea trips available to add an invoice.",
-    "SUCCESS_ADD": "Invoice added successfully!",
-    "SUCCESS_UPDATE": "Invoice updated successfully!",
-    "SUCCESS_DELETE": "Invoice deleted successfully.",
-    "DELETE_CONFIRM_ITEM": "invoice {{number}} ({{amount}} TND)"
+    "TITLE": "Sales"
+  },
+  "FACTURES": {
+    "TITLE": "Invoices"
   },
   "FORM": {
     "ADD": "Add",
@@ -232,14 +155,9 @@
   "MESSAGES": {
     "LOADING": "Loading...",
     "SAVING": "Saving...",
-    "UPDATING": "Updating...",
-    "DELETING": "Deleting...",
-    "CALCULATING": "Calculating...",
     "ADDING_SAILOR": "Adding sailor...",
     "SUCCESS": "Operation successful!",
-    "ERROR_TITLE": "Error",
-    "WARNING_TITLE": "Warning",
-    "ERROR_GENERIC": "An unexpected error occurred. Please try again.",
+    "ERROR": "An error occurred",
     "AREYOUSURE": "Are you sure?",
     "CONFIRMDELETEMESSAGE": "You are about to delete",
     "IRREVERSIBLE": "This action cannot be undone.",

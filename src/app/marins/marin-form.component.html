@@ -39,10 +39,10 @@
       <div class="form-group">
         <label class="form-label">{{ 'SAILORS.FUNCTION' | translate }} *</label>
         <select formControlName="fonction" class="form-input">
-          <option value="capitaine">{{ 'SAILORS.CAPTAIN' | translate }}</option>
+          <option value="capitaine">{{ 'SAILORS.CAPITAINE' | translate }}</option>
           <option value="second">{{ 'SAILORS.SECOND' | translate }}</option>
-          <option value="mecanicien">{{ 'SAILORS.MECHANIC' | translate }}</option>
-          <option value="matelot">{{ 'SAILORS.SAILOR' | translate }}</option>
+          <option value="mecanicien">{{ 'SAILORS.MECANICIEN' | translate }}</option>
+          <option value="matelot">{{ 'SAILORS.MATELOT' | translate }}</option>
         </select>
       </div>
 
@@ -72,7 +72,7 @@
           type="tel" 
           formControlName="telephone" 
           class="form-input"
-          placeholder="Ex: 12345678"
+          [placeholder]="'SAILORS.PLACEHOLDER.PHONE' | translate"
           [class.error]="marinForm.get('telephone')?.invalid && marinForm.get('telephone')?.touched"
         />
         <span class="error-message" *ngIf="marinForm.get('telephone')?.hasError('pattern') && marinForm.get('telephone')?.touched">

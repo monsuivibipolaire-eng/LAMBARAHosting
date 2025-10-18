@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { BateauService } from '../services/bateau.service';
 import { AlertService } from '../services/alert.service';
 import { Bateau } from '../models/bateau.model';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   standalone: false,
@@ -22,12 +23,12 @@ export class BateauFormComponent implements OnInit {
     private bateauService: BateauService,
     private alertService: AlertService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
     this.initForm();
-    
     this.bateauId = this.route.snapshot.paramMap.get('id');
     if (this.bateauId) {
       this.isEditMode = true;
@@ -73,7 +74,7 @@ export class BateauFormComponent implements OnInit {
   async onSubmit(): Promise<void> {
     if (this.bateauForm.valid) {
       this.loading = true;
-      this.alertService.loading('Enregistrement en cours...');
+      this.alertService.loading();
       
       const formValue = this.bateauForm.value;
       const bateauData: Bateau = {
@@ -84,24 +85,21 @@ export class BateauFormComponent implements OnInit {
       try {
         if (this.isEditMode && this.bateauId) {
           await this.bateauService.updateBateau(this.bateauId, bateauData);
-          this.alertService.close();
-          await this.alertService.success('Le bateau a été modifié avec succès', 'Modification réussie!');
+          await this.alertService.success(this.translate.instant('BOATS.SUCCESS_UPDATE'));
         } else {
           await this.bateauService.addBateau(bateauData);
-          this.alertService.close();
-          await this.alertService.success('Le bateau a été ajouté avec succès', 'Ajout réussi!');
+          await this.alertService.success(this.translate.instant('BOATS.SUCCESS_ADD'));
         }
         this.router.navigate(['/dashboard/bateaux']);
       } catch (error) {
         console.error('Erreur:', error);
-        this.alertService.close();
-        this.alertService.error('Une erreur est survenue lors de l\'enregistrement', 'Erreur!');
+        this.alertService.error();
       } finally {
         this.loading = false;
       }
     } else {
       this.markFormGroupTouched(this.bateauForm);
-      this.alertService.warning('Veuillez remplir tous les champs requis', 'Formulaire incomplet');
+      this.alertService.warning(this.translate.instant('FORM.REQUIRED_FIELDS'));
     }
   }
 

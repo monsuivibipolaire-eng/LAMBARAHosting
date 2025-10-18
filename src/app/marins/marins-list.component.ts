@@ -6,6 +6,7 @@ import { AlertService } from '../services/alert.service';
 import { Marin } from '../models/marin.model';
 import { Bateau } from '../models/bateau.model';
 import { Observable } from 'rxjs';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   standalone: false,
@@ -23,7 +24,8 @@ export class MarinsListComponent implements OnInit {
     private bateauService: BateauService,
     private alertService: AlertService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
@@ -50,17 +52,14 @@ export class MarinsListComponent implements OnInit {
 
   async deleteMarin(marin: Marin): Promise<void> {
     const confirmed = await this.alertService.confirmDelete(`${marin.prenom} ${marin.nom}`);
-    
     if (confirmed) {
       try {
-        this.alertService.loading('Suppression en cours...');
+        this.alertService.loading();
         await this.marinService.deleteMarin(marin.id!);
-        this.alertService.close();
-        this.alertService.toast('Marin supprimé avec succès', 'success');
+        this.alertService.toast(this.translate.instant('SAILORS.SUCCESS_DELETE'));
       } catch (error) {
         console.error('Erreur:', error);
-        this.alertService.close();
-        this.alertService.error('Erreur lors de la suppression');
+        this.alertService.error();
       }
     }
   }

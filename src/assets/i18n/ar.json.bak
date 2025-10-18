@@ -51,7 +51,6 @@
     "PORT": "ميناء الرسو",
     "STATUS": "الحالة",
     "ACTIVE": "نشط",
-    "MAINTENANCE": "صيانة",
     "INACTIVE": "غير نشط",
     "NO_BOAT_SELECTED": "لم يتم اختيار أي مركب",
     "NO_BOAT_SELECTED_DETAILS": "الرجاء اختيار مركب أولاً من صفحة 'المراكب'.",
@@ -93,10 +92,12 @@
     "SUCCESS_ADD": "تمت إضافة البحار بنجاح.",
     "SUCCESS_UPDATE": "تم تحديث البحار بنجاح.",
     "SUCCESS_DELETE": "تم حذف البحار بنجاح.",
-    "CAPITAINE": "قبطان",
-    "SECOND": "مساعد قبطان",
-    "MECANICIEN": "ميكانيكي",
-    "MATELOT": "بحار",
+    "FUNCTION_TYPE": {
+      "CAPITAINE": "قبطان",
+      "SECOND": "مساعد قبطان",
+      "MECANICIEN": "ميكانيكي",
+      "MATELOT": "بحار"
+    },
     "PLACEHOLDER": {
       "LASTNAME": "أدخل اللقب",
       "FIRSTNAME": "أدخل الاسم",
@@ -104,60 +105,13 @@
     }
   },
   "SORTIES": {
-    "TITLE": "الرحلات البحرية",
-    "ADD": "إضافة رحلة",
-    "EDIT": "تعديل الرحلة",
-    "DETAILSTITLE": "تفاصيل الرحلة",
-    "DESTINATION": "الوجهة",
-    "DATEDEPART": "تاريخ المغادرة",
-    "DATERETOUR": "تاريخ العودة",
-    "STATUT": "الحالة",
-    "STATUS": {
-      "EN-COURS": "جارية",
-      "TERMINEE": "منتهية",
-      "ANNULEE": "ملغاة"
-    },
-    "GENERALINFO": "معلومات عامة",
-    "OBSERVATIONS": "ملاحظات",
-    "MANAGE": "إدارة الرحلة",
-    "NOSORTIES": "لا توجد رحلات مسجلة لهذا المركب.",
-    "SELECTSORTIES": "تحديد الرحلات البحرية"
+    "TITLE": "الرحلات البحرية"
   },
   "EXPENSES": {
-    "TITLE": "المصاريف",
-    "ADD": "إضافة مصروف",
-    "EDIT": "تعديل المصروف",
-    "TYPE": "نوع المصروف",
-    "AMOUNT": "المبلغ",
-    "DATE": "التاريخ",
-    "DESCRIPTION": "الوصف",
-    "NOEXPENSE": "لا توجد مصاريف مسجلة لهذه الرحلة.",
-    "TYPES": {
-      "FUEL": "وقود",
-      "ICE": "ثلج",
-      "OIL_CHANGE": "تغيير زيت",
-      "CREW_CNSS": "الضمان الاجتماعي للطاقم",
-      "CREW_BONUS": "مكافأة الطاقم",
-      "FOOD": "طعام",
-      "VMS": "VMS",
-      "MISC": "متنوع"
-    },
-    "SUCCESS_ADD": "تمت إضافة المصروف بنجاح",
-    "SUCCESS_UPDATE": "تم تحديث المصروف بنجاح"
+    "TITLE": "المصاريف"
   },
   "POINTAGE": {
-    "TITLE": "تسجيل حضور الطاقم",
-    "CREW": "إدارة الحضور",
-    "PRESENT": "حاضر",
-    "ABSENT": "غائب",
-    "NOCREW": "لا يوجد بحارة معينون لهذا المركب.",
-    "OBSERVATIONS": "ملاحظات",
-    "ADDOBS": "إضافة ملاحظة...",
-    "TOTAL": "المجموع",
-    "SUCCESS_PRESENCE": "تم تسجيل الحضور",
-    "SUCCESS_ABSENCE": "تم تسجيل الغياب",
-    "SUCCESS_OBS": "تم تحديث الملاحظات",
-    "ERROR_ADD": "خطأ أثناء تسجيل الحضور"
+    "TITLE": "تسجيل حضور الطاقم"
   },
   "AVANCES": {
     "TITLE": "السلف على الراتب",
@@ -179,44 +133,13 @@
     "DELETE_CONFIRM_ITEM": "سلفة بقيمة {{amount}} دينار لـ {{name}}"
   },
   "SALAIRES": {
-    "TITLE": "حساب الرواتب",
-    "CALCULER": "حساب الرواتب",
-    "REVENU_TOTAL": "الإيراد الكلي",
-    "TOTAL_DEPENSES": "مجموع المصاريف",
-    "BENEFICE_NET": "الربح الصافي",
-    "PART_PROPRIETAIRE": "حصة المالك (50%)",
-    "PART_EQUIPAGE": "حصة الطاقم (50%)",
-    "DEDUCTIONS": "الخصومات من حصة الطاقم",
-    "NUITS": "ليالي",
-    "MARINS": "بحارة",
-    "MONTANT_A_PARTAGER": "المبلغ الصافي للمشاركة",
-    "DETAILS_PAR_MARIN": "التفاصيل لكل بحار",
-    "SALAIRE_BASE": "الراتب الأساسي (حسب الحصة)",
-    "PRIME_NUITS": "علاوة الليالي",
-    "SALAIRE_NET": "الراتب الصافي",
-    "DEJA_PAYE": "مدفوع مسبقًا",
-    "RESTE_A_PAYER": "المتبقي للدفع",
-    "PAYER": "دفع",
-    "PAYE": "مدفوع",
-    "ERROR_NO_SORTIE": "الرجاء اختيار رحلة واحدة على الأقل",
-    "ERROR_NO_PARTS": "مجموع حصص البحارة هو 0. الرجاء تحديد الحصص في قسم 'البحارة' لكل مركب.",
-    "CALCUL_SUCCESS_TITLE": "اكتمل الحساب!",
-    "PAYMENT_SUCCESS": "تم تسجيل الدفعة!",
-    "PAYMENT_MODAL_TITLE": "دفعة لـ {{name}}",
-    "PAYMENT_MODAL_LABEL": "المبلغ للدفع (المتبقي: {{amount}} دينار)"
+    "TITLE": "حساب الرواتب"
   },
   "VENTES": {
-    "TITLE": "إدارة المبيعات",
-    "ADD_INVOICE": "فاتورة جديدة",
-    "ADD_INVOICE_FOR_TRIP": "إضافة فاتورة لهذه الرحلة",
-    "NO_INVOICES_FOR_TRIP": "لا توجد فواتير مسجلة لهذه الرحلة",
-    "TRIP_TOTAL": "مجموع مبيعات الرحلة",
-    "GENERAL_TOTAL": "المجموع العام للمبيعات",
-    "NO_TRIPS_AVAILABLE": "لا توجد رحلات بحرية متاحة لإضافة فاتورة.",
-    "SUCCESS_ADD": "تمت إضافة الفاتورة بنجاح!",
-    "SUCCESS_UPDATE": "تم تعديل الفاتورة بنجاح!",
-    "SUCCESS_DELETE": "تم حذف الفاتورة بنجاح.",
-    "DELETE_CONFIRM_ITEM": "الفاتورة رقم {{number}} ({{amount}} دينار)"
+    "TITLE": "المبيعات"
+  },
+  "FACTURES": {
+    "TITLE": "الفواتير"
   },
   "FORM": {
     "ADD": "إضافة",
@@ -232,14 +155,9 @@
   "MESSAGES": {
     "LOADING": "جاري التحميل...",
     "SAVING": "جاري الحفظ...",
-    "UPDATING": "جاري التعديل...",
-    "DELETING": "جاري الحذف...",
-    "CALCULATING": "جاري الحساب...",
     "ADDING_SAILOR": "جاري إضافة البحار...",
     "SUCCESS": "تمت العملية بنجاح!",
-    "ERROR_TITLE": "خطأ",
-    "WARNING_TITLE": "تنبيه",
-    "ERROR_GENERIC": "حدث خطأ غير متوقع. الرجاء المحاولة مرة أخرى.",
+    "ERROR": "حدث خطأ",
     "AREYOUSURE": "هل أنت متأكد؟",
     "CONFIRMDELETEMESSAGE": "أنت على وشك حذف",
     "IRREVERSIBLE": "هذا الإجراء لا يمكن التراجع عنه.",

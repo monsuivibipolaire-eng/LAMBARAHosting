@@ -5,11 +5,10 @@
       <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
       </svg>
-      {{ 'BOATS.ADDBOAT' | translate }}
+      {{ 'BOATS.ADD_BOAT' | translate }}
     </button>
   </div>
 
-  <!-- Message d'instruction -->
   <div class="selection-info" *ngIf="!selectedBoat">
     <svg class="info-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -17,7 +16,6 @@
     <p>{{ 'BOATS.SELECT_INFO' | translate }}</p>
   </div>
 
-  <!-- Bateau sélectionné -->
   <div class="selected-boat-card" *ngIf="selectedBoat">
     <div class="selected-header">
       <svg class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -52,7 +50,7 @@
         <tr>
           <th>{{ 'BOATS.NAME' | translate }}</th>
           <th>{{ 'BOATS.REGISTRATION' | translate }}</th>
-          <th>{{ 'BOATS.ENGINETYPE' | translate }}</th>
+          <th>{{ 'BOATS.ENGINE_TYPE' | translate }}</th>
           <th>{{ 'BOATS.POWER' | translate }}</th>
           <th>{{ 'BOATS.LENGTH' | translate }}</th>
           <th>{{ 'BOATS.PORT' | translate }}</th>
@@ -61,7 +59,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let bateau of bateaux | async" 
+        <tr *ngFor="let bateau of bateaux$ | async" 
             [class.selected-row]="isSelected(bateau)"
             (click)="selectBoat(bateau)">
           <td class="font-bold">

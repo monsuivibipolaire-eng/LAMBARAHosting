@@ -4,7 +4,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { HttpClient, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -15,7 +15,6 @@ import { provideFirestore, getFirestore } from '@angular/fire/firestore';
 
 import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
 import { TranslateHttpLoader } from '@ngx-translate/http-loader';
-
 import { environment } from '../environments/environment';
 
 import { AuthComponent } from './auth/auth.component';
@@ -39,6 +38,7 @@ export function createTranslateLoader(http: HttpClient) {
     ReactiveFormsModule,
     BrowserAnimationsModule,
     AppRoutingModule,
+    HttpClientModule,
     TranslateModule.forRoot({
       defaultLanguage: 'ar',
       loader: {
@@ -51,7 +51,6 @@ export function createTranslateLoader(http: HttpClient) {
   providers: [
     AuthService,
     AuthGuard,
-    provideHttpClient(withInterceptorsFromDi()),
     provideFirebaseApp(() => initializeApp(environment.firebase)),
     provideAuth(() => getAuth()),
     provideFirestore(() => getFirestore())

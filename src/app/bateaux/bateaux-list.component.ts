@@ -5,6 +5,7 @@ import { AlertService } from '../services/alert.service';
 import { SelectedBoatService } from '../services/selected-boat.service';
 import { Bateau } from '../models/bateau.model';
 import { Observable } from 'rxjs';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   standalone: false,
@@ -13,7 +14,7 @@ import { Observable } from 'rxjs';
   styleUrls: ['./bateaux-list.component.scss']
 })
 export class BateauxListComponent implements OnInit {
-  bateaux!: Observable<Bateau[]>;
+  bateaux$!: Observable<Bateau[]>;
   searchTerm = '';
   selectedBoat: Bateau | null = null;
 
@@ -21,30 +22,29 @@ export class BateauxListComponent implements OnInit {
     private bateauService: BateauService,
     private alertService: AlertService,
     private router: Router,
-    private selectedBoatService: SelectedBoatService
+    private selectedBoatService: SelectedBoatService,
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
     this.loadBateaux();
-    
-    // Récupérer le bateau sélectionné
     this.selectedBoatService.selectedBoat$.subscribe(boat => {
       this.selectedBoat = boat;
     });
   }
 
   loadBateaux(): void {
-    this.bateaux = this.bateauService.getBateaux();
+    this.bateaux$ = this.bateauService.getBateaux();
   }
 
   selectBoat(bateau: Bateau): void {
     this.selectedBoatService.selectBoat(bateau);
-    this.alertService.toast(`Bateau "${bateau.nom}" sélectionné`, 'success');
+    this.alertService.toast(this.translate.instant('BOATS.TOAST_SELECTED', { boatName: bateau.nom }));
   }
 
   clearSelection(): void {
     this.selectedBoatService.clearSelection();
-    this.alertService.toast('Sélection annulée', 'info');
+    this.alertService.toast(this.translate.instant('BOATS.TOAST_SELECTION_CLEARED'), 'info');
   }
 
   isSelected(bateau: Bateau): boolean {
@@ -64,23 +64,22 @@ export class BateauxListComponent implements OnInit {
   }
 
   async deleteBateau(bateau: Bateau): Promise<void> {
-    const confirmed = await this.alertService.confirmDelete(`le bateau "${bateau.nom}"`);
+    const itemName = this.translate.instant('BOATS.BOAT_NAME_CONFIRM', { boatName: bateau.nom });
+    const confirmed = await this.alertService.confirmDelete(itemName);
+
     if (confirmed) {
       try {
-        this.alertService.loading('Suppression en cours...');
+        this.alertService.loading(this.translate.instant('MESSAGES.DELETING'));
         await this.bateauService.deleteBateau(bateau.id!);
         
-        // Si le bateau supprimé était sélectionné, désélectionner
         if (this.isSelected(bateau)) {
           this.clearSelection();
         }
         
-        this.alertService.close();
-        this.alertService.toast('Bateau supprimé avec succès', 'success');
+        this.alertService.toast(this.translate.instant('BOATS.SUCCESS_DELETE'));
       } catch (error) {
         console.error('Erreur lors de la suppression', error);
-        this.alertService.close();
-        this.alertService.error('Erreur lors de la suppression du bateau');
+        this.alertService.error();
       }
     }
   }

@@ -19,10 +19,10 @@ export class AlertService {
     });
   }
 
-  async error(message: string, title?: string): Promise<void> {
+  async error(message?: string, title?: string): Promise<void> {
     await Swal.fire({
-      title: title || this.translate.instant('MESSAGES.ERROR'),
-      text: message,
+      title: title || this.translate.instant('MESSAGES.ERROR_TITLE'),
+      text: message || this.translate.instant('MESSAGES.ERROR_GENERIC'),
       icon: 'error',
       confirmButtonColor: '#ef4444',
       confirmButtonText: 'OK'
@@ -31,7 +31,7 @@ export class AlertService {
 
   async warning(message: string, title?: string): Promise<void> {
     await Swal.fire({
-      title: title || this.translate.instant('MESSAGES.ERROR'),
+      title: title || this.translate.instant('MESSAGES.WARNING_TITLE'),
       text: message,
       icon: 'warning',
       confirmButtonColor: '#f59e0b',
@@ -42,12 +42,12 @@ export class AlertService {
   async confirmDelete(itemName: string): Promise<boolean> {
     const result = await Swal.fire({
       title: this.translate.instant('MESSAGES.AREYOUSURE'),
-      text: `${this.translate.instant('MESSAGES.CONFIRMDELETEMESSAGE')} ${itemName}? ${this.translate.instant('MESSAGES.IRREVERSIBLE')}`,
+      html: `${this.translate.instant('MESSAGES.CONFIRMDELETEMESSAGE')} <b>${itemName}</b> ?<br>${this.translate.instant('MESSAGES.IRREVERSIBLE')}`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#6b7280',
-      confirmButtonText: this.translate.instant('BOATS.DELETE'),
+      confirmButtonText: this.translate.instant('FORM.DELETE'),
       cancelButtonText: this.translate.instant('FORM.CANCEL')
     });
     return result.isConfirmed;

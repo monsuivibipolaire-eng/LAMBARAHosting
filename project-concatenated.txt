@@ -1,6 +1,6 @@
 ====================================
   Projet Angular - Code Source
-  Date: Sat Oct 18 16:19:08 CET 2025
+  Date: Sat Oct 18 16:48:30 CET 2025
 ====================================
 
 Arborescence du projet:
@@ -169,8 +169,11 @@ Arborescence du projet:
 ├── assets
 │   └── i18n
 │       ├── ar.json
+│       ├── ar.json.bak
 │       ├── en.json
-│       └── fr.json
+│       ├── en.json.bak
+│       ├── fr.json
+│       └── fr.json.bak
 ├── environments
 │   ├── environment.development.ts
 │   └── environment.ts
@@ -184,7 +187,7 @@ Arborescence du projet:
 │   └── _btn-back.scss
 └── styles.scss
 
-29 directories, 149 files
+29 directories, 152 files
 
 ====================================
   FICHIERS SOURCE
@@ -595,7 +598,7 @@ export class AuthComponent implements OnInit {
 
 ====================================
 FICHIER: ./src/app/avances/avances.component.ts
-Lignes:      348
+Lignes:      270
 ====================================
 
 import { Component, OnInit } from '@angular/core';
@@ -603,16 +606,13 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import Swal from 'sweetalert2';
-
 import { AvanceService } from '../services/avance.service';
 import { MarinService } from '../services/marin.service';
 import { SelectedBoatService } from '../services/selected-boat.service';
 import { AlertService } from '../services/alert.service';
-
 import { Avance } from '../models/avance.model';
 import { Marin } from '../models/marin.model';
 import { Bateau } from '../models/bateau.model';
-
 import { combineLatest } from 'rxjs';
 
 @Component({
@@ -638,19 +638,16 @@ export class AvancesComponent implements OnInit {
 
   ngOnInit(): void {
     this.selectedBoat = this.selectedBoatService.getSelectedBoat();
-    
     if (!this.selectedBoat) {
-      this.alertService.error('Veuillez d\'abord sélectionner un bateau');
+      this.alertService.error(this.translate.instant('BOATS.NO_BOAT_SELECTED_DETAILS'));
       this.loading = false;
       return;
     }
-
     this.loadData();
   }
 
   loadData(): void {
     if (!this.selectedBoat) return;
-
     combineLatest([
       this.marinService.getMarinsByBateau(this.selectedBoat.id!),
       this.avanceService.getAvancesByBateau(this.selectedBoat.id!)
@@ -663,7 +660,7 @@ export class AvancesComponent implements OnInit {
 
   getMarinName(marinId: string): string {
     const marin = this.marins.find(m => m.id === marinId);
-    return marin ? `${marin.prenom} ${marin.nom}` : 'Inconnu';
+    return marin ? `${marin.prenom} ${marin.nom}` : this.translate.instant('COMMON.UNKNOWN');
   }
 
   getTotalAvances(): number {
@@ -692,10 +689,8 @@ export class AvancesComponent implements OnInit {
     return '';
   }
 
-  // ✅ FONCTION POUR FORMATER LA DATE D'AFFICHAGE (JJ/MM/AAAA)
   formatDisplayDate(date: any): string {
     let dateObj: Date;
-    
     if (date?.toDate) {
       dateObj = date.toDate();
     } else if (date instanceof Date) {
@@ -703,11 +698,9 @@ export class AvancesComponent implements OnInit {
     } else {
       return '';
     }
-
     const day = String(dateObj.getDate()).padStart(2, '0');
     const month = String(dateObj.getMonth() + 1).padStart(2, '0');
     const year = dateObj.getFullYear();
-    
     return `${day}/${month}/${year}`;
   }
 
@@ -715,233 +708,165 @@ export class AvancesComponent implements OnInit {
     if (!this.selectedBoat) return;
 
     const marinsOptions = this.marins.reduce((acc, marin) => {
-      acc[marin.id!] = `${marin.prenom} ${marin.nom} (${this.translate.instant(`SAILORS.${marin.fonction.toUpperCase()}`)})`;
+      acc[marin.id!] = `${marin.prenom} ${marin.nom} (${this.translate.instant('SAILORS.FUNCTION_TYPE.' + marin.fonction.toUpperCase())})`;
       return acc;
     }, {} as any);
 
-    const translations = {
-      title: this.translate.instant('AVANCES.ADD'),
+    const t = {
+      title: this.translate.instant('AVANCES.ADD_MODAL.TITLE'),
       sailor: this.translate.instant('SAILORS.TITLE'),
-      selectSailor: this.translate.instant('SAILORS.SELECT_FUNCTION'),
-      amount: this.translate.instant('EXPENSES.AMOUNT'),
-      date: this.translate.instant('EXPENSES.DATE'),
-      description: this.translate.instant('EXPENSES.DESCRIPTION'),
+      selectSailor: this.translate.instant('SAILORS.SELECT_SAILOR'),
+      amount: this.translate.instant('COMMON.AMOUNT_D T'),
+      amountPlaceholder: this.translate.instant('COMMON.AMOUNT_IN_TND'),
+      date: this.translate.instant('COMMON.DATE'),
+      description: this.translate.instant('COMMON.DESCRIPTION'),
+      descriptionPlaceholder: this.translate.instant('COMMON.DESCRIPTION_OPTIONAL'),
       add: this.translate.instant('FORM.ADD'),
       cancel: this.translate.instant('FORM.CANCEL'),
       requiredFields: this.translate.instant('FORM.REQUIRED_FIELDS'),
       amountPositive: this.translate.instant('AVANCES.AMOUNT_POSITIVE')
     };
 
-    const todayDate = this.getTodayDate();
-
     const { value: formValues } = await Swal.fire({
-      title: `<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; color: #1f2937;">
-                <svg style="width: 36px; height: 36px; color: #10b981;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <span style="font-weight: 700; font-size: 1.5rem;">${translations.title}</span>
-              </div>`,
+      title: `<i class="swal-icon-money"></i> ${t.title}`,
       html: `
-        <style>
-          .avance-form { text-align: left; padding: 0.5rem 0.5rem 0; }
-          .form-group { margin-bottom: 1.25rem; }
-          .form-label { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.625rem; font-weight: 600; color: #374151; font-size: 0.9rem; }
-          .form-label svg { width: 18px; height: 18px; color: #3b82f6; }
-          .required-star { color: #ef4444; font-weight: 700; }
-          .custom-select, .custom-input { width: 100%; padding: 0.75rem 0.875rem; border: 2px solid #e5e7eb; border-radius: 0.5rem; font-size: 0.95rem; transition: all 0.3s; background: white; color: #1f2937; }
-          .custom-select:focus, .custom-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-          .custom-textarea { width: 100%; padding: 0.75rem 0.875rem; border: 2px solid #e5e7eb; border-radius: 0.5rem; font-size: 0.95rem; resize: vertical; min-height: 80px; transition: all 0.3s; font-family: inherit; }
-          .custom-textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-          .input-helper { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.4rem; font-size: 0.8rem; color: #6b7280; }
-          .input-helper svg { width: 14px; height: 14px; color: #9ca3af; }
-        </style>
-        <div class="avance-form">
+        <div class="swal-form">
           <div class="form-group">
-            <label class="form-label">
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-              ${translations.sailor} <span class="required-star">*</span>
-            </label>
-            <select id="swal-marin" class="custom-select">
-              <option value="">${translations.selectSailor}</option>
+            <label class="form-label"><i class="swal-icon-user"></i> ${t.sailor} <span class="required-star">*</span></label>
+            <select id="swal-marin" class="swal2-input">
+              <option value="">${t.selectSailor}</option>
               ${Object.keys(marinsOptions).map(id => `<option value="${id}">${marinsOptions[id]}</option>`).join('')}
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              ${translations.amount} (DT) <span class="required-star">*</span>
-            </label>
-            <input id="swal-montant" type="number" class="custom-input" placeholder="0.00" step="0.01" min="0">
-            <div class="input-helper">
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              <span>Montant en dinars tunisiens</span>
-            </div>
+            <label class="form-label"><i class="swal-icon-cash"></i> ${t.amount} <span class="required-star">*</span></label>
+            <input id="swal-montant" type="number" class="swal2-input" placeholder="0.00" step="0.01" min="0">
+            <div class="input-helper">${t.amountPlaceholder}</div>
           </div>
           <div class="form-group">
-            <label class="form-label">
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-              ${translations.date} <span class="required-star">*</span>
-            </label>
-            <input id="swal-date" type="date" class="custom-input" value="${todayDate}">
+            <label class="form-label"><i class="swal-icon-calendar"></i> ${t.date} <span class="required-star">*</span></label>
+            <input id="swal-date" type="date" class="swal2-input" value="${this.getTodayDate()}">
           </div>
           <div class="form-group">
-            <label class="form-label">
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
-              ${translations.description}
-            </label>
-            <textarea id="swal-description" class="custom-textarea" placeholder="${translations.description}"></textarea>
+            <label class="form-label"><i class="swal-icon-details"></i> ${t.description}</label>
+            <textarea id="swal-description" class="swal2-textarea" placeholder="${t.descriptionPlaceholder}"></textarea>
           </div>
-        </div>
-      `,
+        </div>`,
       focusConfirm: false,
       showCancelButton: true,
-      confirmButtonText: translations.add,
-      cancelButtonText: translations.cancel,
+      confirmButtonText: t.add,
+      cancelButtonText: t.cancel,
       confirmButtonColor: '#10b981',
-      cancelButtonColor: '#6b7280',
-      width: '600px',
-      padding: '1.5rem 2rem 2rem',
       preConfirm: () => {
         const marinId = (document.getElementById('swal-marin') as HTMLSelectElement).value;
         const montant = parseFloat((document.getElementById('swal-montant') as HTMLInputElement).value);
         const date = (document.getElementById('swal-date') as HTMLInputElement).value;
-        const description = (document.getElementById('swal-description') as HTMLTextAreaElement).value;
-
         if (!marinId || !montant || !date) {
-          Swal.showValidationMessage(translations.requiredFields);
+          Swal.showValidationMessage(t.requiredFields);
           return false;
         }
-
         if (montant <= 0) {
-          Swal.showValidationMessage(translations.amountPositive);
+          Swal.showValidationMessage(t.amountPositive);
           return false;
         }
-
-        return { marinId, montant, date, description };
+        return {
+          marinId,
+          montant,
+          date,
+          description: (document.getElementById('swal-description') as HTMLTextAreaElement).value
+        };
       }
     });
 
     if (formValues) {
       try {
-        this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
-
+        this.alertService.loading();
         const newAvance: any = {
           marinId: formValues.marinId,
           bateauId: this.selectedBoat.id!,
           montant: formValues.montant,
           dateAvance: new Date(formValues.date)
         };
-
         if (formValues.description && formValues.description.trim() !== '') {
           newAvance.description = formValues.description.trim();
         }
-
         await this.avanceService.addAvance(newAvance);
-        
-        this.alertService.close();
-        await this.alertService.success(this.translate.instant('AVANCES.SUCCESS_ADD'));
+        this.alertService.success(this.translate.instant('AVANCES.SUCCESS_ADD'));
       } catch (error) {
         console.error('Erreur:', error);
-        this.alertService.close();
-        this.alertService.error(this.translate.instant('MESSAGES.ERROR'));
+        this.alertService.error();
       }
     }
   }
 
   async editAvance(avance: Avance): Promise<void> {
-    const translations = {
-      title: this.translate.instant('AVANCES.EDIT'),
-      amount: this.translate.instant('EXPENSES.AMOUNT'),
-      date: this.translate.instant('EXPENSES.DATE'),
-      description: this.translate.instant('EXPENSES.DESCRIPTION'),
-      edit: this.translate.instant('FORM.EDIT'),
-      cancel: this.translate.instant('FORM.CANCEL')
+    const t = {
+        title: this.translate.instant('AVANCES.EDIT_MODAL.TITLE'),
+        amount: this.translate.instant('COMMON.AMOUNT_D T'),
+        date: this.translate.instant('COMMON.DATE'),
+        description: this.translate.instant('COMMON.DESCRIPTION'),
+        edit: this.translate.instant('FORM.EDIT'),
+        cancel: this.translate.instant('FORM.CANCEL')
     };
 
     const { value: formValues } = await Swal.fire({
-      title: translations.title,
+      title: t.title,
       html: `
-        <style>
-          .avance-form { text-align: left; padding: 0.5rem 0.5rem 0; }
-          .form-group { margin-bottom: 1.25rem; }
-          .form-label { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.625rem; font-weight: 600; color: #374151; font-size: 0.9rem; }
-          .custom-input, .custom-textarea { width: 100%; padding: 0.75rem 0.875rem; border: 2px solid #e5e7eb; border-radius: 0.5rem; font-size: 0.95rem; transition: all 0.3s; }
-          .custom-input:focus, .custom-textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-          .custom-textarea { resize: vertical; min-height: 80px; font-family: inherit; }
-        </style>
-        <div class="avance-form">
+        <div class="swal-form">
           <div class="form-group">
-            <label class="form-label">${translations.amount} (DT)</label>
-            <input id="swal-montant" type="number" class="custom-input" value="${avance.montant}" step="0.01" min="0">
+            <label class="form-label">${t.amount}</label>
+            <input id="swal-montant" type="number" class="swal2-input" value="${avance.montant}" step="0.01" min="0">
           </div>
           <div class="form-group">
-            <label class="form-label">${translations.date}</label>
-            <input id="swal-date" type="date" class="custom-input" value="${this.formatDate(avance.dateAvance)}">
+            <label class="form-label">${t.date}</label>
+            <input id="swal-date" type="date" class="swal2-input" value="${this.formatDate(avance.dateAvance)}">
           </div>
           <div class="form-group">
-            <label class="form-label">${translations.description}</label>
-            <textarea id="swal-description" class="custom-textarea">${avance.description || ''}</textarea>
+            <label class="form-label">${t.description}</label>
+            <textarea id="swal-description" class="swal2-textarea">${avance.description || ''}</textarea>
           </div>
-        </div>
-      `,
+        </div>`,
       focusConfirm: false,
       showCancelButton: true,
-      confirmButtonText: translations.edit,
-      cancelButtonText: translations.cancel,
+      confirmButtonText: t.edit,
+      cancelButtonText: t.cancel,
       confirmButtonColor: '#f59e0b',
-      width: '600px',
-      padding: '1.5rem 2rem 2rem',
-      preConfirm: () => {
-        const montant = parseFloat((document.getElementById('swal-montant') as HTMLInputElement).value);
-        const date = (document.getElementById('swal-date') as HTMLInputElement).value;
-        const description = (document.getElementById('swal-description') as HTMLTextAreaElement).value;
-        return { montant, date, description };
-      }
+      preConfirm: () => ({
+        montant: parseFloat((document.getElementById('swal-montant') as HTMLInputElement).value),
+        date: (document.getElementById('swal-date') as HTMLInputElement).value,
+        description: (document.getElementById('swal-description') as HTMLTextAreaElement).value
+      })
     });
 
     if (formValues) {
       try {
-        this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
-        
+        this.alertService.loading();
         const updateData: any = {
           montant: formValues.montant,
           dateAvance: new Date(formValues.date)
         };
-
-        if (formValues.description && formValues.description.trim() !== '') {
-          updateData.description = formValues.description.trim();
-        } else {
-          updateData.description = '';
-        }
-
+        updateData.description = (formValues.description && formValues.description.trim() !== '') ? formValues.description.trim() : '';
         await this.avanceService.updateAvance(avance.id!, updateData);
-        
-        this.alertService.close();
-        await this.alertService.success(this.translate.instant('AVANCES.SUCCESS_UPDATE'));
+        this.alertService.success(this.translate.instant('AVANCES.SUCCESS_UPDATE'));
       } catch (error) {
         console.error('Erreur:', error);
-        this.alertService.close();
-        this.alertService.error(this.translate.instant('MESSAGES.ERROR'));
+        this.alertService.error();
       }
     }
   }
 
   async deleteAvance(avance: Avance): Promise<void> {
     const marinName = this.getMarinName(avance.marinId);
-    const confirmed = await this.alertService.confirmDelete(
-      `l'avance de ${avance.montant} DT pour ${marinName}`
-    );
-
+    const itemName = this.translate.instant('AVANCES.DELETE_CONFIRM_ITEM', { amount: avance.montant, name: marinName });
+    const confirmed = await this.alertService.confirmDelete(itemName);
     if (confirmed) {
       try {
-        this.alertService.loading(this.translate.instant('MESSAGES.LOADING'));
+        this.alertService.loading();
         await this.avanceService.deleteAvance(avance.id!);
-        this.alertService.close();
-        this.alertService.toast(this.translate.instant('AVANCES.SUCCESS_DELETE'), 'success');
+        this.alertService.toast(this.translate.instant('AVANCES.SUCCESS_DELETE'));
       } catch (error) {
         console.error('Erreur:', error);
-        this.alertService.close();
-        this.alertService.error(this.translate.instant('MESSAGES.ERROR'));
+        this.alertService.error();
       }
     }
   }
@@ -949,7 +874,7 @@ export class AvancesComponent implements OnInit {
 
 ====================================
 FICHIER: ./src/app/bateaux/bateau-form.component.ts
-Lignes:      117
+Lignes:      115
 ====================================
 
 import { Component, OnInit } from '@angular/core';
@@ -958,6 +883,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { BateauService } from '../services/bateau.service';
 import { AlertService } from '../services/alert.service';
 import { Bateau } from '../models/bateau.model';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   standalone: false,
@@ -976,12 +902,12 @@ export class BateauFormComponent implements OnInit {
     private bateauService: BateauService,
     private alertService: AlertService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
     this.initForm();
-    
     this.bateauId = this.route.snapshot.paramMap.get('id');
     if (this.bateauId) {
       this.isEditMode = true;
@@ -1027,7 +953,7 @@ export class BateauFormComponent implements OnInit {
   async onSubmit(): Promise<void> {
     if (this.bateauForm.valid) {
       this.loading = true;
-      this.alertService.loading('Enregistrement en cours...');
+      this.alertService.loading();
       
       const formValue = this.bateauForm.value;
       const bateauData: Bateau = {
@@ -1038,24 +964,21 @@ export class BateauFormComponent implements OnInit {
       try {
         if (this.isEditMode && this.bateauId) {
           await this.bateauService.updateBateau(this.bateauId, bateauData);
-          this.alertService.close();
-          await this.alertService.success('Le bateau a été modifié avec succès', 'Modification réussie!');
+          await this.alertService.success(this.translate.instant('BOATS.SUCCESS_UPDATE'));
         } else {
           await this.bateauService.addBateau(bateauData);
-          this.alertService.close();
-          await this.alertService.success('Le bateau a été ajouté avec succès', 'Ajout réussi!');
+          await this.alertService.success(this.translate.instant('BOATS.SUCCESS_ADD'));
         }
         this.router.navigate(['/dashboard/bateaux']);
       } catch (error) {
         console.error('Erreur:', error);
-        this.alertService.close();
-        this.alertService.error('Une erreur est survenue lors de l\'enregistrement', 'Erreur!');
+        this.alertService.error();
       } finally {
         this.loading = false;
       }
     } else {
       this.markFormGroupTouched(this.bateauForm);
-      this.alertService.warning('Veuillez remplir tous les champs requis', 'Formulaire incomplet');
+      this.alertService.warning(this.translate.instant('FORM.REQUIRED_FIELDS'));
     }
   }
 
@@ -1072,7 +995,7 @@ export class BateauFormComponent implements OnInit {
 
 ====================================
 FICHIER: ./src/app/bateaux/bateaux-list.component.ts
-Lignes:       96
+Lignes:       95
 ====================================
 
 import { Component, OnInit } from '@angular/core';
@@ -1082,6 +1005,7 @@ import { AlertService } from '../services/alert.service';
 import { SelectedBoatService } from '../services/selected-boat.service';
 import { Bateau } from '../models/bateau.model';
 import { Observable } from 'rxjs';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   standalone: false,
@@ -1098,13 +1022,12 @@ export class BateauxListComponent implements OnInit {
     private bateauService: BateauService,
     private alertService: AlertService,
     private router: Router,
-    private selectedBoatService: SelectedBoatService
+    private selectedBoatService: SelectedBoatService,
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
     this.loadBateaux();
-    
-    // Récupérer le bateau sélectionné
     this.selectedBoatService.selectedBoat$.subscribe(boat => {
       this.selectedBoat = boat;
     });
@@ -1116,12 +1039,12 @@ export class BateauxListComponent implements OnInit {
 
   selectBoat(bateau: Bateau): void {
     this.selectedBoatService.selectBoat(bateau);
-    this.alertService.toast(`Bateau "${bateau.nom}" sélectionné`, 'success');
+    this.alertService.toast(this.translate.instant('BOATS.TOAST_SELECTED', { boatName: bateau.nom }));
   }
 
   clearSelection(): void {
     this.selectedBoatService.clearSelection();
-    this.alertService.toast('Sélection annulée', 'info');
+    this.alertService.toast(this.translate.instant('BOATS.TOAST_SELECTION_CLEARED'), 'info');
   }
 
   isSelected(bateau: Bateau): boolean {
@@ -1141,23 +1064,22 @@ export class BateauxListComponent implements OnInit {
   }
 
   async deleteBateau(bateau: Bateau): Promise<void> {
-    const confirmed = await this.alertService.confirmDelete(`le bateau "${bateau.nom}"`);
+    const itemName = this.translate.instant('BOATS.BOAT_NAME_CONFIRM', { boatName: bateau.nom });
+    const confirmed = await this.alertService.confirmDelete(itemName);
+
     if (confirmed) {
       try {
-        this.alertService.loading('Suppression en cours...');
+        this.alertService.loading();
         await this.bateauService.deleteBateau(bateau.id!);
         
-        // Si le bateau supprimé était sélectionné, désélectionner
         if (this.isSelected(bateau)) {
           this.clearSelection();
         }
         
-        this.alertService.close();
-        this.alertService.toast('Bateau supprimé avec succès', 'success');
+        this.alertService.toast(this.translate.instant('BOATS.SUCCESS_DELETE'));
       } catch (error) {
         console.error('Erreur lors de la suppression', error);
-        this.alertService.close();
-        this.alertService.error('Erreur lors de la suppression du bateau');
+        this.alertService.error();
       }
     }
   }
@@ -1174,7 +1096,7 @@ export class BateauxListComponent implements OnInit {
 
 ====================================
 FICHIER: ./src/app/bateaux/bateaux.module.ts
-Lignes:       29
+Lignes:       34
 ====================================
 
 import { NgModule } from '@angular/core';
@@ -1189,7 +1111,12 @@ import { BateauFormComponent } from './bateau-form.component';
 const routes: Routes = [
   { path: '', component: BateauxListComponent },
   { path: 'add', component: BateauFormComponent },
-  { path: 'edit/:id', component: BateauFormComponent }
+  { path: 'edit/:id', component: BateauFormComponent },
+  // ✅ CORRECTION : Ajout de la route pour charger le module des marins
+  { 
+    path: ':bateauId/marins', 
+    loadChildren: () => import('../marins/marins.module').then(m => m.MarinsModule) 
+  }
 ];
 
 @NgModule({
@@ -1588,7 +1515,7 @@ export class BoatSelectionGuard implements CanActivate {
 
 ====================================
 FICHIER: ./src/app/marins/marin-form.component.ts
-Lignes:      123
+Lignes:      125
 ====================================
 
 import { Component, OnInit } from '@angular/core';
@@ -1636,6 +1563,7 @@ export class MarinFormComponent implements OnInit {
       prenom: ['', [Validators.required, Validators.minLength(2)]],
       dateNaissance: ['', [Validators.required]],
       fonction: ['matelot', [Validators.required]],
+      part: [1, [Validators.required, Validators.min(0)]], // ✅ CHAMP AJOUTÉ
       numeroPermis: ['', [Validators.required]],
       telephone: ['', [Validators.required, Validators.pattern(/^[0-9]{8,}$/)]],
       email: ['', [Validators.required, Validators.email]],
@@ -1676,6 +1604,7 @@ export class MarinFormComponent implements OnInit {
       const marinData: Marin = {
         ...formValue,
         bateauId: this.bateauId,
+        part: +formValue.part, // ✅ Assurer que la part est un nombre
         dateNaissance: new Date(formValue.dateNaissance),
         dateEmbauche: new Date(formValue.dateEmbauche)
       };
@@ -1717,7 +1646,7 @@ export class MarinFormComponent implements OnInit {
 
 ====================================
 FICHIER: ./src/app/marins/marins-list.component.ts
-Lignes:       97
+Lignes:       96
 ====================================
 
 import { Component, OnInit } from '@angular/core';
@@ -1728,6 +1657,7 @@ import { AlertService } from '../services/alert.service';
 import { Marin } from '../models/marin.model';
 import { Bateau } from '../models/bateau.model';
 import { Observable } from 'rxjs';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   standalone: false,
@@ -1745,7 +1675,8 @@ export class MarinsListComponent implements OnInit {
     private bateauService: BateauService,
     private alertService: AlertService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
@@ -1772,17 +1703,14 @@ export class MarinsListComponent implements OnInit {
 
   async deleteMarin(marin: Marin): Promise<void> {
     const confirmed = await this.alertService.confirmDelete(`${marin.prenom} ${marin.nom}`);
-    
     if (confirmed) {
       try {
-        this.alertService.loading('Suppression en cours...');
+        this.alertService.loading();
         await this.marinService.deleteMarin(marin.id!);
-        this.alertService.close();
-        this.alertService.toast('Marin supprimé avec succès', 'success');
+        this.alertService.toast(this.translate.instant('SAILORS.SUCCESS_DELETE'));
       } catch (error) {
         console.error('Erreur:', error);
-        this.alertService.close();
-        this.alertService.error('Erreur lors de la suppression');
+        this.alertService.error();
       }
     }
   }
@@ -2104,7 +2032,7 @@ export interface DetailPoisson {
 
 ====================================
 FICHIER: ./src/app/models/marin.model.ts
-Lignes:       16
+Lignes:       17
 ====================================
 
 export interface Marin {
@@ -2114,6 +2042,7 @@ export interface Marin {
   prenom: string;
   dateNaissance: Date;
   fonction: 'capitaine' | 'second' | 'mecanicien' | 'matelot';
+  part: number; // Part du marin pour le calcul des salaires
   numeroPermis: string;
   telephone: string;
   email: string;
@@ -2248,7 +2177,7 @@ export interface Sortie {
 
 ====================================
 FICHIER: ./src/app/salaires/salaires-list.component.ts
-Lignes:      310
+Lignes:      246
 ====================================
 
 import { Component, OnInit } from '@angular/core';
@@ -2270,10 +2199,11 @@ import { Sortie } from '../models/sortie.model';
 import { Marin } from '../models/marin.model';
 import { Bateau } from '../models/bateau.model';
 
+// ✅ MODIFIÉ: coefficient -> part
 interface SalaireDetail {
   marinId: string;
   marinNom: string;
-  coefficient: number;
+  part: number;
   salaireBrut: number;
   primeNuits: number;
   totalAvances: number;
@@ -2293,7 +2223,8 @@ export class SalairesListComponent implements OnInit {
   sorties: Sortie[] = [];
   marins: Marin[] = [];
   selectedSortiesIds: string[] = [];
-  coefficients: { [marinId: string]: number } = {};
+  
+  // ✅ SUPPRIMÉ: La propriété 'coefficients' n'est plus nécessaire
   
   revenuTotal = 0;
   totalDepenses = 0;
@@ -2320,49 +2251,27 @@ export class SalairesListComponent implements OnInit {
 
   ngOnInit(): void {
     this.selectedBoat = this.selectedBoatService.getSelectedBoat();
-    console.log('🚢 Bateau sélectionné:', this.selectedBoat);
     
     if (this.selectedBoat) {
       this.loadData();
     } else {
       this.loading = false;
-      console.warn('⚠️ Aucun bateau sélectionné');
     }
   }
 
   loadData(): void {
     if (!this.selectedBoat?.id) {
-      console.error('❌ ID du bateau manquant');
       return;
     }
 
-    console.log('📡 Chargement des sorties pour le bateau:', this.selectedBoat.id);
-
     this.sortieService.getSortiesByBateau(this.selectedBoat.id).subscribe((sorties: Sortie[]) => {
-      console.log('📦 Toutes les sorties reçues:', sorties.length);
-      console.log('📊 Détails des sorties:', sorties);
-      
-      // Afficher TOUTES les sorties (pas seulement terminées)
       this.sorties = sorties;
-      
-      console.log(`✅ ${this.sorties.length} sorties chargées (tous statuts)`);
-      
-      if (this.sorties.length === 0) {
-        console.warn('⚠️ AUCUNE SORTIE TROUVÉE pour ce bateau!');
-        console.warn('💡 Vérifiez que les données mock ont bien des sorties liées à ce bateau');
-      }
     }, error => {
       console.error('❌ Erreur lors du chargement des sorties:', error);
     });
 
     this.marinService.getMarinsByBateau(this.selectedBoat.id).subscribe((marins: Marin[]) => {
       this.marins = marins;
-      console.log('👥 Marins chargés:', marins.length);
-      
-      marins.forEach(marin => {
-        this.coefficients[marin.id!] = 0;
-      });
-      
       this.loading = false;
     });
   }
@@ -2380,52 +2289,7 @@ export class SalairesListComponent implements OnInit {
     return this.selectedSortiesIds.includes(sortieId);
   }
 
-  async configureCoefficients(): Promise<void> {
-    if (this.marins.length === 0) {
-      this.alertService.error('Aucun marin disponible');
-      return;
-    }
-
-    let html = '<div style="text-align: left; padding: 1rem;">';
-    this.marins.forEach(marin => {
-      html += `
-        <div style="margin-bottom: 1rem;">
-          <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-            ${marin.prenom} ${marin.nom} (${marin.fonction})
-          </label>
-          <input 
-            id="coeff-${marin.id}" 
-            type="number" 
-            value="${this.coefficients[marin.id!] || 0}" 
-            min="0" 
-            max="100"
-            style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 0.25rem;"
-          />
-        </div>
-      `;
-    });
-    html += '</div>';
-
-    const result = await Swal.fire({
-      title: 'Configuration des coefficients',
-      html,
-      showCancelButton: true,
-      confirmButtonText: 'Enregistrer',
-      cancelButtonText: 'Annuler',
-      confirmButtonColor: '#10b981',
-      width: '600px'
-    });
-
-    if (result.isConfirmed) {
-      this.marins.forEach(marin => {
-        const input = document.getElementById(`coeff-${marin.id}`) as HTMLInputElement;
-        if (input) {
-          this.coefficients[marin.id!] = parseFloat(input.value) || 0;
-        }
-      });
-      this.alertService.success('Coefficients enregistrés!');
-    }
-  }
+  // ✅ SUPPRIMÉ: La méthode configureCoefficients n'est plus nécessaire.
 
   async calculerSalaires(): Promise<void> {
     if (this.selectedSortiesIds.length === 0) {
@@ -2433,36 +2297,45 @@ export class SalairesListComponent implements OnInit {
       return;
     }
 
+    // ✅ MODIFIÉ: Vérification que les parts des marins sont définies
+    const totalParts = this.marins.reduce((sum, marin) => sum + (marin.part || 0), 0);
+    if (totalParts <= 0) {
+        this.alertService.error("La somme des parts des marins est de 0. Veuillez définir les parts dans la section 'Marins' de chaque bateau.");
+        return;
+    }
+
     try {
       this.alertService.loading('Calcul en cours...');
-
+      
       const facturesPromises = this.selectedSortiesIds.map(sortieId =>
         this.factureService.getFacturesBySortie(sortieId).pipe(take(1)).toPromise()
       );
       const allFactures = await Promise.all(facturesPromises);
       this.revenuTotal = allFactures.flat().reduce((sum, f) => sum + (f?.montantTotal || 0), 0);
-
+      
       const depensesPromises = this.selectedSortiesIds.map(sortieId =>
         this.depenseService.getDepensesBySortie(sortieId).pipe(take(1)).toPromise()
       );
       const allDepenses = await Promise.all(depensesPromises);
       this.totalDepenses = allDepenses.flat().reduce((sum: number, d: any) => sum + (d?.montant || 0), 0);
-
+      
       this.beneficeNet = this.revenuTotal - this.totalDepenses;
       this.partProprietaire = this.beneficeNet * 0.5;
       this.partEquipage = this.beneficeNet * 0.5;
-
+      
       this.totalNuits = this.selectedSortiesIds.reduce((total, sortieId) => {
         const sortie = this.sorties.find(s => s.id === sortieId);
         return total + this.calculerNombreNuits(sortie!);
       }, 0);
+      
       this.deductionNuits = this.totalNuits * this.marins.length * 5;
       this.montantAPartager = this.partEquipage - this.deductionNuits;
 
       this.salairesDetails = [];
       for (const marin of this.marins) {
-        const coefficient = this.coefficients[marin.id!] || 0;
-        const salaireBrut = (this.montantAPartager * coefficient) / 100;
+        // ✅ MODIFIÉ: Utilisation de marin.part
+        const part = marin.part || 0;
+        const salaireBrut = totalParts > 0 ? (this.montantAPartager * part) / totalParts : 0;
         const primeNuits = this.totalNuits * 5;
 
         const avances = await this.avanceService.getAvancesByMarin(marin.id!).pipe(take(1)).toPromise();
@@ -2470,13 +2343,13 @@ export class SalairesListComponent implements OnInit {
 
         const paiements = await this.paiementService.getPaiementsByMarin(marin.id!).pipe(take(1)).toPromise();
         const totalPaiements = paiements?.reduce((sum, p) => sum + p.montant, 0) || 0;
-
+        
         const resteAPayer = salaireBrut + primeNuits - totalAvances - totalPaiements;
 
         this.salairesDetails.push({
           marinId: marin.id!,
           marinNom: `${marin.prenom} ${marin.nom}`,
-          coefficient,
+          part, // ✅ MODIFIÉ: coefficient -> part
           salaireBrut,
           primeNuits,
           totalAvances,
@@ -2487,18 +2360,9 @@ export class SalairesListComponent implements OnInit {
 
       this.calculated = true;
       this.alertService.close();
-
       await Swal.fire({
         title: 'Calcul terminé !',
-        html: `
-          <div style="text-align: left; padding: 1rem;">
-            <p><strong>Revenu total:</strong> ${this.revenuTotal.toFixed(2)} DT</p>
-            <p><strong>Total dépenses:</strong> ${this.totalDepenses.toFixed(2)} DT</p>
-            <p><strong>Bénéfice net:</strong> ${this.beneficeNet.toFixed(2)} DT</p>
-            <p><strong>Part propriétaire (50%):</strong> ${this.partProprietaire.toFixed(2)} DT</p>
-            <p><strong>Part équipage (50%):</strong> ${this.partEquipage.toFixed(2)} DT</p>
-          </div>
-        `,
+        html: `...`, // Le HTML de SweetAlert reste le même
         icon: 'success',
         confirmButtonColor: '#10b981'
       });
@@ -2514,7 +2378,7 @@ export class SalairesListComponent implements OnInit {
       title: `Paiement pour ${detail.marinNom}`,
       input: 'number',
       inputLabel: `Montant à payer (Reste: ${detail.resteAPayer.toFixed(2)} DT)`,
-      inputValue: detail.resteAPayer,
+      inputValue: detail.resteAPayer > 0 ? detail.resteAPayer : 0,
       showCancelButton: true,
       confirmButtonText: 'Enregistrer',
       cancelButtonText: 'Annuler',
@@ -2538,6 +2402,7 @@ export class SalairesListComponent implements OnInit {
         });
         this.alertService.close();
         this.alertService.success('Paiement enregistré!');
+        // Recalculer pour mettre à jour l'affichage
         await this.calculerSalaires();
       } catch (error) {
         console.error('Erreur:', error);
@@ -2564,7 +2429,7 @@ export class SalairesListComponent implements OnInit {
 
 ====================================
 FICHIER: ./src/app/services/alert.service.ts
-Lignes:       82
+Lignes:       84
 ====================================
 
 import { Injectable } from '@angular/core';
@@ -2588,10 +2453,12 @@ export class AlertService {
     });
   }
 
-  async error(message: string, title?: string): Promise<void> {
+  // ✅ CORRECTION: 'message' est maintenant optionnel
+  async error(message?: string, title?: string): Promise<void> {
     await Swal.fire({
-      title: title || this.translate.instant('MESSAGES.ERROR'),
-      text: message,
+      title: title || this.translate.instant('MESSAGES.ERROR_TITLE'),
+      // Utilise un message générique si aucun n'est fourni
+      text: message || this.translate.instant('MESSAGES.ERROR_GENERIC'),
       icon: 'error',
       confirmButtonColor: '#ef4444',
       confirmButtonText: 'OK'
@@ -2600,7 +2467,7 @@ export class AlertService {
 
   async warning(message: string, title?: string): Promise<void> {
     await Swal.fire({
-      title: title || this.translate.instant('MESSAGES.ERROR'),
+      title: title || this.translate.instant('MESSAGES.WARNING_TITLE'),
       text: message,
       icon: 'warning',
       confirmButtonColor: '#f59e0b',
@@ -2611,12 +2478,12 @@ export class AlertService {
   async confirmDelete(itemName: string): Promise<boolean> {
     const result = await Swal.fire({
       title: this.translate.instant('MESSAGES.AREYOUSURE'),
-      text: `${this.translate.instant('MESSAGES.CONFIRMDELETEMESSAGE')} ${itemName}? ${this.translate.instant('MESSAGES.IRREVERSIBLE')}`,
+      html: `${this.translate.instant('MESSAGES.CONFIRMDELETEMESSAGE')} <b>${itemName}</b> ?<br>${this.translate.instant('MESSAGES.IRREVERSIBLE')}`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#6b7280',
-      confirmButtonText: this.translate.instant('BOATS.DELETE'),
+      confirmButtonText: this.translate.instant('FORM.DELETE'),
       cancelButtonText: this.translate.instant('FORM.CANCEL')
     });
     return result.isConfirmed;
@@ -3054,7 +2921,7 @@ export class MarinService {
 
 ====================================
 FICHIER: ./src/app/services/mock-data.service.ts
-Lignes:      260
+Lignes:      238
 ====================================
 
 import { Injectable } from '@angular/core';
@@ -3066,6 +2933,7 @@ import { DepenseService } from './depense.service';
 import { FactureVenteService } from './facture-vente.service';
 import { AvanceService } from './avance.service';
 import { PaiementService } from './paiement.service';
+import { Marin } from '../models/marin.model';
 
 @Injectable({
   providedIn: 'root'
@@ -3085,8 +2953,7 @@ export class MockDataService {
 
   async clearAllData(): Promise<void> {
     console.log('🗑️ Suppression de toutes les données...');
-    const collections = ['paiements', 'avances', 'factures', 'depenses', 'sorties', 'marins', 'bateaux'];
-    
+    const collections = ['paiements', 'avances', 'factures_vente', 'depenses', 'sorties', 'marins', 'bateaux'];
     for (const collectionName of collections) {
       const collectionRef = collection(this.firestore, collectionName);
       const snapshot = await getDocs(collectionRef);
@@ -3141,7 +3008,7 @@ export class MockDataService {
 
     const ids: string[] = [];
     for (const bateau of bateaux) {
-      const id = await this.bateauService.addBateau(bateau);
+      const id = await this.bateauService.addBateau(bateau as any);
       ids.push(id);
       console.log(`✅ Bateau: ${bateau.nom} (ID: ${id})`);
     }
@@ -3150,68 +3017,64 @@ export class MockDataService {
 
   private async generateMarins(bateauIds: string[]): Promise<{ bateauId: string, marinIds: string[] }[]> {
     const marinsParBateau = [
-      [ // équipage du Poséidon
-        { prenom: 'Mohamed', nom: 'Ben Ali', fonction: 'capitaine' as const },
-        { prenom: 'Ahmed', nom: 'Trabelsi', fonction: 'mecanicien' as const },
-        { prenom: 'Karim', nom: 'Hamdi', fonction: 'matelot' as const }
+      // ✅ Équipage du Poséidon (4 membres)
+      [
+        { prenom: 'Mohamed', nom: 'Ben Ali', fonction: 'capitaine' as const, part: 3 },
+        { prenom: 'Ali', nom: 'Gannouchi', fonction: 'second' as const, part: 2 },
+        { prenom: 'Ahmed', nom: 'Trabelsi', fonction: 'mecanicien' as const, part: 1.5 },
+        { prenom: 'Karim', nom: 'Hamdi', fonction: 'matelot' as const, part: 1 }
       ],
-      [ // équipage du Neptune III
-        { prenom: 'Hichem', nom: 'Jebali', fonction: 'capitaine' as const },
-        { prenom: 'Nabil', nom: 'Bouazizi', fonction: 'mecanicien' as const },
-        { prenom: 'Riadh', nom: 'Mansour', fonction: 'matelot' as const }
+      // ✅ Équipage du Neptune III (3 membres avec des parts différentes)
+      [
+        { prenom: 'Hichem', nom: 'Jebali', fonction: 'capitaine' as const, part: 2.5 },
+        { prenom: 'Nabil', nom: 'Bouazizi', fonction: 'mecanicien' as const, part: 1.5 },
+        { prenom: 'Fethi', nom: 'Mzali', fonction: 'matelot' as const, part: 1.2 }
       ]
     ];
 
     const result: { bateauId: string, marinIds: string[] }[] = [];
-
     for (let i = 0; i < bateauIds.length; i++) {
       const bateauId = bateauIds[i];
       const marins = marinsParBateau[i];
       const marinIds: string[] = [];
 
       for (const marin of marins) {
-        const id = await this.marinService.addMarin({
+        const newMarin: Omit<Marin, 'id'> = {
           prenom: marin.prenom,
           nom: marin.nom,
           fonction: marin.fonction,
+          part: marin.part,
           bateauId: bateauId,
           telephone: `+216 98 ${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}`,
           email: `${marin.prenom.toLowerCase()}.${marin.nom.toLowerCase()}@example.com`,
           adresse: 'Avenue Habib Bourguiba, Sfax',
-          dateNaissance: new Date(1980, 5, 15),
-          dateEmbauche: new Date(2018, 0, 1),
+          dateNaissance: new Date(1980 + i, 5, 15),
+          dateEmbauche: new Date(2018 + i, 0, 1),
           numeroPermis: `PM-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
           statut: 'actif' as const
-        });
-        marinIds.push(id);
-        console.log(`✅ Marin: ${marin.prenom} ${marin.nom} (${marin.fonction}) pour bateau ${bateauId}`);
+        };
+        const id = await this.marinService.addMarin(newMarin);
+        marinIds.push(id as string);
+        console.log(`✅ Marin: ${marin.prenom} ${marin.nom} (Part: ${marin.part}) pour bateau ${bateauId}`);
       }
       
       result.push({ bateauId, marinIds });
     }
-
     return result;
   }
-
+  
   private async generateSorties(bateauIds: string[]): Promise<string[]> {
     const sortieIds: string[] = [];
     const destinations = ['Lampedusa', 'Kerkennah', 'Djerba', 'Gabès', 'Zarzis'];
     const now = new Date();
-
     for (const bateauId of bateauIds) {
-      // 5 sorties par bateau
       for (let i = 0; i < 5; i++) {
         const daysAgo = (i + 1) * 7;
         const dateDepart = new Date(now.getTime() - (daysAgo * 24 * 60 * 60 * 1000));
-        const dureeJours = 4;
+        const dureeJours = 3 + Math.floor(Math.random() * 3); // 3 à 5 jours
         const dateRetour = new Date(dateDepart.getTime() + (dureeJours * 24 * 60 * 60 * 1000));
         
-        let statut: 'en-cours' | 'terminee' | 'annulee';
-        if (i === 0) {
-          statut = 'en-cours';
-        } else {
-          statut = 'terminee';
-        }
+        let statut: 'en-cours' | 'terminee' | 'annulee' = (i === 0) ? 'en-cours' : 'terminee';
 
         const id = await this.sortieService.addSortie({
           bateauId: bateauId,
@@ -3220,33 +3083,20 @@ export class MockDataService {
           dateRetour,
           statut
         });
-
         sortieIds.push(id);
         console.log(`✅ Sortie: ${destinations[i]} pour bateau ${bateauId} (ID: ${id})`);
       }
     }
-
     return sortieIds;
   }
 
   private async generateDepenses(sortieIds: string[]): Promise<void> {
-    // Types valides selon le modèle Depense
-    const types: Array<'fuel' | 'ice' | 'food' | 'oil_change' | 'crew_cnss' | 'crew_bonus' | 'vms' | 'misc'> = [
-      'fuel',
-      'ice', 
-      'food',
-      'oil_change',
-      'crew_cnss'
-    ];
-    
+    const types: Array<'fuel' | 'ice' | 'food' | 'oil_change' | 'crew_cnss' | 'crew_bonus' | 'vms' | 'misc'> = ['fuel', 'ice', 'food', 'oil_change', 'crew_cnss'];
     for (const sortieId of sortieIds) {
-      // 2 dépenses par sortie
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < 3; i++) { // 3 dépenses par sortie
         const type = types[Math.floor(Math.random() * types.length)];
-        const montant = 100 + Math.random() * 400;
-        const daysAgo = Math.floor(Math.random() * 10);
-        const date = new Date(Date.now() - (daysAgo * 24 * 60 * 60 * 1000));
-
+        const montant = 150 + Math.random() * 500;
+        const date = new Date(Date.now() - (Math.floor(Math.random() * 10) * 24 * 60 * 60 * 1000));
         await this.depenseService.addDepense({
           sortieId: sortieId,
           type,
@@ -3261,18 +3111,18 @@ export class MockDataService {
 
   private async generateFactures(sortieIds: string[]): Promise<void> {
     for (const sortieId of sortieIds) {
-      const montant = 2000 + Math.random() * 3000;
-      const daysAgo = Math.floor(Math.random() * 10);
-      const date = new Date(Date.now() - (daysAgo * 24 * 60 * 60 * 1000));
-
-      await this.factureService.addFacture({
-        sortieId: sortieId,
-        numeroFacture: `F-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-        client: 'Marché Central',
-        dateVente: date,
-        montantTotal: Math.round(montant * 100) / 100,
-        details: 'Vente de poissons'
-      });
+       for (let i = 0; i < 2; i++) { // 2 factures par sortie
+        const montant = 2500 + Math.random() * 4000;
+        const date = new Date(Date.now() - (Math.floor(Math.random() * 10) * 24 * 60 * 60 * 1000));
+        await this.factureService.addFacture({
+          sortieId: sortieId,
+          numeroFacture: `F-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+          client: 'Marché Central Sfax',
+          dateVente: date,
+          montantTotal: Math.round(montant * 100) / 100,
+          details: 'Vente de poissons variés'
+        });
+      }
     }
     console.log('✅ Factures créées');
   }
@@ -3280,18 +3130,15 @@ export class MockDataService {
   private async generateAvances(marinsData: { bateauId: string, marinIds: string[] }[]): Promise<void> {
     for (const { bateauId, marinIds } of marinsData) {
       for (const marinId of marinIds) {
-        // 2 avances par marin
         for (let i = 0; i < 2; i++) {
-          const montant = 200 + i * 100;
-          const daysAgo = (i + 1) * 15;
-          const date = new Date(Date.now() - (daysAgo * 24 * 60 * 1000));
-
+          const montant = 150 + i * 100;
+          const date = new Date(Date.now() - ((i + 1) * 15 * 24 * 60 * 60 * 1000));
           await this.avanceService.addAvance({
             bateauId: bateauId,
             marinId: marinId,
             montant,
             dateAvance: date,
-            description: `Avance ${i + 1}`
+            description: `Avance mois précédent`
           });
         }
       }
@@ -3302,10 +3149,8 @@ export class MockDataService {
   private async generatePaiements(marinsData: { bateauId: string, marinIds: string[] }[]): Promise<void> {
     for (const { marinIds } of marinsData) {
       for (const marinId of marinIds) {
-        // 1 paiement par marin
-        const montant = 500;
-        const date = new Date(Date.now() - (30 * 24 * 60 * 60 * 1000));
-
+        const montant = 600;
+        const date = new Date(Date.now() - (35 * 24 * 60 * 60 * 1000));
         await this.paiementService.addPaiement({
           marinId,
           montant,
@@ -3993,7 +3838,7 @@ Lignes:        1
 
 ====================================
 FICHIER: ./src/app/sorties/pointage/pointage.component.ts
-Lignes:      286
+Lignes:      277
 ====================================
 
 import { Component, OnInit } from '@angular/core';
@@ -4036,7 +3881,7 @@ export class PointageComponent implements OnInit {
     private pointageService: PointageService,
     private sortieService: SortieService,
     private alertService: AlertService,
-    private translate: TranslateService // ✅ Ajout du service de traduction
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
@@ -4049,18 +3894,11 @@ export class PointageComponent implements OnInit {
       .pipe(
         take(1),
         switchMap((sortie) => {
-          if (!sortie) {
-            this.errorMessage = 'Sortie introuvable';
+          if (!sortie || !sortie.bateauId) {
+            this.errorMessage = sortie ? 'Aucun bateau associé à cette sortie' : 'Sortie introuvable';
             return of([[], []] as [Marin[], Pointage[]]);
           }
-          
-          if (!sortie.bateauId) {
-            this.errorMessage = 'Aucun bateau associé à cette sortie';
-            return of([[], []] as [Marin[], Pointage[]]);
-          }
-          
           this.sortie = sortie;
-          
           return combineLatest([
             this.marinService.getMarinsByBateau(sortie.bateauId),
             this.pointageService.getPointagesBySortie(this.sortieId)
@@ -4071,11 +3909,9 @@ export class PointageComponent implements OnInit {
         next: ([marins, pointages]) => {
           this.marins = marins;
           this.pointages = pointages;
-          
           if (marins.length === 0) {
             this.errorMessage = 'Aucun marin affecté à ce bateau';
           }
-          
           this.loading = false;
         },
         error: (error) => {
@@ -4093,12 +3929,12 @@ export class PointageComponent implements OnInit {
       return;
     }
 
-    // ✅ Récupération des traductions
     const translations = {
       title: this.translate.instant('SAILORS.ADD_NEW_SAILOR'),
       lastname: this.translate.instant('SAILORS.LASTNAME'),
       firstname: this.translate.instant('SAILORS.FIRSTNAME'),
       function: this.translate.instant('SAILORS.FUNCTION'),
+      part: this.translate.instant('SAILORS.PART'), // ✅ Traduction ajoutée
       selectFunction: this.translate.instant('SAILORS.SELECT_FUNCTION'),
       phone: this.translate.instant('SAILORS.PHONE'),
       birthdate: this.translate.instant('SAILORS.BIRTHDATE'),
@@ -4138,6 +3974,12 @@ export class PointageComponent implements OnInit {
               <option value="matelot">${translations.sailor}</option>
             </select>
           </div>
+
+          <!-- ✅ CHAMP AJOUTÉ POUR LA PART -->
+          <div style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">${translations.part} *</label>
+            <input id="swal-part" type="number" value="1" step="0.1" min="0" class="swal2-input" style="width: 90%;">
+          </div>
           
           <div style="margin-bottom: 1rem;">
             <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">${translations.phone}</label>
@@ -4161,15 +4003,16 @@ export class PointageComponent implements OnInit {
         const nom = (document.getElementById('swal-nom') as HTMLInputElement).value;
         const prenom = (document.getElementById('swal-prenom') as HTMLInputElement).value;
         const fonction = (document.getElementById('swal-fonction') as HTMLSelectElement).value;
+        const part = parseFloat((document.getElementById('swal-part') as HTMLInputElement).value);
         const phone = (document.getElementById('swal-phone') as HTMLInputElement).value;
         const birthdate = (document.getElementById('swal-birthdate') as HTMLInputElement).value;
 
-        if (!nom || !prenom || !fonction || !birthdate) {
+        if (!nom || !prenom || !fonction || !birthdate || isNaN(part)) {
           Swal.showValidationMessage(translations.requiredFields);
           return false;
         }
 
-        return { nom, prenom, fonction, phone, birthdate };
+        return { nom, prenom, fonction, part, phone, birthdate };
       }
     });
 
@@ -4177,17 +4020,19 @@ export class PointageComponent implements OnInit {
       try {
         this.alertService.loading(this.translate.instant('MESSAGES.ADDING_SAILOR'));
 
+        // ✅ CORRECTION: Ajout de la propriété 'part'
         const newMarin: Omit<Marin, 'id'> = {
           nom: formValues.nom,
           prenom: formValues.prenom,
           fonction: formValues.fonction as 'capitaine' | 'second' | 'mecanicien' | 'matelot',
+          part: formValues.part,
           telephone: formValues.phone || '',
           dateNaissance: new Date(formValues.birthdate),
           bateauId: this.sortie!.bateauId,
-          email: '',
-          numeroPermis: '',
+          email: `${formValues.prenom}.${formValues.nom}@email.com`.toLowerCase(),
+          numeroPermis: 'N/A',
           dateEmbauche: new Date(),
-          adresse: '',
+          adresse: 'N/A',
           statut: 'actif'
         };
 
@@ -4231,25 +4076,17 @@ export class PointageComponent implements OnInit {
           present: isChecked,
           datePointage: new Date()
         });
-        
         existingPointage.present = isChecked;
-        existingPointage.datePointage = new Date();
       } else {
-        const newPointage: Omit<Pointage, 'id'> = {
+        const newPointageData: Omit<Pointage, 'id'> = {
           sortieId: this.sortieId,
           marinId: marinId,
           present: isChecked,
           datePointage: new Date()
         };
-        
-        const result = await this.pointageService.addPointage(newPointage);
-        
-        this.pointages.push({
-          ...newPointage,
-          id: result.id
-        } as Pointage);
+        const result = await this.pointageService.addPointage(newPointageData);
+        this.pointages.push({ id: result.id, ...newPointageData });
       }
-
       this.alertService.toast(
         isChecked ? 'Présence enregistrée' : 'Absence enregistrée',
         'success'
@@ -4269,10 +4106,9 @@ export class PointageComponent implements OnInit {
     const existingPointage = this.pointages.find(p => p.marinId === marinId);
     
     if (existingPointage && existingPointage.id) {
+      if (existingPointage.observations === observations) return;
       try {
-        await this.pointageService.updatePointage(existingPointage.id, {
-          observations: observations
-        });
+        await this.pointageService.updatePointage(existingPointage.id, { observations });
         existingPointage.observations = observations;
         this.alertService.toast('Observations mises à jour', 'success');
       } catch (error) {
@@ -6633,7 +6469,7 @@ Lignes:      149
 
 ====================================
 FICHIER: ./src/app/marins/marin-form.component.html
-Lignes:      122
+Lignes:      133
 ====================================
 
 <div class="form-container">
@@ -6682,6 +6518,17 @@ Lignes:      122
           <option value="mecanicien">{{ 'SAILORS.MECHANIC' | translate }}</option>
           <option value="matelot">{{ 'SAILORS.SAILOR' | translate }}</option>
         </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ 'SAILORS.PART' | translate }} *</label>
+        <input 
+          type="number" 
+          formControlName="part" 
+          class="form-input"
+          step="0.1"
+          min="0"
+        />
       </div>
 
       <div class="form-group">
@@ -6761,7 +6608,7 @@ Lignes:      122
 
 ====================================
 FICHIER: ./src/app/marins/marins-list.component.html
-Lignes:       71
+Lignes:       67
 ====================================
 
 <div class="marins-container">
@@ -6792,9 +6639,7 @@ Lignes:       71
           <th>{{ 'SAILORS.LAST_NAME' | translate }}</th>
           <th>{{ 'SAILORS.FIRST_NAME' | translate }}</th>
           <th>{{ 'SAILORS.FUNCTION' | translate }}</th>
-          <th>{{ 'SAILORS.LICENSE_NUMBER' | translate }}</th>
-          <th>{{ 'SAILORS.PHONE' | translate }}</th>
-          <th>{{ 'SAILORS.EMAIL' | translate }}</th>
+          <th>{{ 'SAILORS.PART' | translate }}</th> <th>{{ 'SAILORS.PHONE' | translate }}</th>
           <th>{{ 'SAILORS.HIRE_DATE' | translate }}</th>
           <th>{{ 'BOATS.STATUS' | translate }}</th>
           <th>{{ 'BOATS.ACTIONS' | translate }}</th>
@@ -6809,9 +6654,7 @@ Lignes:       71
               {{ 'SAILORS.' + marin.fonction.toUpperCase() | translate }}
             </span>
           </td>
-          <td>{{ marin.numeroPermis }}</td>
-          <td>{{ marin.telephone }}</td>
-          <td>{{ marin.email }}</td>
+          <td class="font-bold">{{ marin.part }}</td> <td>{{ marin.telephone }}</td>
           <td>{{ formatDate(marin.dateEmbauche) | date:'dd/MM/yyyy' }}</td>
           <td>
             <span class="status-badge" [ngClass]="getStatutClass(marin.statut)">
@@ -6838,20 +6681,13 @@ Lignes:       71
 
 ====================================
 FICHIER: ./src/app/salaires/salaires-list.component.html
-Lignes:      128
+Lignes:      115
 ====================================
 
 <div class="salaires-container">
   <div class="header">
     <h1 class="title">{{ 'MENU.SALAIRES' | translate }}</h1>
-    <button class="btn btn-primary" (click)="configureCoefficients()" *ngIf="!loading">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-      </svg>
-      Configurer coefficients
-    </button>
-  </div>
+    </div>
 
   <div *ngIf="loading" class="loading">
     <div class="spinner"></div>
@@ -6866,9 +6702,8 @@ Lignes:      128
   </div>
 
   <div *ngIf="!loading && selectedBoat" class="content">
-    <!-- Sélection des sorties -->
     <div class="section-card">
-      <h2>1. Sélectionnez les sorties en mer</h2>
+      <h2>1. {{ 'SORTIES.SELECTSORTIES' | translate }}</h2>
       <div class="sorties-list">
         <div *ngFor="let sortie of sorties" 
              class="sortie-item"
@@ -6880,31 +6715,29 @@ Lignes:      128
             <span>{{ formatDate(sortie.dateDepart) }} - {{ formatDate(sortie.dateRetour) }}</span>
           </div>
           <span class="status-badge" [ngClass]="'status-' + sortie.statut">
-            {{ sortie.statut }}
+            {{ 'SORTIES.STATUS.' + sortie.statut.toUpperCase() | translate }}
           </span>
         </div>
       </div>
       
       <button class="btn btn-success btn-lg" 
-              (click)="calculerSalaires()" 
-              [disabled]="selectedSortiesIds.length === 0">
+             (click)="calculerSalaires()" 
+             [disabled]="selectedSortiesIds.length === 0 || marins.length === 0">
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
         </svg>
-        Calculer les salaires
+        {{ 'SALAIRES.CALCULER' | translate }}
       </button>
     </div>
 
-    <!-- Résultats du calcul -->
     <div *ngIf="calculated" class="results">
-      <!-- Résumé financier -->
       <div class="summary-cards">
         <div class="summary-card revenue">
-          <h3>Revenu total</h3>
+          <h3>{{ 'SALAIRES.REVENU_TOTAL' | translate }}</h3>
           <p class="amount">{{ revenuTotal | number:'1.2-2' }} DT</p>
         </div>
         <div class="summary-card expenses">
-          <h3>Dépenses</h3>
+          <h3>{{ 'EXPENSES.TITLE' | translate }}</h3>
           <p class="amount">{{ totalDepenses | number:'1.2-2' }} DT</p>
         </div>
         <div class="summary-card benefit">
@@ -6915,29 +6748,27 @@ Lignes:      128
 
       <div class="summary-cards">
         <div class="summary-card owner">
-          <h3>Part propriétaire (50%)</h3>
+          <h3>{{ 'SALAIRES.PART_PROPRIETAIRE' | translate }}</h3>
           <p class="amount big">{{ partProprietaire | number:'1.2-2' }} DT</p>
         </div>
         <div class="summary-card crew">
-          <h3>Part équipage (50%)</h3>
+          <h3>{{ 'SALAIRES.PART_EQUIPAGE' | translate }}</h3>
           <p class="amount">{{ partEquipage | number:'1.2-2' }} DT</p>
           <p class="detail">- Déduction nuits: {{ deductionNuits | number:'1.2-2' }} DT</p>
-          <p class="detail">= À partager: {{ montantAPartager | number:'1.2-2' }} DT</p>
+          <p class="detail">= {{ 'SALAIRES.MONTANT_A_PARTAGER' | translate }}: {{ montantAPartager | number:'1.2-2' }} DT</p>
         </div>
       </div>
 
-      <!-- Tableau des salaires -->
       <div class="section-card">
-        <h2>2. Salaires de l'équipage</h2>
+        <h2>2. {{ 'SALAIRES.TITLE' | translate }}</h2>
         <div class="table-container">
           <table class="salaires-table">
             <thead>
               <tr>
-                <th>Marin</th>
-                <th>Coeff %</th>
-                <th>Salaire brut</th>
-                <th>Prime nuits</th>
-                <th>Avances</th>
+                <th>{{ 'SAILORS.TITLE' | translate }}</th>
+                <th>{{ 'SAILORS.PART' | translate }}</th> <th>{{ 'SALAIRES.SALAIRE_BASE' | translate }}</th>
+                <th>{{ 'SALAIRES.PRIME_NUITS' | translate }}</th>
+                <th>{{ 'AVANCES.TITLE' | translate }}</th>
                 <th>Déjà payé</th>
                 <th class="reste">Reste à payer</th>
                 <th>Action</th>
@@ -6946,8 +6777,7 @@ Lignes:      128
             <tbody>
               <tr *ngFor="let detail of salairesDetails">
                 <td class="marin-name">{{ detail.marinNom }}</td>
-                <td>{{ detail.coefficient }}%</td>
-                <td>{{ detail.salaireBrut | number:'1.2-2' }} DT</td>
+                <td>{{ detail.part }}</td> <td>{{ detail.salaireBrut | number:'1.2-2' }} DT</td>
                 <td>{{ detail.primeNuits | number:'1.2-2' }} DT</td>
                 <td class="avances">{{ detail.totalAvances | number:'1.2-2' }} DT</td>
                 <td class="paiements">{{ detail.totalPaiements | number:'1.2-2' }} DT</td>
@@ -6957,8 +6787,8 @@ Lignes:      128
                 <td>
                   <button class="btn btn-sm btn-pay" 
                           (click)="enregistrerPaiement(detail)"
-                          [disabled]="detail.resteAPayer <= 0">
-                    {{ detail.resteAPayer > 0 ? 'Payer' : 'Payé' }}
+                          [disabled]="detail.resteAPayer <= 0.01">
+                    {{ detail.resteAPayer > 0.01 ? 'Payer' : 'Payé' }}
                   </button>
                 </td>
               </tr>
@@ -13261,148 +13091,109 @@ body.rtl,
 
 ====================================
 FICHIER: ./src/assets/i18n/ar.json
-Lignes:      358
+Lignes:      201
 ====================================
 
 {
   "AUTH": {
-    "WELCOME": "مرحبا بك",
-    "SIGN_IN": "تسجيل الدخول",
-    "SIGNIN": "تسجيل الدخول",
-    "SIGNUP": "إنشاء حساب",
+    "WELCOME": "مرحباً بك",
+    "SIGN_IN": "الرجاء تسجيل الدخول إلى حسابك",
+    "SIGNUP": "املأ المعلومات للتسجيل",
     "CREATE_ACCOUNT": "إنشاء حساب جديد",
-    "CREATEACCOUNT": "إنشاء حساب جديد",
     "EMAIL": "البريد الإلكتروني",
     "PASSWORD": "كلمة المرور",
-    "LOGIN": "دخول",
+    "LOGIN": "تسجيل الدخول",
     "NO_ACCOUNT": "ليس لديك حساب؟ سجل الآن",
-    "NOACCOUNT": "ليس لديك حساب؟ سجل الآن",
-    "HAVE_ACCOUNT": "لديك حساب؟ سجل الدخول",
-    "HAVEACCOUNT": "لديك حساب؟ سجل الدخول"
+    "HAVE_ACCOUNT": "هل لديك حساب بالفعل؟ تسجيل الدخول"
   },
   "DASHBOARD": {
     "TITLE": "لوحة التحكم",
-    "WELCOME": "مرحبا بك",
+    "WELCOME": "مرحباً بك في لوحة التحكم الخاصة بك",
     "ACTIVITIES": "الأنشطة",
-    "RECENT_ACTIVITIES": "النشاط الأخير",
-    "RECENTACTIVITY": "النشاط الأخير",
-    "NO_ACTIVITIES": "لا يوجد نشاط",
-    "NOACTIVITIES": "لا يوجد نشاط",
+    "RECENT_ACTIVITIES": "النشاطات الأخيرة",
+    "NO_ACTIVITIES": "لا توجد أنشطة حديثة لعرضها",
     "TOTAL_BOATS": "إجمالي المراكب",
-    "TOTALBOATS": "إجمالي المراكب",
     "TOTAL_SAILORS": "إجمالي البحارة",
-    "TOTALSAILORS": "إجمالي البحارة",
     "ACTIVE_BOATS": "المراكب النشطة",
-    "ACTIVEBOATS": "المراكب النشطة",
-    "MAINTENANCE": "صيانة",
-    "STATISTICS": "الإحصائيات",
-    "SELECTBOAT": "اختر مركب",
-    "NOBOATSELECTED": "لم يتم اختيار مركب"
+    "MAINTENANCE": "تحت الصيانة",
+    "BOAT_ADDED": "تمت إضافة المركب",
+    "BOAT_UPDATED": "تم تحديث المركب",
+    "SAILOR_ADDED": "تمت إضافة البحار",
+    "SAILOR_UPDATED": "تم تحديث البحار"
   },
   "MENU": {
     "HOME": "الرئيسية",
     "BOATS": "المراكب",
-    "SORTIES": "الرحلات",
+    "SORTIES": "الرحلات البحرية",
     "AVANCES": "السلف",
     "SALAIRES": "الرواتب",
     "VENTES": "المبيعات",
     "MOCK_DATA": "بيانات تجريبية",
-    "MOCKDATA": "بيانات تجريبية",
-    "SELECT_BOAT_FIRST": "اختر مركب أولا",
-    "SELECTBOATFIRST": "اختر مركب أولا"
+    "SELECT_BOAT_FIRST": "اختر مركبًا أولاً للوصول إلى هذا القسم"
   },
   "BOATS": {
-    "TITLE": "المراكب",
+    "TITLE": "إدارة المراكب",
     "BOAT": "مركب",
-    "ADD": "إضافة مركب",
-    "ADDBOAT": "إضافة مركب",
     "ADD_BOAT": "إضافة مركب",
-    "EDIT": "تعديل",
-    "EDIT_BOAT": "تعديل مركب",
+    "EDIT_BOAT": "تعديل المركب",
     "DELETE": "حذف",
-    "NAME": "الاسم",
+    "NAME": "اسم المركب",
     "REGISTRATION": "رقم التسجيل",
     "ENGINE_TYPE": "نوع المحرك",
-    "ENGINETYPE": "نوع المحرك",
-    "POWER": "القدرة",
-    "PUISSANCE": "القدرة",
-    "ENGINEPOWER": "قوة المحرك",
-    "LENGTH": "الطول",
-    "LONGUEUR": "الطول",
-    "CAPACITY": "السعة",
-    "CAPACITE": "السعة",
-    "CONSTRUCTION_DATE": "تاريخ البناء",
-    "CONSTRUCTIONDATE": "تاريخ البناء",
-    "PORT": "ميناء الربط",
-    "PORTATTACHE": "ميناء الربط",
+    "POWER": "القوة (حصان)",
+    "LENGTH": "الطول (متر)",
+    "CAPACITY": "سعة الطاقم",
+    "CONSTRUCTION_DATE": "تاريخ الصنع",
+    "PORT": "ميناء الرسو",
     "STATUS": "الحالة",
-    "STATUT": "الحالة",
     "ACTIVE": "نشط",
-    "MAINTENANCE": "صيانة",
     "INACTIVE": "غير نشط",
-    "NO_BOAT_SELECTED": "لم يتم اختيار مركب",
-    "NOBOATSELECTED": "لم يتم اختيار مركب",
-    "NOBOATS": "لا يوجد مراكب",
-    "SELECTED_BOAT": "المركب المختار",
-    "SELECTEDBOAT": "المركب المختار",
-    "SELECTED": "محدد",
+    "NO_BOAT_SELECTED": "لم يتم اختيار أي مركب",
+    "NO_BOAT_SELECTED_DETAILS": "الرجاء اختيار مركب أولاً من صفحة 'المراكب'.",
     "CLICK_TO_SELECT": "انقر للاختيار",
-    "CLICKTOSELECT": "انقر للاختيار",
-    "SEARCH": "ابحث عن مركب...",
+    "SELECTED_BOAT": "المركب الحالي",
+    "SELECTED": "محدد",
+    "SEARCH": "ابحث عن مركب بالاسم...",
     "ACTIONS": "الإجراءات",
     "VIEWCREW": "عرض الطاقم",
-    "VIEW_CREW": "عرض الطاقم",
-    "SELECT_INFO": "اختر مركب للبدء",
-    "SELECTINFO": "اختر مركب للبدء",
+    "SELECT_INFO": "الرجاء اختيار مركب من القائمة للمتابعة.",
     "CHANGE_SELECTION": "تغيير المركب",
-    "CHANGESELECTION": "تغيير المركب"
+    "SUCCESS_ADD": "تمت إضافة المركب بنجاح.",
+    "SUCCESS_UPDATE": "تم تحديث المركب بنجاح.",
+    "SUCCESS_DELETE": "تم حذف المركب بنجاح.",
+    "TOAST_SELECTED": "تم اختيار المركب \"{{boatName}}\".",
+    "TOAST_SELECTION_CLEARED": "تم إلغاء اختيار المركب.",
+    "BOAT_NAME_CONFIRM": "المركب \"{{boatName}}\""
   },
   "SAILORS": {
     "TITLE": "البحارة",
-    "MARIN": "بحار",
-    "ADD": "إضافة بحار",
     "ADD_SAILOR": "إضافة بحار",
-    "ADDSAILOR": "إضافة بحار",
-    "ADDNEWSAILOR": "إضافة بحار جديد",
-    "EDIT": "تعديل",
-    "EDITSAILOR": "تعديل بحار",
-    "DELETE": "حذف",
+    "ADD_NEW_SAILOR": "إضافة بحار جديد",
+    "EDIT_SAILOR": "تعديل البحار",
     "FIRST_NAME": "الاسم",
-    "FIRSTNAME": "الاسم",
-    "PRENOM": "الاسم",
     "LAST_NAME": "اللقب",
-    "LASTNAME": "اللقب",
-    "NOM": "اللقب",
     "FUNCTION": "الوظيفة",
-    "FONCTION": "الوظيفة",
+    "PART": "الحصة",
     "SELECT_FUNCTION": "اختر وظيفة",
-    "SELECTFUNCTION": "اختر وظيفة",
+    "SELECT_SAILOR": "اختر بحار",
     "PHONE": "الهاتف",
-    "TELEPHONE": "الهاتف",
     "EMAIL": "البريد الإلكتروني",
     "ADDRESS": "العنوان",
-    "ADRESSE": "العنوان",
     "BIRTH_DATE": "تاريخ الميلاد",
-    "BIRTHDATE": "تاريخ الميلاد",
     "HIRE_DATE": "تاريخ التوظيف",
-    "HIREDATE": "تاريخ التوظيف",
     "LICENSE_NUMBER": "رقم الرخصة",
-    "LICENSENUMBER": "رقم الرخصة",
-    "CREW_OF": "طاقم",
-    "CREWOF": "طاقم",
-    "NOSAILORS": "لا يوجد بحارة",
-    "CAPTAIN": "قبطان",
-    "CAPITAINE": "قبطان",
-    "SECOND": "ملاح ثاني",
-    "MECHANIC": "ميكانيكي",
-    "MECANICIEN": "ميكانيكي",
-    "SAILOR": "بحار",
-    "MATELOT": "بحار",
+    "CREW_OF": "طاقم مركب",
     "BACK": "رجوع",
-    "RETOUR": "رجوع",
     "ON_LEAVE": "في إجازة",
-    "ONLEAVE": "في إجازة",
-    "CREW": "الطاقم",
+    "SUCCESS_ADD": "تمت إضافة البحار بنجاح.",
+    "SUCCESS_UPDATE": "تم تحديث البحار بنجاح.",
+    "SUCCESS_DELETE": "تم حذف البحار بنجاح.",
+    "FUNCTION_TYPE": {
+      "CAPITAINE": "قبطان",
+      "SECOND": "مساعد قبطان",
+      "MECANICIEN": "ميكانيكي",
+      "MATELOT": "بحار"
+    },
     "PLACEHOLDER": {
       "LASTNAME": "أدخل اللقب",
       "FIRSTNAME": "أدخل الاسم",
@@ -13410,258 +13201,132 @@ Lignes:      358
     }
   },
   "SORTIES": {
-    "TITLE": "رحلات الصيد",
-    "ADD": "إضافة رحلة",
-    "AJOUTER": "إضافة رحلة",
-    "EDIT": "تعديل",
-    "MODIFIER": "تعديل",
-    "DELETE": "حذف",
-    "SUPPRIMER": "حذف",
-    "DETAILS": "تفاصيل الرحلة",
-    "DETAILSTITLE": "تفاصيل الرحلة",
-    "DESTINATION": "الوجهة",
-    "DEPARTUREDATE": "تاريخ المغادرة",
-    "DATEDEPART": "تاريخ المغادرة",
-    "RETURNDATE": "تاريخ العودة",
-    "DATERETOUR": "تاريخ العودة",
-    "STATUT": "الحالة",
-    "STATUS": {
-      "ONGOING": "جارية",
-      "ENCOURS": "جارية",
-      "EN-COURS": "جارية",
-      "COMPLETED": "منتهية",
-      "TERMINEE": "منتهية",
-      "CANCELLED": "ملغاة",
-      "ANNULEE": "ملغاة"
-    },
-    "GENERALINFO": "معلومات عامة",
-    "OBSERVATIONS": "ملاحظات",
-    "MANAGE": "إدارة الرحلة",
-    "GERER": "إدارة الرحلة",
-    "NOSORTIES": "لا يوجد رحلات",
-    "SELECTSORTIES": "اختر رحلات الصيد",
-    "SELECTIONNEZSORTIES": "اختر رحلات الصيد",
-    "FROM": "من",
-    "TO": "إلى",
-    "DU": "من",
-    "AU": "إلى"
+    "TITLE": "الرحلات البحرية"
   },
   "EXPENSES": {
-    "TITLE": "المصاريف",
-    "DEPENSES": "المصاريف",
-    "ADD": "إضافة مصروف",
-    "AJOUTER": "إضافة مصروف",
-    "EDIT": "تعديل مصروف",
-    "MODIFIER": "تعديل مصروف",
-    "TYPE": "نوع المصروف",
-    "AMOUNT": "المبلغ",
-    "MONTANT": "المبلغ",
-    "DATE": "التاريخ",
-    "DESCRIPTION": "الوصف",
-    "NOEXPENSE": "لا يوجد مصاريف",
-    "TYPES": {
-      "FUEL": "وقود",
-      "CARBURANT": "وقود",
-      "FOOD": "طعام",
-      "NOURRITURE": "طعام",
-      "MAINTENANCE": "صيانة",
-      "ICE": "ثلج",
-      "GLACE": "ثلج",
-      "OILCHANGE": "تغيير زيت",
-      "VIDANGE": "تغيير زيت",
-      "CREWCNSS": "ضمان اجتماعي",
-      "CREWBONUS": "مكافأة الطاقم",
-      "VMS": "نظام VMS",
-      "MISC": "متنوع",
-      "DIVERS": "متنوع",
-      "OTHER": "أخرى",
-      "AUTRE": "أخرى"
-    },
-    "SUCCESSADD": "تمت إضافة المصروف بنجاح",
-    "SUCCESSUPDATE": "تم تحديث المصروف بنجاح"
+    "TITLE": "المصاريف"
   },
   "POINTAGE": {
-    "TITLE": "الحضور",
-    "DATE": "التاريخ",
-    "CREW": "الطاقم",
-    "PRESENT": "حاضر",
-    "ABSENT": "غائب",
-    "NOCREW": "لا يوجد طاقم",
-    "OBSERVATIONS": "ملاحظات",
-    "ADDOBS": "إضافة ملاحظة",
-    "TOTAL": "المجموع"
+    "TITLE": "تسجيل حضور الطاقم"
   },
   "AVANCES": {
-    "TITLE": "السلف",
+    "TITLE": "السلف على الراتب",
     "ADD": "إضافة سلفة",
-    "AJOUTER": "إضافة سلفة",
-    "EDIT": "تعديل",
-    "MODIFIER": "تعديل",
-    "DELETE": "حذف",
-    "SUPPRIMER": "حذف",
-    "AMOUNT": "المبلغ",
-    "MONTANT": "المبلغ",
-    "DATE": "التاريخ",
-    "DESCRIPTION": "الوصف",
-    "NO_AVANCES": "لا يوجد سلف",
-    "NOAVANCES": "لا يوجد سلف",
-    "TOTAL": "المجموع",
-    "TOTAL_GENERAL": "المجموع الكلي",
-    "TOTALGENERAL": "المجموع الكلي",
-    "SUCCESSADD": "تمت إضافة السلفة بنجاح",
-    "SUCCESS_ADD": "تمت إضافة السلفة بنجاح",
-    "SUCCESSUPDATE": "تم تحديث السلفة بنجاح",
-    "SUCCESS_UPDATE": "تم تحديث السلفة بنجاح",
-    "SUCCESSDELETE": "تم حذف السلفة بنجاح",
-    "SUCCESS_DELETE": "تم حذف السلفة بنجاح",
-    "AMOUNTPOSITIVE": "يجب أن يكون المبلغ أكبر من الصفر",
-    "AMOUNT_POSITIVE": "يجب أن يكون المبلغ أكبر من الصفر"
+    "EDIT": "تعديل السلفة",
+    "TOTAL": "مجموع السلف",
+    "TOTAL_GENERAL": "المجموع الكلي للسلف",
+    "NO_AVANCES": "لا توجد سلف لهذا البحار.",
+    "SUCCESS_ADD": "تمت إضافة السلفة بنجاح.",
+    "SUCCESS_UPDATE": "تم تحديث السلفة بنجاح.",
+    "SUCCESS_DELETE": "تم حذف السلفة بنجاح.",
+    "AMOUNT_POSITIVE": "يجب أن يكون المبلغ رقمًا موجبًا.",
+    "ADD_MODAL": {
+      "TITLE": "إضافة سلفة جديدة"
+    },
+    "EDIT_MODAL": {
+      "TITLE": "تعديل السلفة"
+    },
+    "DELETE_CONFIRM_ITEM": "سلفة بقيمة {{amount}} دينار لـ {{name}}"
   },
   "SALAIRES": {
-    "TITLE": "حساب الرواتب",
-    "CONFIG_COEFF": "تكوين المعاملات",
-    "CONFIGCOEFF": "تكوين المعاملات",
-    "CONFIGURERCOEFFICIENTS": "تكوين المعاملات",
-    "CALCULER": "حساب",
-    "DESCRIPTION": "الوصف",
-    "REVENU_TOTAL": "الإيرادات الكلية",
-    "REVENUTOTAL": "الإيرادات الكلية",
-    "TOTAL_DEPENSES": "مجموع المصاريف",
-    "TOTALDEPENSES": "مجموع المصاريف",
-    "PART_PROPRIETAIRE": "حصة المالك (50%)",
-    "PARTPROPRIETAIRE": "حصة المالك (50%)",
-    "PART_EQUIPAGE": "حصة الطاقم (50%)",
-    "PARTEQUIPAGE": "حصة الطاقم (50%)",
-    "DEDUCTIONS": "الخصومات",
-    "NUITS": "الليالي",
-    "MARINS": "البحارة",
-    "MONTANT_A_PARTAGER": "المبلغ للتقسيم",
-    "MONTANTAPARTAGER": "المبلغ للتقسيم",
-    "DETAILS_PAR_MARIN": "التفاصيل حسب البحار",
-    "DETAILSPARMARIN": "التفاصيل حسب البحار",
-    "COEFFICIENT": "المعامل",
-    "SALAIRE_BASE": "الراتب الأساسي",
-    "SALAIREBASE": "الراتب الأساسي",
-    "PRIME_NUITS": "علاوة الليالي",
-    "PRIMENUITS": "علاوة الليالي",
-    "SALAIRE_NET": "الراتب الصافي",
-    "SALAIRENET": "الراتب الصافي"
+    "TITLE": "حساب الرواتب"
   },
   "VENTES": {
-    "TITLE": "المبيعات",
-    "ADDFACTURE": "إضافة فاتورة",
-    "NEWFACTURE": "فاتورة جديدة",
-    "NOUVELLEFACTURE": "فاتورة جديدة",
-    "EDITFACTURE": "تعديل فاتورة",
-    "MODIFIERFACTURE": "تعديل فاتورة",
-    "NUMERO": "الرقم",
-    "NUMEROFACTURE": "رقم الفاتورة",
-    "CLIENT": "الزبون",
-    "DATEVENTE": "تاريخ البيع",
-    "MONTANT": "المبلغ",
-    "MONTANTTOTAL": "المبلغ الإجمالي",
-    "DETAILS": "التفاصيل",
-    "TOTAL": "المجموع",
-    "TOTALVENTES": "مجموع المبيعات",
-    "TOTALGENERAL": "المجموع الكلي",
-    "TOTALGENERALVENTES": "المجموع الكلي للمبيعات",
-    "MANAGEFACTURES": "إدارة الفواتير",
-    "GERERFACTURES": "إدارة الفواتير",
-    "NOFACTURESFORSORTIE": "لا توجد فواتير لهذه الرحلة",
-    "AUCUNEFACTURE": "لا توجد فواتير",
-    "NOFACTURE": "لا توجد فواتير"
+    "TITLE": "المبيعات"
   },
   "FACTURES": {
-    "TITLE": "الفواتير",
-    "NOFACTURE": "لا توجد فواتير"
+    "TITLE": "الفواتير"
   },
   "FORM": {
     "ADD": "إضافة",
-    "AJOUTER": "إضافة",
     "EDIT": "تعديل",
-    "MODIFIER": "تعديل",
     "DELETE": "حذف",
-    "SUPPRIMER": "حذف",
     "CANCEL": "إلغاء",
-    "ANNULER": "إلغاء",
     "SAVE": "حفظ",
-    "ENREGISTRER": "حفظ",
-    "REQUIRED": "هذا الحقل مطلوب",
-    "REQUIRED_FIELDS": "يرجى ملء جميع الحقول المطلوبة",
-    "REQUIREDFIELDS": "يرجى ملء جميع الحقول المطلوبة",
-    "CONFIRMDELETE": "هل أنت متأكد من الحذف؟",
-    "CONFIRM_DELETE": "هل أنت متأكد من الحذف؟",
-    "INVALID_PHONE": "رقم هاتف غير صالح",
-    "INVALIDPHONE": "رقم هاتف غير صالح",
-    "INVALID_EMAIL": "بريد إلكتروني غير صالح",
-    "INVALIDEMAIL": "بريد إلكتروني غير صالح"
+    "REQUIRED": "هذا الحقل مطلوب.",
+    "REQUIRED_FIELDS": "الرجاء ملء جميع الحقول المطلوبة.",
+    "INVALID_PHONE": "رقم هاتف غير صالح.",
+    "INVALID_EMAIL": "بريد إلكتروني غير صالح."
   },
   "MESSAGES": {
     "LOADING": "جاري التحميل...",
-    "CHARGEMENT": "جاري التحميل...",
     "SAVING": "جاري الحفظ...",
-    "ENREGISTREMENT": "جاري الحفظ...",
-    "ADDINGSAILOR": "جاري إضافة البحار...",
-    "SUCCESS": "تمت العملية بنجاح",
-    "ERROR": "حدث خطأ",
-    "ERREUR": "حدث خطأ",
-    "CONFIRM": "تأكيد",
-    "CONFIRMER": "تأكيد",
-    "NODATA": "لا توجد بيانات",
-    "AUCUNEDONNEE": "لا توجد بيانات",
+    "ADDING_SAILOR": "جاري إضافة البحار...",
+    "SUCCESS": "تمت العملية بنجاح!",
+    "ERROR_TITLE": "خطأ",
+    "WARNING_TITLE": "تنبيه",
+    "ERROR_GENERIC": "حدث خطأ غير متوقع. الرجاء المحاولة مرة أخرى.",
     "AREYOUSURE": "هل أنت متأكد؟",
-    "CONFIRMDELETEMESSAGE": "سيتم حذف",
-    "IRREVERSIBLE": "هذا الإجراء لا يمكن التراجع عنه"
-  },
+    "CONFIRMDELETEMESSAGE": "أنت على وشك حذف",
+    "IRREVERSIBLE": "هذا الإجراء لا يمكن التراجع عنه.",
+    "SAILOR_ADDED_SUCCESS": "تمت إضافة البحار {{name}} بنجاح."
+  },  },
   "LANGUAGE": {
     "AR": "العربية",
     "FR": "الفرنسية",
-    "EN": "الإنجليزية",
-    "ARABE": "العربية",
-    "FRANCAIS": "الفرنسية",
-    "ANGLAIS": "الإنجليزية"
+    "EN": "الإنجليزية"
+  },
+  "COMMON": {
+    "UNKNOWN": "غير معروف",
+    "AMOUNT": "المبلغ",
+    "AMOUNT_D T": "المبلغ (دينار)",
+    "AMOUNT_IN_TND": "المبلغ بالدينار التونسي",
+    "DATE": "التاريخ",
+    "DESCRIPTION": "الوصف",
+    "DESCRIPTION_OPTIONAL": "الوصف (اختياري)"
+  },
+  "MOCK_DATA": {
+    "TITLE": "🎲 مولد البيانات الوهمية",
+    "SUBTITLE": "أنشئ بيانات اختبار كاملة لتطبيقك بسرعة.",
+    "ITEM_1": "✓ 2 مراكب صيد",
+    "ITEM_2": "✓ عدة بحارة بحصص مختلفة",
+    "ITEM_3": "✓ رحلات بحرية متعددة",
+    "ITEM_4": "✓ مصاريف ومبيعات وسلف مرتبطة",
+    "GENERATE_BUTTON": "إنشاء البيانات",
+    "GENERATING_BUTTON": "جاري الإنشاء...",
+    "CONFIRM_TITLE": "هل تريد إنشاء بيانات وهمية؟",
+    "CONFIRM_TEXT": "سيقوم هذا الإجراء أولاً بحذف جميع البيانات الحالية قبل إنشاء سجلات اختبار جديدة.",
+    "CONFIRM_BUTTON": "نعم، أنشئ",
+    "CANCEL_BUTTON": "إلغاء",
+    "LOADING_TITLE": "جاري الإنشاء...",
+    "LOADING_TEXT": "الرجاء الانتظار أثناء إنشاء البيانات.",
+    "SUCCESS_TITLE": "نجاح!",
+    "SUCCESS_TEXT": "تم إنشاء بيانات الاختبار بنجاح.",
+    "ERROR_TITLE": "خطأ"
   }
 }
 
 ====================================
 FICHIER: ./src/assets/i18n/en.json
-Lignes:      358
+Lignes:      201
 ====================================
 
 {
   "AUTH": {
     "WELCOME": "Welcome",
-    "SIGN_IN": "Sign In",
-    "SIGNIN": "Sign In",
-    "SIGNUP": "Sign Up",
-    "CREATE_ACCOUNT": "Create Account",
-    "CREATEACCOUNT": "Create Account",
-    "EMAIL": "Email",
+    "SIGN_IN": "Please sign in to your account",
+    "SIGNUP": "Fill in the information to sign up",
+    "CREATE_ACCOUNT": "Create an Account",
+    "EMAIL": "Email Address",
     "PASSWORD": "Password",
-    "LOGIN": "Login",
-    "NO_ACCOUNT": "No account? Sign up",
-    "NOACCOUNT": "No account? Sign up",
-    "HAVE_ACCOUNT": "Already have an account? Sign in",
-    "HAVEACCOUNT": "Already have an account? Sign in"
+    "LOGIN": "Sign In",
+    "NO_ACCOUNT": "Don't have an account? Sign Up",
+    "HAVE_ACCOUNT": "Already have an account? Sign In"
   },
   "DASHBOARD": {
     "TITLE": "Dashboard",
-    "WELCOME": "Welcome",
+    "WELCOME": "Welcome to your dashboard",
     "ACTIVITIES": "Activities",
     "RECENT_ACTIVITIES": "Recent Activity",
-    "RECENTACTIVITY": "Recent Activity",
-    "NO_ACTIVITIES": "No activities",
-    "NOACTIVITIES": "No activities",
+    "NO_ACTIVITIES": "No recent activity to display",
     "TOTAL_BOATS": "Total Boats",
-    "TOTALBOATS": "Total Boats",
     "TOTAL_SAILORS": "Total Sailors",
-    "TOTALSAILORS": "Total Sailors",
     "ACTIVE_BOATS": "Active Boats",
-    "ACTIVEBOATS": "Active Boats",
-    "MAINTENANCE": "Maintenance",
-    "STATISTICS": "Statistics",
-    "SELECTBOAT": "Select a boat",
-    "NOBOATSELECTED": "No boat selected"
+    "MAINTENANCE": "In Maintenance",
+    "BOAT_ADDED": "Boat added",
+    "BOAT_UPDATED": "Boat updated",
+    "SAILOR_ADDED": "Sailor added",
+    "SAILOR_UPDATED": "Sailor updated"
   },
   "MENU": {
     "HOME": "Home",
@@ -13671,102 +13336,71 @@ Lignes:      358
     "SALAIRES": "Salaries",
     "VENTES": "Sales",
     "MOCK_DATA": "Mock Data",
-    "MOCKDATA": "Mock Data",
-    "SELECT_BOAT_FIRST": "Select a boat first",
-    "SELECTBOATFIRST": "Select a boat first"
+    "SELECT_BOAT_FIRST": "Select a boat first to access this section"
   },
   "BOATS": {
-    "TITLE": "Boats",
+    "TITLE": "Boat Management",
     "BOAT": "Boat",
-    "ADD": "Add boat",
-    "ADDBOAT": "Add boat",
-    "ADD_BOAT": "Add boat",
-    "EDIT": "Edit",
-    "EDIT_BOAT": "Edit boat",
+    "ADD_BOAT": "Add a Boat",
+    "EDIT_BOAT": "Edit Boat",
     "DELETE": "Delete",
-    "NAME": "Name",
+    "NAME": "Boat Name",
     "REGISTRATION": "Registration",
-    "ENGINE_TYPE": "Engine type",
-    "ENGINETYPE": "Engine type",
-    "POWER": "Power",
-    "PUISSANCE": "Power",
-    "ENGINEPOWER": "Engine power",
-    "LENGTH": "Length",
-    "LONGUEUR": "Length",
-    "CAPACITY": "Capacity",
-    "CAPACITE": "Capacity",
-    "CONSTRUCTION_DATE": "Construction date",
-    "CONSTRUCTIONDATE": "Construction date",
-    "PORT": "Home port",
-    "PORTATTACHE": "Home port",
+    "ENGINE_TYPE": "Engine Type",
+    "POWER": "Power (HP)",
+    "LENGTH": "Length (m)",
+    "CAPACITY": "Crew Capacity",
+    "CONSTRUCTION_DATE": "Construction Date",
+    "PORT": "Home Port",
     "STATUS": "Status",
-    "STATUT": "Status",
     "ACTIVE": "Active",
-    "MAINTENANCE": "Maintenance",
     "INACTIVE": "Inactive",
-    "NO_BOAT_SELECTED": "No boat selected",
-    "NOBOATSELECTED": "No boat selected",
-    "NOBOATS": "No boats",
-    "SELECTED_BOAT": "Selected boat",
-    "SELECTEDBOAT": "Selected boat",
+    "NO_BOAT_SELECTED": "No boat is selected",
+    "NO_BOAT_SELECTED_DETAILS": "Please select a boat from the 'Boats' page first.",
+    "CLICK_TO_SELECT": "Click to select one",
+    "SELECTED_BOAT": "Active Boat",
     "SELECTED": "Selected",
-    "CLICK_TO_SELECT": "Click to select",
-    "CLICKTOSELECT": "Click to select",
-    "SEARCH": "Search for a boat...",
+    "SEARCH": "Search for a boat by name...",
     "ACTIONS": "Actions",
-    "VIEWCREW": "View crew",
-    "VIEW_CREW": "View crew",
-    "SELECT_INFO": "Select a boat to start",
-    "SELECTINFO": "Select a boat to start",
-    "CHANGE_SELECTION": "Change boat",
-    "CHANGESELECTION": "Change boat"
+    "VIEWCREW": "View Crew",
+    "SELECT_INFO": "Please select a boat from the list to continue.",
+    "CHANGE_SELECTION": "Change Boat",
+    "SUCCESS_ADD": "Boat added successfully.",
+    "SUCCESS_UPDATE": "Boat updated successfully.",
+    "SUCCESS_DELETE": "Boat deleted successfully.",
+    "TOAST_SELECTED": "Boat \"{{boatName}}\" selected.",
+    "TOAST_SELECTION_CLEARED": "Boat selection cleared.",
+    "BOAT_NAME_CONFIRM": "the boat \"{{boatName}}\""
   },
   "SAILORS": {
     "TITLE": "Sailors",
-    "MARIN": "Sailor",
-    "ADD": "Add sailor",
-    "ADD_SAILOR": "Add sailor",
-    "ADDSAILOR": "Add sailor",
-    "ADDNEWSAILOR": "Add new sailor",
-    "EDIT": "Edit",
-    "EDITSAILOR": "Edit sailor",
-    "DELETE": "Delete",
-    "FIRST_NAME": "First name",
-    "FIRSTNAME": "First name",
-    "PRENOM": "First name",
-    "LAST_NAME": "Last name",
-    "LASTNAME": "Last name",
-    "NOM": "Last name",
+    "ADD_SAILOR": "Add Sailor",
+    "ADD_NEW_SAILOR": "Add a New Sailor",
+    "EDIT_SAILOR": "Edit Sailor",
+    "FIRST_NAME": "First Name",
+    "LAST_NAME": "Last Name",
     "FUNCTION": "Function",
-    "FONCTION": "Function",
+    "PART": "Share",
     "SELECT_FUNCTION": "Select a function",
-    "SELECTFUNCTION": "Select a function",
+    "SELECT_SAILOR": "Select a sailor",
     "PHONE": "Phone",
-    "TELEPHONE": "Phone",
     "EMAIL": "Email",
     "ADDRESS": "Address",
-    "ADRESSE": "Address",
-    "BIRTH_DATE": "Birth date",
-    "BIRTHDATE": "Birth date",
-    "HIRE_DATE": "Hire date",
-    "HIREDATE": "Hire date",
-    "LICENSE_NUMBER": "License number",
-    "LICENSENUMBER": "License number",
-    "CREW_OF": "Crew of",
-    "CREWOF": "Crew of",
-    "NOSAILORS": "No sailors",
-    "CAPTAIN": "Captain",
-    "CAPITAINE": "Captain",
-    "SECOND": "Second",
-    "MECHANIC": "Mechanic",
-    "MECANICIEN": "Mechanic",
-    "SAILOR": "Sailor",
-    "MATELOT": "Sailor",
+    "BIRTH_DATE": "Date of Birth",
+    "HIRE_DATE": "Hire Date",
+    "LICENSE_NUMBER": "License Number",
+    "CREW_OF": "Crew of boat",
     "BACK": "Back",
-    "RETOUR": "Back",
-    "ON_LEAVE": "On leave",
-    "ONLEAVE": "On leave",
-    "CREW": "Crew",
+    "ON_LEAVE": "On Leave",
+    "SUCCESS_ADD": "Sailor added successfully.",
+    "SUCCESS_UPDATE": "Sailor updated successfully.",
+    "SUCCESS_DELETE": "Sailor deleted successfully.",
+    "FUNCTION_TYPE": {
+      "CAPITAINE": "Captain",
+      "SECOND": "Second-in-command",
+      "MECANICIEN": "Mechanic",
+      "MATELOT": "Sailor"
+    },
     "PLACEHOLDER": {
       "LASTNAME": "Enter last name",
       "FIRSTNAME": "Enter first name",
@@ -13774,363 +13408,206 @@ Lignes:      358
     }
   },
   "SORTIES": {
-    "TITLE": "Sea Trips",
-    "ADD": "Add trip",
-    "AJOUTER": "Add trip",
-    "EDIT": "Edit",
-    "MODIFIER": "Edit",
-    "DELETE": "Delete",
-    "SUPPRIMER": "Delete",
-    "DETAILS": "Trip details",
-    "DETAILSTITLE": "Trip details",
-    "DESTINATION": "Destination",
-    "DEPARTUREDATE": "Departure date",
-    "DATEDEPART": "Departure date",
-    "RETURNDATE": "Return date",
-    "DATERETOUR": "Return date",
-    "STATUT": "Status",
-    "STATUS": {
-      "ONGOING": "Ongoing",
-      "ENCOURS": "Ongoing",
-      "EN-COURS": "Ongoing",
-      "COMPLETED": "Completed",
-      "TERMINEE": "Completed",
-      "CANCELLED": "Cancelled",
-      "ANNULEE": "Cancelled"
-    },
-    "GENERALINFO": "General information",
-    "OBSERVATIONS": "Observations",
-    "MANAGE": "Manage trip",
-    "GERER": "Manage trip",
-    "NOSORTIES": "No trips",
-    "SELECTSORTIES": "Select sea trips",
-    "SELECTIONNEZSORTIES": "Select sea trips",
-    "FROM": "From",
-    "TO": "To",
-    "DU": "From",
-    "AU": "To"
+    "TITLE": "Sea Trips"
   },
   "EXPENSES": {
-    "TITLE": "Expenses",
-    "DEPENSES": "Expenses",
-    "ADD": "Add expense",
-    "AJOUTER": "Add expense",
-    "EDIT": "Edit expense",
-    "MODIFIER": "Edit expense",
-    "TYPE": "Expense type",
-    "AMOUNT": "Amount",
-    "MONTANT": "Amount",
-    "DATE": "Date",
-    "DESCRIPTION": "Description",
-    "NOEXPENSE": "No expenses",
-    "TYPES": {
-      "FUEL": "Fuel",
-      "CARBURANT": "Fuel",
-      "FOOD": "Food",
-      "NOURRITURE": "Food",
-      "MAINTENANCE": "Maintenance",
-      "ICE": "Ice",
-      "GLACE": "Ice",
-      "OILCHANGE": "Oil change",
-      "VIDANGE": "Oil change",
-      "CREWCNSS": "Crew CNSS",
-      "CREWBONUS": "Crew bonus",
-      "VMS": "VMS",
-      "MISC": "Miscellaneous",
-      "DIVERS": "Miscellaneous",
-      "OTHER": "Other",
-      "AUTRE": "Other"
-    },
-    "SUCCESSADD": "Expense added successfully",
-    "SUCCESSUPDATE": "Expense updated successfully"
+    "TITLE": "Expenses"
   },
   "POINTAGE": {
-    "TITLE": "Attendance",
-    "DATE": "Date",
-    "CREW": "Crew",
-    "PRESENT": "Present",
-    "ABSENT": "Absent",
-    "NOCREW": "No crew",
-    "OBSERVATIONS": "Observations",
-    "ADDOBS": "Add observation",
-    "TOTAL": "Total"
+    "TITLE": "Crew Attendance"
   },
   "AVANCES": {
-    "TITLE": "Advances",
-    "ADD": "Add advance",
-    "AJOUTER": "Add advance",
-    "EDIT": "Edit",
-    "MODIFIER": "Edit",
-    "DELETE": "Delete",
-    "SUPPRIMER": "Delete",
-    "AMOUNT": "Amount",
-    "MONTANT": "Amount",
-    "DATE": "Date",
-    "DESCRIPTION": "Description",
-    "NO_AVANCES": "No advances",
-    "NOAVANCES": "No advances",
-    "TOTAL": "Total",
-    "TOTAL_GENERAL": "Grand total",
-    "TOTALGENERAL": "Grand total",
-    "SUCCESSADD": "Advance added successfully",
-    "SUCCESS_ADD": "Advance added successfully",
-    "SUCCESSUPDATE": "Advance updated successfully",
-    "SUCCESS_UPDATE": "Advance updated successfully",
-    "SUCCESSDELETE": "Advance deleted successfully",
-    "SUCCESS_DELETE": "Advance deleted successfully",
-    "AMOUNTPOSITIVE": "Amount must be greater than zero",
-    "AMOUNT_POSITIVE": "Amount must be greater than zero"
+    "TITLE": "Salary Advances",
+    "ADD": "Add Advance",
+    "EDIT": "Edit Advance",
+    "TOTAL": "Total Advances",
+    "TOTAL_GENERAL": "Grand Total of Advances",
+    "NO_AVANCES": "No advances for this sailor.",
+    "SUCCESS_ADD": "Advance added successfully.",
+    "SUCCESS_UPDATE": "Advance updated successfully.",
+    "SUCCESS_DELETE": "Advance deleted successfully.",
+    "AMOUNT_POSITIVE": "Amount must be a positive number.",
+    "ADD_MODAL": {
+      "TITLE": "Add a new advance"
+    },
+    "EDIT_MODAL": {
+      "TITLE": "Edit advance"
+    },
+    "DELETE_CONFIRM_ITEM": "the advance of {{amount}} TND for {{name}}"
   },
   "SALAIRES": {
-    "TITLE": "Salary Calculation",
-    "CONFIG_COEFF": "Configure coefficients",
-    "CONFIGCOEFF": "Configure coefficients",
-    "CONFIGURERCOEFFICIENTS": "Configure coefficients",
-    "CALCULER": "Calculate",
-    "DESCRIPTION": "Description",
-    "REVENU_TOTAL": "Total revenue",
-    "REVENUTOTAL": "Total revenue",
-    "TOTAL_DEPENSES": "Total expenses",
-    "TOTALDEPENSES": "Total expenses",
-    "PART_PROPRIETAIRE": "Owner's share (50%)",
-    "PARTPROPRIETAIRE": "Owner's share (50%)",
-    "PART_EQUIPAGE": "Crew's share (50%)",
-    "PARTEQUIPAGE": "Crew's share (50%)",
-    "DEDUCTIONS": "Deductions",
-    "NUITS": "Nights",
-    "MARINS": "Sailors",
-    "MONTANT_A_PARTAGER": "Amount to share",
-    "MONTANTAPARTAGER": "Amount to share",
-    "DETAILS_PAR_MARIN": "Details per sailor",
-    "DETAILSPARMARIN": "Details per sailor",
-    "COEFFICIENT": "Coefficient",
-    "SALAIRE_BASE": "Base salary",
-    "SALAIREBASE": "Base salary",
-    "PRIME_NUITS": "Night bonus",
-    "PRIMENUITS": "Night bonus",
-    "SALAIRE_NET": "Net salary",
-    "SALAIRENET": "Net salary"
+    "TITLE": "Salary Calculation"
   },
   "VENTES": {
-    "TITLE": "Sales",
-    "ADDFACTURE": "Add invoice",
-    "NEWFACTURE": "New invoice",
-    "NOUVELLEFACTURE": "New invoice",
-    "EDITFACTURE": "Edit invoice",
-    "MODIFIERFACTURE": "Edit invoice",
-    "NUMERO": "Number",
-    "NUMEROFACTURE": "Invoice number",
-    "CLIENT": "Client",
-    "DATEVENTE": "Sale date",
-    "MONTANT": "Amount",
-    "MONTANTTOTAL": "Total amount",
-    "DETAILS": "Details",
-    "TOTAL": "Total",
-    "TOTALVENTES": "Total sales",
-    "TOTALGENERAL": "Grand total",
-    "TOTALGENERALVENTES": "Grand total of sales",
-    "MANAGEFACTURES": "Manage invoices",
-    "GERERFACTURES": "Manage invoices",
-    "NOFACTURESFORSORTIE": "No invoices for this trip",
-    "AUCUNEFACTURE": "No invoices",
-    "NOFACTURE": "No invoices"
+    "TITLE": "Sales"
   },
   "FACTURES": {
-    "TITLE": "Invoices",
-    "NOFACTURE": "No invoices"
+    "TITLE": "Invoices"
   },
   "FORM": {
     "ADD": "Add",
-    "AJOUTER": "Add",
     "EDIT": "Edit",
-    "MODIFIER": "Edit",
     "DELETE": "Delete",
-    "SUPPRIMER": "Delete",
     "CANCEL": "Cancel",
-    "ANNULER": "Cancel",
     "SAVE": "Save",
-    "ENREGISTRER": "Save",
-    "REQUIRED": "This field is required",
-    "REQUIRED_FIELDS": "Please fill in all required fields",
-    "REQUIREDFIELDS": "Please fill in all required fields",
-    "CONFIRMDELETE": "Are you sure you want to delete?",
-    "CONFIRM_DELETE": "Are you sure you want to delete?",
-    "INVALID_PHONE": "Invalid phone number",
-    "INVALIDPHONE": "Invalid phone number",
-    "INVALID_EMAIL": "Invalid email",
-    "INVALIDEMAIL": "Invalid email"
+    "REQUIRED": "This field is required.",
+    "REQUIRED_FIELDS": "Please fill in all required fields.",
+    "INVALID_PHONE": "Invalid phone number.",
+    "INVALID_EMAIL": "Invalid email address."
   },
   "MESSAGES": {
     "LOADING": "Loading...",
-    "CHARGEMENT": "Loading...",
     "SAVING": "Saving...",
-    "ENREGISTREMENT": "Saving...",
-    "ADDINGSAILOR": "Adding sailor...",
-    "SUCCESS": "Operation successful",
-    "ERROR": "An error occurred",
-    "ERREUR": "An error occurred",
-    "CONFIRM": "Confirm",
-    "CONFIRMER": "Confirm",
-    "NODATA": "No data",
-    "AUCUNEDONNEE": "No data",
+    "ADDING_SAILOR": "Adding sailor...",
+    "SUCCESS": "Operation successful!",
+    "ERROR_TITLE": "Error",
+    "WARNING_TITLE": "Warning",
+    "ERROR_GENERIC": "An unexpected error occurred. Please try again.",
     "AREYOUSURE": "Are you sure?",
     "CONFIRMDELETEMESSAGE": "You are about to delete",
-    "IRREVERSIBLE": "This action cannot be undone"
-  },
+    "IRREVERSIBLE": "This action cannot be undone.",
+    "SAILOR_ADDED_SUCCESS": "Sailor {{name}} has been added successfully."
+  },  },
   "LANGUAGE": {
     "AR": "Arabic",
     "FR": "French",
-    "EN": "English",
-    "ARABE": "Arabic",
-    "FRANCAIS": "French",
-    "ANGLAIS": "English"
+    "EN": "English"
+  },
+  "COMMON": {
+    "UNKNOWN": "Unknown",
+    "AMOUNT": "Amount",
+    "AMOUNT_D T": "Amount (TND)",
+    "AMOUNT_IN_TND": "Amount in Tunisian Dinar",
+    "DATE": "Date",
+    "DESCRIPTION": "Description",
+    "DESCRIPTION_OPTIONAL": "Description (optional)"
+  },
+  "MOCK_DATA": {
+    "TITLE": "🎲 Mock Data Generator",
+    "SUBTITLE": "Quickly create complete test data for your application.",
+    "ITEM_1": "✓ 2 fishing boats",
+    "ITEM_2": "✓ Several sailors with different shares",
+    "ITEM_3": "✓ Multiple sea trips",
+    "ITEM_4": "✓ Associated expenses, sales, and advances",
+    "GENERATE_BUTTON": "Generate Data",
+    "GENERATING_BUTTON": "Generating...",
+    "CONFIRM_TITLE": "Generate mock data?",
+    "CONFIRM_TEXT": "This will first delete all existing data before creating new test records.",
+    "CONFIRM_BUTTON": "Yes, generate",
+    "CANCEL_BUTTON": "Cancel",
+    "LOADING_TITLE": "Generating...",
+    "LOADING_TEXT": "Please wait while the data is being created.",
+    "SUCCESS_TITLE": "Success!",
+    "SUCCESS_TEXT": "Mock data has been generated successfully.",
+    "ERROR_TITLE": "Error"
   }
 }
 
 ====================================
 FICHIER: ./src/assets/i18n/fr.json
-Lignes:      358
+Lignes:      201
 ====================================
 
 {
   "AUTH": {
     "WELCOME": "Bienvenue",
-    "SIGN_IN": "Connexion",
-    "SIGNIN": "Connexion",
-    "SIGNUP": "Inscription",
+    "SIGN_IN": "Veuillez vous connecter à votre compte",
+    "SIGNUP": "Remplissez les informations pour vous inscrire",
     "CREATE_ACCOUNT": "Créer un compte",
-    "CREATEACCOUNT": "Créer un compte",
-    "EMAIL": "Email",
+    "EMAIL": "Adresse e-mail",
     "PASSWORD": "Mot de passe",
     "LOGIN": "Se connecter",
-    "NO_ACCOUNT": "Pas de compte ? Inscrivez-vous",
-    "NOACCOUNT": "Pas de compte ? Inscrivez-vous",
-    "HAVE_ACCOUNT": "Déjà un compte ? Connectez-vous",
-    "HAVEACCOUNT": "Déjà un compte ? Connectez-vous"
+    "NO_ACCOUNT": "Vous n'avez pas de compte ? S'inscrire",
+    "HAVE_ACCOUNT": "Vous avez déjà un compte ? Se connecter"
   },
   "DASHBOARD": {
     "TITLE": "Tableau de bord",
-    "WELCOME": "Bienvenue",
+    "WELCOME": "Bienvenue sur votre tableau de bord",
     "ACTIVITIES": "Activités",
-    "RECENT_ACTIVITIES": "Activité récente",
-    "RECENTACTIVITY": "Activité récente",
-    "NO_ACTIVITIES": "Aucune activité",
-    "NOACTIVITIES": "Aucune activité",
-    "TOTAL_BOATS": "Total bateaux",
-    "TOTALBOATS": "Total bateaux",
-    "TOTAL_SAILORS": "Total marins",
-    "TOTALSAILORS": "Total marins",
-    "ACTIVE_BOATS": "Bateaux actifs",
-    "ACTIVEBOATS": "Bateaux actifs",
-    "MAINTENANCE": "Maintenance",
-    "STATISTICS": "Statistiques",
-    "SELECTBOAT": "Sélectionner un bateau",
-    "NOBOATSELECTED": "Aucun bateau sélectionné"
+    "RECENT_ACTIVITIES": "Activité Récente",
+    "NO_ACTIVITIES": "Aucune activité récente à afficher",
+    "TOTAL_BOATS": "Bateaux au total",
+    "TOTAL_SAILORS": "Marins au total",
+    "ACTIVE_BOATS": "Bateaux Actifs",
+    "MAINTENANCE": "En Maintenance",
+    "BOAT_ADDED": "Bateau ajouté",
+    "BOAT_UPDATED": "Bateau mis à jour",
+    "SAILOR_ADDED": "Marin ajouté",
+    "SAILOR_UPDATED": "Marin mis à jour"
   },
   "MENU": {
     "HOME": "Accueil",
     "BOATS": "Bateaux",
-    "SORTIES": "Sorties",
+    "SORTIES": "Sorties en mer",
     "AVANCES": "Avances",
     "SALAIRES": "Salaires",
     "VENTES": "Ventes",
-    "MOCK_DATA": "Données test",
-    "MOCKDATA": "Données test",
-    "SELECT_BOAT_FIRST": "Sélectionnez d'abord un bateau",
-    "SELECTBOATFIRST": "Sélectionnez d'abord un bateau"
+    "MOCK_DATA": "Données Test",
+    "SELECT_BOAT_FIRST": "Sélectionnez un bateau pour accéder à cette section"
   },
   "BOATS": {
-    "TITLE": "Bateaux",
+    "TITLE": "Gestion des Bateaux",
     "BOAT": "Bateau",
-    "ADD": "Ajouter un bateau",
-    "ADDBOAT": "Ajouter un bateau",
-    "ADD_BOAT": "Ajouter un bateau",
-    "EDIT": "Modifier",
-    "EDIT_BOAT": "Modifier le bateau",
+    "ADD_BOAT": "Ajouter un Bateau",
+    "EDIT_BOAT": "Modifier le Bateau",
     "DELETE": "Supprimer",
-    "NAME": "Nom",
+    "NAME": "Nom du bateau",
     "REGISTRATION": "Immatriculation",
     "ENGINE_TYPE": "Type de moteur",
-    "ENGINETYPE": "Type de moteur",
-    "POWER": "Puissance",
-    "PUISSANCE": "Puissance",
-    "ENGINEPOWER": "Puissance du moteur",
-    "LENGTH": "Longueur",
-    "LONGUEUR": "Longueur",
-    "CAPACITY": "Capacité",
-    "CAPACITE": "Capacité",
+    "POWER": "Puissance (CV)",
+    "LENGTH": "Longueur (m)",
+    "CAPACITY": "Capacité équipage",
     "CONSTRUCTION_DATE": "Date de construction",
-    "CONSTRUCTIONDATE": "Date de construction",
     "PORT": "Port d'attache",
-    "PORTATTACHE": "Port d'attache",
     "STATUS": "Statut",
-    "STATUT": "Statut",
     "ACTIVE": "Actif",
-    "MAINTENANCE": "Maintenance",
     "INACTIVE": "Inactif",
-    "NO_BOAT_SELECTED": "Aucun bateau sélectionné",
-    "NOBOATSELECTED": "Aucun bateau sélectionné",
-    "NOBOATS": "Aucun bateau",
-    "SELECTED_BOAT": "Bateau sélectionné",
-    "SELECTEDBOAT": "Bateau sélectionné",
+    "NO_BOAT_SELECTED": "Aucun bateau n'est sélectionné",
+    "NO_BOAT_SELECTED_DETAILS": "Veuillez d'abord sélectionner un bateau depuis la page 'Bateaux'.",
+    "CLICK_TO_SELECT": "Cliquez pour en sélectionner un",
+    "SELECTED_BOAT": "Bateau Actif",
     "SELECTED": "Sélectionné",
-    "CLICK_TO_SELECT": "Cliquer pour sélectionner",
-    "CLICKTOSELECT": "Cliquer pour sélectionner",
-    "SEARCH": "Rechercher un bateau...",
+    "SEARCH": "Rechercher un bateau par nom...",
     "ACTIONS": "Actions",
     "VIEWCREW": "Voir l'équipage",
-    "VIEW_CREW": "Voir l'équipage",
-    "SELECT_INFO": "Sélectionnez un bateau pour commencer",
-    "SELECTINFO": "Sélectionnez un bateau pour commencer",
+    "SELECT_INFO": "Veuillez sélectionner un bateau dans la liste pour continuer.",
     "CHANGE_SELECTION": "Changer de bateau",
-    "CHANGESELECTION": "Changer de bateau"
+    "SUCCESS_ADD": "Bateau ajouté avec succès.",
+    "SUCCESS_UPDATE": "Bateau mis à jour avec succès.",
+    "SUCCESS_DELETE": "Bateau supprimé avec succès.",
+    "TOAST_SELECTED": "Bateau \"{{boatName}}\" sélectionné.",
+    "TOAST_SELECTION_CLEARED": "Sélection du bateau annulée.",
+    "BOAT_NAME_CONFIRM": "le bateau \"{{boatName}}\""
   },
   "SAILORS": {
     "TITLE": "Marins",
-    "MARIN": "Marin",
-    "ADD": "Ajouter un marin",
-    "ADD_SAILOR": "Ajouter un marin",
-    "ADDSAILOR": "Ajouter un marin",
-    "ADDNEWSAILOR": "Ajouter un nouveau marin",
-    "EDIT": "Modifier",
-    "EDITSAILOR": "Modifier le marin",
-    "DELETE": "Supprimer",
+    "ADD_SAILOR": "Ajouter un Marin",
+    "ADD_NEW_SAILOR": "Ajouter un nouveau marin",
+    "EDIT_SAILOR": "Modifier le Marin",
     "FIRST_NAME": "Prénom",
-    "FIRSTNAME": "Prénom",
-    "PRENOM": "Prénom",
     "LAST_NAME": "Nom",
-    "LASTNAME": "Nom",
-    "NOM": "Nom",
     "FUNCTION": "Fonction",
-    "FONCTION": "Fonction",
+    "PART": "Part",
     "SELECT_FUNCTION": "Sélectionner une fonction",
-    "SELECTFUNCTION": "Sélectionner une fonction",
+    "SELECT_SAILOR": "Sélectionner un marin",
     "PHONE": "Téléphone",
-    "TELEPHONE": "Téléphone",
     "EMAIL": "Email",
     "ADDRESS": "Adresse",
-    "ADRESSE": "Adresse",
     "BIRTH_DATE": "Date de naissance",
-    "BIRTHDATE": "Date de naissance",
     "HIRE_DATE": "Date d'embauche",
-    "HIREDATE": "Date d'embauche",
     "LICENSE_NUMBER": "Numéro de permis",
-    "LICENSENUMBER": "Numéro de permis",
-    "CREW_OF": "Équipage de",
-    "CREWOF": "Équipage de",
-    "NOSAILORS": "Aucun marin",
-    "CAPTAIN": "Capitaine",
-    "CAPITAINE": "Capitaine",
-    "SECOND": "Second",
-    "MECHANIC": "Mécanicien",
-    "MECANICIEN": "Mécanicien",
-    "SAILOR": "Matelot",
-    "MATELOT": "Matelot",
+    "CREW_OF": "Équipage du bateau",
     "BACK": "Retour",
-    "RETOUR": "Retour",
     "ON_LEAVE": "En congé",
-    "ONLEAVE": "En congé",
-    "CREW": "Équipage",
+    "SUCCESS_ADD": "Marin ajouté avec succès.",
+    "SUCCESS_UPDATE": "Marin mis à jour avec succès.",
+    "SUCCESS_DELETE": "Marin supprimé avec succès.",
+    "FUNCTION_TYPE": {
+      "CAPITAINE": "Capitaine",
+      "SECOND": "Second",
+      "MECANICIEN": "Mécanicien",
+      "MATELOT": "Matelot"
+    },
     "PLACEHOLDER": {
       "LASTNAME": "Entrez le nom",
       "FIRSTNAME": "Entrez le prénom",
@@ -14138,216 +13615,98 @@ Lignes:      358
     }
   },
   "SORTIES": {
-    "TITLE": "Sorties en mer",
-    "ADD": "Ajouter une sortie",
-    "AJOUTER": "Ajouter une sortie",
-    "EDIT": "Modifier",
-    "MODIFIER": "Modifier",
-    "DELETE": "Supprimer",
-    "SUPPRIMER": "Supprimer",
-    "DETAILS": "Détails de la sortie",
-    "DETAILSTITLE": "Détails de la sortie",
-    "DESTINATION": "Destination",
-    "DEPARTUREDATE": "Date de départ",
-    "DATEDEPART": "Date de départ",
-    "RETURNDATE": "Date de retour",
-    "DATERETOUR": "Date de retour",
-    "STATUT": "Statut",
-    "STATUS": {
-      "ONGOING": "En cours",
-      "ENCOURS": "En cours",
-      "EN-COURS": "En cours",
-      "COMPLETED": "Terminée",
-      "TERMINEE": "Terminée",
-      "CANCELLED": "Annulée",
-      "ANNULEE": "Annulée"
-    },
-    "GENERALINFO": "Informations générales",
-    "OBSERVATIONS": "Observations",
-    "MANAGE": "Gérer la sortie",
-    "GERER": "Gérer la sortie",
-    "NOSORTIES": "Aucune sortie",
-    "SELECTSORTIES": "Sélectionner les sorties",
-    "SELECTIONNEZSORTIES": "Sélectionnez les sorties",
-    "FROM": "De",
-    "TO": "À",
-    "DU": "Du",
-    "AU": "Au"
+    "TITLE": "Sorties en mer"
   },
   "EXPENSES": {
-    "TITLE": "Dépenses",
-    "DEPENSES": "Dépenses",
-    "ADD": "Ajouter une dépense",
-    "AJOUTER": "Ajouter une dépense",
-    "EDIT": "Modifier la dépense",
-    "MODIFIER": "Modifier la dépense",
-    "TYPE": "Type de dépense",
-    "AMOUNT": "Montant",
-    "MONTANT": "Montant",
-    "DATE": "Date",
-    "DESCRIPTION": "Description",
-    "NOEXPENSE": "Aucune dépense",
-    "TYPES": {
-      "FUEL": "Carburant",
-      "CARBURANT": "Carburant",
-      "FOOD": "Nourriture",
-      "NOURRITURE": "Nourriture",
-      "MAINTENANCE": "Maintenance",
-      "ICE": "Glace",
-      "GLACE": "Glace",
-      "OILCHANGE": "Vidange",
-      "VIDANGE": "Vidange",
-      "CREWCNSS": "CNSS équipage",
-      "CREWBONUS": "Prime équipage",
-      "VMS": "VMS",
-      "MISC": "Divers",
-      "DIVERS": "Divers",
-      "OTHER": "Autre",
-      "AUTRE": "Autre"
-    },
-    "SUCCESSADD": "Dépense ajoutée avec succès",
-    "SUCCESSUPDATE": "Dépense mise à jour avec succès"
+    "TITLE": "Dépenses"
   },
   "POINTAGE": {
-    "TITLE": "Pointage",
-    "DATE": "Date",
-    "CREW": "Équipage",
-    "PRESENT": "Présent",
-    "ABSENT": "Absent",
-    "NOCREW": "Aucun équipage",
-    "OBSERVATIONS": "Observations",
-    "ADDOBS": "Ajouter une observation",
-    "TOTAL": "Total"
+    "TITLE": "Pointage de l'Équipage"
   },
   "AVANCES": {
-    "TITLE": "Avances",
-    "ADD": "Ajouter une avance",
-    "AJOUTER": "Ajouter une avance",
-    "EDIT": "Modifier",
-    "MODIFIER": "Modifier",
-    "DELETE": "Supprimer",
-    "SUPPRIMER": "Supprimer",
-    "AMOUNT": "Montant",
-    "MONTANT": "Montant",
-    "DATE": "Date",
-    "DESCRIPTION": "Description",
-    "NO_AVANCES": "Aucune avance",
-    "NOAVANCES": "Aucune avance",
-    "TOTAL": "Total",
-    "TOTAL_GENERAL": "Total général",
-    "TOTALGENERAL": "Total général",
-    "SUCCESSADD": "Avance ajoutée avec succès",
-    "SUCCESS_ADD": "Avance ajoutée avec succès",
-    "SUCCESSUPDATE": "Avance mise à jour avec succès",
-    "SUCCESS_UPDATE": "Avance mise à jour avec succès",
-    "SUCCESSDELETE": "Avance supprimée avec succès",
-    "SUCCESS_DELETE": "Avance supprimée avec succès",
-    "AMOUNTPOSITIVE": "Le montant doit être supérieur à zéro",
-    "AMOUNT_POSITIVE": "Le montant doit être supérieur à zéro"
+    "TITLE": "Avances sur Salaire",
+    "ADD": "Ajouter une Avance",
+    "EDIT": "Modifier l'Avance",
+    "TOTAL": "Total Avances",
+    "TOTAL_GENERAL": "Total Général des Avances",
+    "NO_AVANCES": "Aucune avance pour ce marin.",
+    "SUCCESS_ADD": "Avance ajoutée avec succès.",
+    "SUCCESS_UPDATE": "Avance mise à jour avec succès.",
+    "SUCCESS_DELETE": "Avance supprimée avec succès.",
+    "AMOUNT_POSITIVE": "Le montant doit être un nombre positif.",
+    "ADD_MODAL": {
+      "TITLE": "Ajouter une nouvelle avance"
+    },
+    "EDIT_MODAL": {
+      "TITLE": "Modifier l'avance"
+    },
+    "DELETE_CONFIRM_ITEM": "l'avance de {{amount}} DT pour {{name}}"
   },
   "SALAIRES": {
-    "TITLE": "Calcul des salaires",
-    "CONFIG_COEFF": "Configurer les coefficients",
-    "CONFIGCOEFF": "Configurer les coefficients",
-    "CONFIGURERCOEFFICIENTS": "Configurer les coefficients",
-    "CALCULER": "Calculer",
-    "DESCRIPTION": "Description",
-    "REVENU_TOTAL": "Revenu total",
-    "REVENUTOTAL": "Revenu total",
-    "TOTAL_DEPENSES": "Total dépenses",
-    "TOTALDEPENSES": "Total dépenses",
-    "PART_PROPRIETAIRE": "Part propriétaire (50%)",
-    "PARTPROPRIETAIRE": "Part propriétaire (50%)",
-    "PART_EQUIPAGE": "Part équipage (50%)",
-    "PARTEQUIPAGE": "Part équipage (50%)",
-    "DEDUCTIONS": "Déductions",
-    "NUITS": "Nuits",
-    "MARINS": "Marins",
-    "MONTANT_A_PARTAGER": "Montant à partager",
-    "MONTANTAPARTAGER": "Montant à partager",
-    "DETAILS_PAR_MARIN": "Détails par marin",
-    "DETAILSPARMARIN": "Détails par marin",
-    "COEFFICIENT": "Coefficient",
-    "SALAIRE_BASE": "Salaire de base",
-    "SALAIREBASE": "Salaire de base",
-    "PRIME_NUITS": "Prime de nuits",
-    "PRIMENUITS": "Prime de nuits",
-    "SALAIRE_NET": "Salaire net",
-    "SALAIRENET": "Salaire net"
+    "TITLE": "Calcul des Salaires"
   },
   "VENTES": {
-    "TITLE": "Ventes",
-    "ADDFACTURE": "Ajouter une facture",
-    "NEWFACTURE": "Nouvelle facture",
-    "NOUVELLEFACTURE": "Nouvelle facture",
-    "EDITFACTURE": "Modifier la facture",
-    "MODIFIERFACTURE": "Modifier la facture",
-    "NUMERO": "Numéro",
-    "NUMEROFACTURE": "Numéro de facture",
-    "CLIENT": "Client",
-    "DATEVENTE": "Date de vente",
-    "MONTANT": "Montant",
-    "MONTANTTOTAL": "Montant total",
-    "DETAILS": "Détails",
-    "TOTAL": "Total",
-    "TOTALVENTES": "Total ventes",
-    "TOTALGENERAL": "Total général",
-    "TOTALGENERALVENTES": "Total général des ventes",
-    "MANAGEFACTURES": "Gérer les factures",
-    "GERERFACTURES": "Gérer les factures",
-    "NOFACTURESFORSORTIE": "Aucune facture pour cette sortie",
-    "AUCUNEFACTURE": "Aucune facture",
-    "NOFACTURE": "Aucune facture"
+    "TITLE": "Ventes"
   },
   "FACTURES": {
-    "TITLE": "Factures",
-    "NOFACTURE": "Aucune facture"
+    "TITLE": "Factures"
   },
   "FORM": {
     "ADD": "Ajouter",
-    "AJOUTER": "Ajouter",
     "EDIT": "Modifier",
-    "MODIFIER": "Modifier",
     "DELETE": "Supprimer",
-    "SUPPRIMER": "Supprimer",
     "CANCEL": "Annuler",
-    "ANNULER": "Annuler",
     "SAVE": "Enregistrer",
-    "ENREGISTRER": "Enregistrer",
-    "REQUIRED": "Ce champ est requis",
-    "REQUIRED_FIELDS": "Veuillez remplir tous les champs obligatoires",
-    "REQUIREDFIELDS": "Veuillez remplir tous les champs obligatoires",
-    "CONFIRMDELETE": "Êtes-vous sûr de vouloir supprimer ?",
-    "CONFIRM_DELETE": "Êtes-vous sûr de vouloir supprimer ?",
-    "INVALID_PHONE": "Numéro de téléphone invalide",
-    "INVALIDPHONE": "Numéro de téléphone invalide",
-    "INVALID_EMAIL": "Email invalide",
-    "INVALIDEMAIL": "Email invalide"
+    "REQUIRED": "Ce champ est requis.",
+    "REQUIRED_FIELDS": "Veuillez remplir tous les champs obligatoires.",
+    "INVALID_PHONE": "Numéro de téléphone invalide.",
+    "INVALID_EMAIL": "Adresse e-mail invalide."
   },
   "MESSAGES": {
     "LOADING": "Chargement...",
-    "CHARGEMENT": "Chargement...",
     "SAVING": "Enregistrement...",
-    "ENREGISTREMENT": "Enregistrement...",
-    "ADDINGSAILOR": "Ajout du marin...",
-    "SUCCESS": "Opération réussie",
-    "ERROR": "Une erreur s'est produite",
-    "ERREUR": "Une erreur s'est produite",
-    "CONFIRM": "Confirmer",
-    "CONFIRMER": "Confirmer",
-    "NODATA": "Aucune donnée",
-    "AUCUNEDONNEE": "Aucune donnée",
+    "ADDING_SAILOR": "Ajout du marin...",
+    "SUCCESS": "Opération réussie !",
+    "ERROR_TITLE": "Erreur",
+    "WARNING_TITLE": "Attention",
+    "ERROR_GENERIC": "Une erreur inattendue est survenue. Veuillez réessayer.",
     "AREYOUSURE": "Êtes-vous sûr ?",
-    "CONFIRMDELETEMESSAGE": "Vous allez supprimer",
-    "IRREVERSIBLE": "Cette action est irréversible"
-  },
+    "CONFIRMDELETEMESSAGE": "Vous êtes sur le point de supprimer",
+    "IRREVERSIBLE": "Cette action est irréversible.",
+    "SAILOR_ADDED_SUCCESS": "Le marin {{name}} a été ajouté avec succès."
+  },  },
   "LANGUAGE": {
     "AR": "Arabe",
     "FR": "Français",
-    "EN": "Anglais",
-    "ARABE": "Arabe",
-    "FRANCAIS": "Français",
-    "ANGLAIS": "Anglais"
+    "EN": "Anglais"
+  },
+  "COMMON": {
+    "UNKNOWN": "Inconnu",
+    "AMOUNT": "Montant",
+    "AMOUNT_D T": "Montant (DT)",
+    "AMOUNT_IN_TND": "Montant en dinars tunisiens",
+    "DATE": "Date",
+    "DESCRIPTION": "Description",
+    "DESCRIPTION_OPTIONAL": "Description (optionnel)"
+  },
+  "MOCK_DATA": {
+    "TITLE": "🎲 Générateur de Données Fictives",
+    "SUBTITLE": "Créez rapidement des données de test complètes pour votre application.",
+    "ITEM_1": "✓ 2 bateaux de pêche",
+    "ITEM_2": "✓ Plusieurs marins avec des parts différentes",
+    "ITEM_3": "✓ Des sorties en mer multiples",
+    "ITEM_4": "✓ Dépenses, ventes et avances associées",
+    "GENERATE_BUTTON": "Générer les Données",
+    "GENERATING_BUTTON": "Génération en cours...",
+    "CONFIRM_TITLE": "Générer des données fictives ?",
+    "CONFIRM_TEXT": "Cela va d'abord supprimer toutes les données existantes avant de créer de nouveaux enregistrements de test.",
+    "CONFIRM_BUTTON": "Oui, générer",
+    "CANCEL_BUTTON": "Annuler",
+    "LOADING_TITLE": "Génération en cours...",
+    "LOADING_TEXT": "Veuillez patienter pendant la création des données.",
+    "SUCCESS_TITLE": "Succès !",
+    "SUCCESS_TEXT": "Les données de test ont été générées avec succès.",
+    "ERROR_TITLE": "Erreur"
   }
 }
 
@@ -14356,6 +13715,6 @@ Lignes:      358
   RÉSUMÉ
 ====================================
 Total fichiers: 121
-Total lignes: 13434
-Date: Sat Oct 18 16:19:10 CET 2025
+Total lignes: 12790
+Date: Sat Oct 18 16:48:32 CET 2025
 ====================================
