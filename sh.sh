@@ -1,7 +1,6 @@
 #!/bin/sh
 set -e
 
-# ⚠️ IMPORTANT : Le nom EXACT du repo GitHub (avec "ing")
 GITHUB_USER="monsuivibipolaire-eng"
 GITHUB_REPO="LAMBARAHosting"
 
@@ -11,10 +10,6 @@ if [ ! -f "angular.json" ]; then
   echo "❌ Erreur : angular.json introuvable !"
   exit 1
 fi
-
-# Extraire le outputPath
-OUTPUT_PATH=$(node -e "const config = require('./angular.json'); const proj = Object.keys(config.projects)[0]; console.log(config.projects[proj].architect.build.options.outputPath || 'dist/' + proj.toLowerCase())")
-echo "📁 Output path : $OUTPUT_PATH"
 
 echo "📦 Commit des modifications..."
 git add .
@@ -26,13 +21,18 @@ git push origin main
 echo "🏗️ Build avec base-href=/$GITHUB_REPO/..."
 ng build --configuration production --base-href=/$GITHUB_REPO/
 
-echo "✅ Vérification du build..."
-if [ ! -f "$OUTPUT_PATH/index.html" ]; then
-  echo "❌ Erreur : index.html introuvable dans $OUTPUT_PATH"
+# Détection automatique du dossier de build (cherche index.html)
+echo "🔍 Recherche du dossier de build..."
+OUTPUT_PATH=$(find dist/ -name "index.html" -exec dirname {} \; | head -n 1)
+
+if [ -z "$OUTPUT_PATH" ]; then
+  echo "❌ Erreur : index.html introuvable dans dist/"
   echo "Contenu de dist/ :"
-  ls -la dist/
+  find dist/ -type f
   exit 1
 fi
+
+echo "✅ Dossier de build trouvé : $OUTPUT_PATH"
 
 echo "🚀 Déploiement sur GitHub Pages..."
 npx angular-cli-ghpages --dir=$OUTPUT_PATH --repo=https://github.com/$GITHUB_USER/$GITHUB_REPO.git --branch=gh-pages --no-silent
@@ -42,6 +42,5 @@ echo "✅ Déploiement terminé !"
 echo "👉 Attends 2-3 minutes puis visite :"
 echo "   https://$GITHUB_USER.github.io/$GITHUB_REPO/"
 echo ""
-echo "💡 Si tu vois encore des erreurs 404, vide le cache :"
-echo "   - Chrome/Edge : Ctrl+Shift+R (Windows) ou Cmd+Shift+R (Mac)"
-echo "   - Firefox : Ctrl+F5"
+echo "💡 Vide le cache du navigateur :"
+echo "   Cmd+Shift+R (Mac) ou Ctrl+Shift+R (Windows)"
