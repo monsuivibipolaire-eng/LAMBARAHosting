@@ -1,36 +1,32 @@
 #!/bin/sh
 set -e
 
-PROJECT="LAMBARAHost"
+# ⚠️ IMPORTANT : Utilise le nom EXACT de ton repo GitHub
 GITHUB_USER="monsuivibipolaire-eng"
-GITHUB_REPO="$PROJECT"
+GITHUB_REPO="LAMBARAHosting"  # ← Avec "ing" !
 
-echo "📦 Publication sur GitHub et déploiement GitHub Pages..."
+echo "🔧 Vérification de la configuration..."
 
-# 1. S'assurer qu'on est dans le bon dossier
+# Vérifier qu'on est dans le bon dossier
 if [ ! -f "angular.json" ]; then
-  echo "❌ Erreur : angular.json introuvable. Lance ce script depuis la racine du projet Angular !"
+  echo "❌ Erreur : angular.json introuvable !"
   exit 1
 fi
 
-# 2. Vérifier que les modifications sont commitées
-echo "💾 Commit des modifications..."
+echo "📦 Commit des modifications..."
 git add .
-git commit -m "Update: corrections et améliorations" || echo "⚠️ Rien à commiter"
+git commit -m "Fix: correction base-href pour GitHub Pages" || echo "Rien à commiter"
 
-# 3. Push sur GitHub
 echo "🔗 Push sur GitHub..."
 git push origin main
 
-# 4. Build de l'application
-echo "🏗️ Build de l'application Angular..."
-ng build --configuration production
+echo "🏗️ Build avec le bon base-href..."
+ng build --configuration production --base-href=/$GITHUB_REPO/
 
-# 5. Déploiement sur GitHub Pages
 echo "🚀 Déploiement sur GitHub Pages..."
-ng deploy --base-href=/$GITHUB_REPO/
+npx angular-cli-ghpages --dir=dist/lambarahost --repo=https://github.com/$GITHUB_USER/$GITHUB_REPO.git --branch=gh-pages
 
 echo ""
-echo "✅ Publication terminée !"
-echo "👉 Repo GitHub : https://github.com/$GITHUB_USER/$GITHUB_REPO"
-echo "👉 Site déployé : https://$GITHUB_USER.github.io/$GITHUB_REPO/"
+echo "✅ Déploiement terminé !"
+echo "👉 Attends 1-2 minutes puis visite :"
+echo "   https://$GITHUB_USER.github.io/$GITHUB_REPO/"
