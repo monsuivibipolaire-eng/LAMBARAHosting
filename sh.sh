@@ -1,46 +1,59 @@
-#!/bin/sh
-set -e
+#!/bin/bash
 
-GITHUB_USER="monsuivibipolaire-eng"
-GITHUB_REPO="LAMBARAHosting"
+# Script pour corriger le problème de routage du module des marins dans le projet Angular.
 
-echo "🔧 Configuration du déploiement pour $GITHUB_REPO..."
+# Le problème : Le BateauxModule ne sait pas comment charger le MarinsModule.
+# La solution : Ajouter une route enfant au BateauxModule pour charger
+# paresseusement (lazy load) le MarinsModule lorsque l'URL correspond à ':bateauId/marins'.
 
-if [ ! -f "angular.json" ]; then
-  echo "❌ Erreur : angular.json introuvable !"
+BATEAUX_MODULE_PATH="./src/app/bateaux/bateaux.module.ts"
+
+# Vérifier si le fichier existe avant de le modifier
+if [ ! -f "$BATEAUX_MODULE_PATH" ]; then
+  echo "❌ Erreur : Le fichier $BATEAUX_MODULE_PATH n'a pas été trouvé."
+  echo "Veuillez exécuter ce script depuis la racine de votre projet Angular."
   exit 1
 fi
 
-echo "📦 Commit des modifications..."
-git add .
-git commit -m "Fix: base-href corrigé pour $GITHUB_REPO" || echo "Rien à commiter"
+echo "🔧 Application du correctif de routage pour les marins..."
 
-echo "🔗 Push sur GitHub..."
-git push origin main
+# Remplacer le contenu du fichier bateaux.module.ts avec la version corrigée
+cat > "$BATEAUX_MODULE_PATH" << 'EOF'
+import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { RouterModule, Routes } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
 
-echo "🏗️ Build avec base-href=/$GITHUB_REPO/..."
-ng build --configuration production --base-href=/$GITHUB_REPO/
+import { BateauxListComponent } from './bateaux-list.component';
+import { BateauFormComponent } from './bateau-form.component';
 
-# Détection automatique du dossier de build (cherche index.html)
-echo "🔍 Recherche du dossier de build..."
-OUTPUT_PATH=$(find dist/ -name "index.html" -exec dirname {} \; | head -n 1)
+const routes: Routes = [
+  { path: '', component: BateauxListComponent },
+  { path: 'add', component: BateauFormComponent },
+  { path: 'edit/:id', component: BateauFormComponent },
+  // ✅ CORRECTION : Ajout de la route pour charger le module des marins
+  { 
+    path: ':bateauId/marins', 
+    loadChildren: () => import('../marins/marins.module').then(m => m.MarinsModule) 
+  }
+];
 
-if [ -z "$OUTPUT_PATH" ]; then
-  echo "❌ Erreur : index.html introuvable dans dist/"
-  echo "Contenu de dist/ :"
-  find dist/ -type f
-  exit 1
-fi
+@NgModule({
+  declarations: [
+    BateauxListComponent,
+    BateauFormComponent
+  ],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    FormsModule,
+    RouterModule.forChild(routes),
+    TranslateModule
+  ]
+})
+export class BateauxModule { }
+EOF
 
-echo "✅ Dossier de build trouvé : $OUTPUT_PATH"
-
-echo "🚀 Déploiement sur GitHub Pages..."
-npx angular-cli-ghpages --dir=$OUTPUT_PATH --repo=https://github.com/$GITHUB_USER/$GITHUB_REPO.git --branch=gh-pages --no-silent
-
-echo ""
-echo "✅ Déploiement terminé !"
-echo "👉 Attends 2-3 minutes puis visite :"
-echo "   https://$GITHUB_USER.github.io/$GITHUB_REPO/"
-echo ""
-echo "💡 Vide le cache du navigateur :"
-echo "   Cmd+Shift+R (Mac) ou Ctrl+Shift+R (Windows)"
+echo "✅ Le fichier $BATEAUX_MODULE_PATH a été mis à jour avec succès."
+echo "Le problème de routage des marins devrait être résolu."

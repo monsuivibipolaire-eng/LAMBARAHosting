@@ -6,16 +6,16 @@ import { TranslateModule } from '@ngx-translate/core';
 
 import { BateauxListComponent } from './bateaux-list.component';
 import { BateauFormComponent } from './bateau-form.component';
-
+import { MarinsListComponent } from '../marins/marins-list.component';
+import { MarinFormComponent } from '../marins/marin-form.component';
 const routes: Routes = [
   { path: '', component: BateauxListComponent },
   { path: 'add', component: BateauFormComponent },
-  { path: 'edit/:id', component: BateauFormComponent },
-  // ✅ CORRECTION : Ajout de la route pour charger le module des marins
-  { 
-    path: ':bateauId/marins', 
-    loadChildren: () => import('../marins/marins.module').then(m => m.MarinsModule) 
-  }
+  { path: 'edit/:bateauId', component: BateauFormComponent },
+  { path: ':bateauId/marins', component: MarinsListComponent },
+  { path: ':bateauId/marins/add', component: MarinFormComponent },
+  // >>> Recommandé d’ajouter :
+  { path: ':bateauId/marins/:marinId/edit', component: MarinFormComponent },
 ];
 
 @NgModule({
