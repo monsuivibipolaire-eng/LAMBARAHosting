@@ -5,6 +5,7 @@ import { SelectedBoatService } from '../services/selected-boat.service';
 import { SortieService } from '../services/sortie.service';
 import { AlertService } from '../services/alert.service';
 import { Bateau } from '../models/bateau.model';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   standalone: false,
@@ -25,7 +26,8 @@ export class SortieFormComponent implements OnInit {
     private alertService: AlertService,
     private route: ActivatedRoute,
     private router: Router,
-    private selectedBoatService: SelectedBoatService
+    private selectedBoatService: SelectedBoatService,
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
@@ -34,7 +36,7 @@ export class SortieFormComponent implements OnInit {
     
     this.selectedBoat = this.selectedBoatService.getSelectedBoat();
     if (!this.selectedBoat && !this.isEditMode) {
-      this.alertService.error('Veuillez d\'abord sélectionner un bateau');
+      this.alertService.error(this.translate.instant('BOATS.NO_BOAT_SELECTED_DETAILS'));
       this.router.navigate(['/dashboard/bateaux']);
       return;
     }
@@ -50,9 +52,7 @@ export class SortieFormComponent implements OnInit {
 
     this.form.get('bateauId')?.disable();
 
-    if (this.isEditMode) {
-      this.loadSortie();
-    }
+    if (this.isEditMode) { this.loadSortie(); }
   }
 
   loadSortie(): void {
@@ -66,46 +66,37 @@ export class SortieFormComponent implements OnInit {
   }
 
   formatDate(date: any): string {
-    if (date?.toDate) {
-      return date.toDate().toISOString().split('T')[0];
-    }
-    if (date instanceof Date) {
-      return date.toISOString().split('T')[0];
-    }
+    if (date?.toDate) { return date.toDate().toISOString().split('T')[0]; }
+    if (date instanceof Date) { return date.toISOString().split('T')[0]; }
     return '';
   }
 
   async onSubmit(): Promise<void> {
     if (this.form.valid) {
       this.loading = true;
-      this.alertService.loading('Enregistrement en cours...');
-
+      this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
       const data = {
         ...this.form.getRawValue(),
         dateDepart: new Date(this.form.value.dateDepart),
         dateRetour: new Date(this.form.value.dateRetour)
       };
-
       try {
         if (this.isEditMode) {
           await this.sortieService.updateSortie(this.id!, data);
-          this.alertService.close();
-          await this.alertService.success('La sortie a été modifiée avec succès', 'Modification réussie!');
+          this.alertService.success(this.translate.instant('SORTIES.SUCCESS_UPDATE'));
         } else {
           await this.sortieService.addSortie(data);
-          this.alertService.close();
-          await this.alertService.success('La sortie a été ajoutée avec succès', 'Ajout réussi!');
+          this.alertService.success(this.translate.instant('SORTIES.SUCCESS_ADD'));
         }
         this.router.navigate(['/dashboard/sorties']);
       } catch (error) {
-        this.alertService.close();
-        this.alertService.error('Erreur lors de l\'enregistrement');
+        this.alertService.error();
       } finally {
         this.loading = false;
       }
     } else {
       this.markFormGroupTouched(this.form);
-      this.alertService.warning('Veuillez remplir tous les champs requis', 'Formulaire incomplet');
+      this.alertService.warning(this.translate.instant('FORM.REQUIRED_FIELDS'));
     }
   }
 
@@ -115,12 +106,6 @@ export class SortieFormComponent implements OnInit {
     });
   }
 
-  cancel(): void {
-    this.router.navigate(['/dashboard/sorties']);
-  }
-
-  // ✅ MÉTHODE POUR LE BOUTON "PRÉCÉDENT"
-  goBack(): void {
-    this.cancel();
-  }
+  cancel(): void { this.router.navigate(['/dashboard/sorties']); }
+  goBack(): void { this.cancel(); }
 }

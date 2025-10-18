@@ -1,6 +1,6 @@
 ====================================
   Projet Angular - Code Source
-  Date: Sat Oct 18 22:24:33 CET 2025
+  Date: Sat Oct 18 23:11:29 CET 2025
 ====================================
 
 Arborescence du projet:
@@ -124,8 +124,7 @@ Arborescence du projet:
 │   │   ├── salaires-list.component.html
 │   │   ├── salaires-list.component.html.bak
 │   │   ├── salaires-list.component.scss
-│   │   ├── salaires-list.component.ts
-│   │   └── salaires-list.component.ts.bak
+│   │   └── salaires-list.component.ts
 │   ├── services
 │   │   ├── alert.service.ts
 │   │   ├── avance.service.ts
@@ -183,10 +182,7 @@ Arborescence du projet:
 │   │   │   ├── pointage.component.ts
 │   │   │   └── pointage.component.ts.bak
 │   │   ├── salaires
-│   │   │   ├── salaires.component.html
 │   │   │   ├── salaires.component.html.bak
-│   │   │   ├── salaires.component.scss
-│   │   │   ├── salaires.component.ts
 │   │   │   └── salaires.component.ts.bak
 │   │   ├── sortie-details.component.html
 │   │   ├── sortie-details.component.html.bak
@@ -214,9 +210,7 @@ Arborescence du projet:
 ├── assets
 │   └── i18n
 │       ├── ar.json
-│       ├── ar.json.bak
 │       ├── en.json
-│       ├── en.json.bak
 │       ├── fr.json
 │       └── fr.json.bak
 ├── environments
@@ -232,7 +226,7 @@ Arborescence du projet:
 │   └── _btn-back.scss
 └── styles.scss
 
-29 directories, 197 files
+29 directories, 191 files
 
 ====================================
   FICHIERS SOURCE
@@ -328,7 +322,7 @@ export const appConfig: ApplicationConfig = {
 
 ====================================
 FICHIER: ./src/app/app.module.ts
-Lignes:       60
+Lignes:       46
 ====================================
 
 import { NgModule } from '@angular/core';
@@ -338,18 +332,14 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
-
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-
 import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
 import { provideAuth, getAuth } from '@angular/fire/auth';
 import { provideFirestore, getFirestore } from '@angular/fire/firestore';
-
 import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
 import { TranslateHttpLoader } from '@ngx-translate/http-loader';
 import { environment } from '../environments/environment';
-
 import { AuthComponent } from './auth/auth.component';
 import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
@@ -359,19 +349,10 @@ export function createTranslateLoader(http: HttpClient) {
 }
 
 @NgModule({
-  declarations: [
-    AppComponent
-  ],
+  declarations: [AppComponent],
   imports: [
-    RouterModule,
-    AuthComponent,
-    BrowserModule,
-    CommonModule,
-    FormsModule,
-    ReactiveFormsModule,
-    BrowserAnimationsModule,
-    AppRoutingModule,
-    HttpClientModule,
+    RouterModule, AuthComponent, BrowserModule, CommonModule, FormsModule,
+    ReactiveFormsModule, BrowserAnimationsModule, AppRoutingModule, HttpClientModule,
     TranslateModule.forRoot({
       defaultLanguage: 'ar',
       loader: {
@@ -382,8 +363,7 @@ export function createTranslateLoader(http: HttpClient) {
     })
   ],
   providers: [
-    AuthService,
-    AuthGuard,
+    AuthService, AuthGuard,
     provideFirebaseApp(() => initializeApp(environment.firebase)),
     provideAuth(() => getAuth()),
     provideFirestore(() => getFirestore())
@@ -1924,7 +1904,7 @@ export class MockDataComponent {
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: this.translate.instant('MOCK_DATA.CONFIRM_BUTTON'),
-      cancelButtonText: this.translate.instant('MOCK_DATA.CANCEL_BUTTON'),
+      cancelButtonText: this.translate.instant('FORM.CANCEL'),
       confirmButtonColor: '#3b82f6'
     });
 
@@ -2138,48 +2118,47 @@ export interface Pointage {
 
 ====================================
 FICHIER: ./src/app/models/salaire.model.ts
-Lignes:       40
+Lignes:       39
 ====================================
 
-export interface CoeffSalaire {
-  marinId: string;
-  coefficient: number; // Pourcentage du partage équipage (ex: 20 pour 20%)
-}
+import { Depense } from "./depense.model";
+import { FactureVente } from "./facture-vente.model";
 
+// Modèle pour sauvegarder un calcul complet
 export interface CalculSalaire {
-  sortieId: string;
+  id?: string;
+  bateauId: string;
+  sortiesIds: string[];
+  sortiesDestinations: string[]; // Pour un affichage facile
   dateCalcul: Date;
   
-  // Revenus
+  // Résumé financier
   revenuTotal: number;
-  
-  // Dépenses
   totalDepenses: number;
-  
-  // Part propriétaire et équipage
-  partProprietaire: number; // 50%
-  partEquipage: number; // 50%
-  
-  // Déduction nuits (5 DT par nuit par marin)
-  nbNuits: number;
-  nbMarins: number;
+  beneficeNet: number;
+  partProprietaire: number;
+  partEquipage: number;
   deductionNuits: number;
-  
-  // Montant à partager entre équipage
   montantAPartager: number;
   
   // Détails par marin
   detailsMarins: DetailSalaireMarin[];
+
+  // ✅ Transactions utilisées pour le calcul
+  factures?: FactureVente[];
+  depenses?: Depense[];
 }
 
+// Modèle pour les détails de chaque marin au sein d'un calcul
 export interface DetailSalaireMarin {
   marinId: string;
   marinNom: string;
-  coefficient: number;
-  salaireBase: number; // Part selon coefficient
-  primenuits: number; // 5 DT × nombre de nuits
-  avances: number;
-  salaireNet: number; // salaireBase + primeNuits - avances
+  part: number;
+  salaireBrut: number;
+  primeNuits: number;
+  totalAvances: number;
+  totalPaiements: number;
+  resteAPayer: number;
 }
 
 ====================================
@@ -2202,7 +2181,7 @@ export interface Sortie {
 
 ====================================
 FICHIER: ./src/app/salaires/salaires-list.component.ts
-Lignes:      206
+Lignes:      292
 ====================================
 
 import { Component, OnInit } from '@angular/core';
@@ -2224,18 +2203,9 @@ import { Sortie } from '../models/sortie.model';
 import { Marin } from '../models/marin.model';
 import { Bateau } from '../models/bateau.model';
 import { SalaireService } from '../services/salaire.service';
-import { CalculSalaire } from '../models/salaire.model';
-
-interface SalaireDetail {
-  marinId: string;
-  marinNom: string;
-  part: number;
-  salaireBrut: number;
-  primeNuits: number;
-  totalAvances: number;
-  totalPaiements: number;
-  resteAPayer: number;
-}
+import { CalculSalaire, DetailSalaireMarin } from '../models/salaire.model';
+import { FactureVente } from '../models/facture-vente.model';
+import { Depense } from '../models/depense.model';
 
 @Component({
   selector: 'app-salaires-list',
@@ -2254,6 +2224,9 @@ export class SalairesListComponent implements OnInit {
   sortiesCalculees: Sortie[] = [];
   historiqueCalculs: { [sortieId: string]: CalculSalaire[] } = {};
 
+  dernierCalcul: CalculSalaire | null = null;
+  accordionState: { [key: string]: boolean } = { summary: true, sharing: true, details: true };
+
   loading = true;
 
   constructor(
@@ -2271,24 +2244,16 @@ export class SalairesListComponent implements OnInit {
 
   ngOnInit(): void {
     this.selectedBoat = this.selectedBoatService.getSelectedBoat();
-    
-    if (this.selectedBoat) {
-      this.loadData();
-    } else {
-      this.loading = false;
-    }
+    if (this.selectedBoat) { this.loadData(); } else { this.loading = false; }
   }
 
   loadData(): void {
     if (!this.selectedBoat?.id) return;
     this.loading = true;
-
     const boatId = this.selectedBoat.id;
 
     this.sortieService.getSortiesByBateau(boatId).subscribe((sorties: Sortie[]) => {
       this.sortiesOuvertes = sorties.filter(s => s.statut === 'terminee' && !s.salaireCalcule);
-      
-      // ✅ CORRECTION: Gère correctement la conversion de Timestamp ou Date
       this.sortiesCalculees = sorties.filter(s => s.salaireCalcule === true)
         .sort((a, b) => {
           const dateA = (a.dateRetour as any).toDate ? (a.dateRetour as any).toDate().getTime() : new Date(a.dateRetour).getTime();
@@ -2305,15 +2270,13 @@ export class SalairesListComponent implements OnInit {
 
   selectTab(tabName: 'ouvertes' | 'historique'): void {
     this.activeTab = tabName;
+    this.dernierCalcul = null;
   }
 
   toggleSortie(sortieId: string): void {
+    this.dernierCalcul = null;
     const index = this.selectedSortiesIds.indexOf(sortieId);
-    if (index > -1) {
-      this.selectedSortiesIds.splice(index, 1);
-    } else {
-      this.selectedSortiesIds.push(sortieId);
-    }
+    if (index > -1) { this.selectedSortiesIds.splice(index, 1); } else { this.selectedSortiesIds.push(sortieId); }
   }
 
   isSortieSelected(sortieId: string): boolean {
@@ -2325,67 +2288,66 @@ export class SalairesListComponent implements OnInit {
       this.alertService.error(this.translate.instant('SALAIRES.ERROR_NO_SORTIE'));
       return;
     }
-
     const totalParts = this.marins.reduce((sum, marin) => sum + (marin.part || 0), 0);
     if (totalParts <= 0) {
-        this.alertService.error(this.translate.instant('SALAIRES.ERROR_NO_PARTS'));
-        return;
+      this.alertService.error(this.translate.instant('SALAIRES.ERROR_NO_PARTS'));
+      return;
     }
 
     try {
       this.alertService.loading(this.translate.instant('MESSAGES.CALCULATING'));
-      
       const allSorties = [...this.sortiesOuvertes, ...this.sortiesCalculees];
       const selectedSorties = allSorties.filter(s => this.selectedSortiesIds.includes(s.id!));
 
-      const facturesPromises = this.selectedSortiesIds.map(sortieId =>
-        this.factureService.getFacturesBySortie(sortieId).pipe(take(1)).toPromise()
-      );
+      const facturesPromises = this.selectedSortiesIds.map(id => this.factureService.getFacturesBySortie(id).pipe(take(1)).toPromise());
       const allFactures = await Promise.all(facturesPromises);
       const revenuTotal = allFactures.flat().reduce((sum, f) => sum + (f?.montantTotal || 0), 0);
       
-      const depensesPromises = this.selectedSortiesIds.map(sortieId =>
-        this.depenseService.getDepensesBySortie(sortieId).pipe(take(1)).toPromise()
-      );
+      const depensesPromises = this.selectedSortiesIds.map(id => this.depenseService.getDepensesBySortie(id).pipe(take(1)).toPromise());
       const allDepenses = await Promise.all(depensesPromises);
-      const totalDepenses = allDepenses.flat().reduce((sum: number, d: any) => sum + (d?.montant || 0), 0);
+      const totalDepenses = allDepenses.flat().reduce((sum, d: any) => sum + (d?.montant || 0), 0);
       
       const beneficeNet = revenuTotal - totalDepenses;
       const partProprietaire = beneficeNet * 0.5;
       const partEquipage = beneficeNet * 0.5;
-      
-      const totalNuits = selectedSorties.reduce((total, sortie) => total + this.calculerNombreNuits(sortie), 0);
-      
+      const totalNuits = selectedSorties.reduce((total, s) => total + this.calculerNombreNuits(s), 0);
       const deductionNuits = totalNuits * this.marins.length * 5;
       const montantAPartager = partEquipage - deductionNuits;
 
+      let detailsMarins: DetailSalaireMarin[] = [];
       for (const marin of this.marins) {
         const part = marin.part || 0;
         const salaireBrut = totalParts > 0 ? (montantAPartager * part) / totalParts : 0;
         const primeNuits = totalNuits * 5;
-
         const avances = await this.avanceService.getAvancesByMarin(marin.id!).pipe(take(1)).toPromise();
         const totalAvances = avances?.reduce((sum, a) => sum + a.montant, 0) || 0;
-
         const paiements = await this.paiementService.getPaiementsByMarin(marin.id!).pipe(take(1)).toPromise();
         const totalPaiements = paiements?.reduce((sum, p) => sum + p.montant, 0) || 0;
+        const resteAPayer = salaireBrut + primeNuits - totalAvances - totalPaiements;
+        detailsMarins.push({ marinId: marin.id!, marinNom: `${marin.prenom} ${marin.nom}`, part, salaireBrut, primeNuits, totalAvances, totalPaiements, resteAPayer });
       }
+
+      const calculData: Omit<CalculSalaire, 'id'> = {
+        bateauId: this.selectedBoat!.id!,
+        sortiesIds: this.selectedSortiesIds,
+        sortiesDestinations: selectedSorties.map(s => s.destination),
+        dateCalcul: new Date(),
+        revenuTotal, totalDepenses, beneficeNet, partProprietaire, partEquipage, deductionNuits, montantAPartager, detailsMarins,
+        factures: allFactures.flat() as FactureVente[],
+        depenses: allDepenses.flat() as Depense[]
+      };
+      await this.salaireService.saveCalculSalaire(calculData);
 
       for (const sortieId of this.selectedSortiesIds) {
         await this.sortieService.updateSortie(sortieId, { salaireCalcule: true });
       }
 
       this.alertService.close();
+      this.dernierCalcul = calculData as CalculSalaire;
+      this.accordionState = { summary: true, sharing: true, details: true };
       this.selectedSortiesIds = [];
-      this.loadData(); 
-      this.activeTab = 'historique'; 
-
-      await Swal.fire({
-        title: this.translate.instant('SALAIRES.CALCUL_SUCCESS_TITLE'),
-        icon: 'success',
-        confirmButtonColor: '#10b981'
-      });
-
+      this.loadData();
+      this.alertService.toast(this.translate.instant('SALAIRES.CALCUL_SUCCESS_TITLE'), 'success');
     } catch (error) {
       console.error('Erreur:', error);
       this.alertService.close();
@@ -2394,7 +2356,106 @@ export class SalairesListComponent implements OnInit {
   }
 
   async viewCalculDetails(sortie: Sortie): Promise<void> {
-    this.alertService.warning('Fonctionnalité à venir', 'Historique');
+    this.alertService.loading(this.translate.instant('MESSAGES.LOADING_DETAILS'));
+    if (this.historiqueCalculs[sortie.id!]) {
+      this.displayCalculInView(this.historiqueCalculs[sortie.id!][0]);
+      return;
+    }
+    this.salaireService.getCalculsBySortieId(sortie.id!).pipe(take(1)).subscribe({
+        next: async (calculs) => {
+            if (calculs && calculs.length > 0) {
+                this.historiqueCalculs[sortie.id!] = calculs;
+                this.displayCalculInView(calculs[0]);
+            } else {
+                this.alertService.close();
+                const res = await Swal.fire({
+                    title: this.translate.instant('SALAIRES.HISTORY.NO_DATA_FOUND_TITLE'), text: this.translate.instant('SALAIRES.HISTORY.NO_DATA_FOUND_TEXT'),
+                    icon: 'info', showCancelButton: true, confirmButtonText: this.translate.instant('SALAIRES.HISTORY.RECALCULATE_BTN'),
+                    cancelButtonText: this.translate.instant('FORM.CANCEL'), confirmButtonColor: '#10b981'
+                });
+                if (res.isConfirmed) { await this.reopenSortieForRecalculation(sortie); }
+            }
+        },
+        error: (err) => { console.error(err); this.alertService.error(); }
+    });
+  }
+  
+  async reopenSortieForRecalculation(sortie: Sortie): Promise<void> {
+    try {
+        this.alertService.loading(this.translate.instant('MESSAGES.UPDATING'));
+        await this.sortieService.updateSortie(sortie.id!, { salaireCalcule: false });
+        this.loadData();
+        this.activeTab = 'ouvertes';
+        this.alertService.success(this.translate.instant('SALAIRES.HISTORY.MOVED_FOR_RECALC'));
+    } catch (error) { console.error(error); this.alertService.error(); }
+  }
+
+  private displayCalculInView(calcul: CalculSalaire): void {
+    this.dernierCalcul = calcul;
+    this.accordionState = { summary: true, sharing: true, details: true };
+    this.activeTab = 'historique';
+    this.alertService.close();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  showRevenueDetails(): void {
+      if (!this.dernierCalcul || !this.dernierCalcul.factures) return;
+      const t = { title: this.translate.instant('SALAIRES.DETAILS_MODAL.REVENUE_TITLE'), invoiceNum: this.translate.instant('SALAIRES.DETAILS_MODAL.INVOICE_NUM'), client: this.translate.instant('SALAIRES.DETAILS_MODAL.CLIENT'), date: this.translate.instant('COMMON.DATE'), amount: this.translate.instant('COMMON.AMOUNT') };
+      const rows = this.dernierCalcul.factures.map(f => `<tr><td>${f.numeroFacture}</td><td>${f.client}</td><td>${this.formatDate(f.dateVente)}</td><td class="amount">${f.montantTotal.toFixed(2)} DT</td></tr>`).join('');
+      const html = `<div class="details-modal-content"><table class="details-table"><thead><tr><th>${t.invoiceNum}</th><th>${t.client}</th><th>${t.date}</th><th class="amount">${t.amount}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      Swal.fire({ title: t.title, html: html, width: '800px', showCloseButton: true, showConfirmButton: false });
+  }
+
+  showExpenseDetails(): void {
+      if (!this.dernierCalcul || !this.dernierCalcul.depenses) return;
+      const t = { title: this.translate.instant('SALAIRES.DETAILS_MODAL.EXPENSE_TITLE'), type: this.translate.instant('EXPENSES.TYPE'), date: this.translate.instant('COMMON.DATE'), description: this.translate.instant('COMMON.DESCRIPTION'), amount: this.translate.instant('COMMON.AMOUNT') };
+      const rows = this.dernierCalcul.depenses.map(d => `<tr><td>${this.translate.instant('EXPENSES.TYPES.' + d.type.toUpperCase())}</td><td>${this.formatDate(d.date)}</td><td>${d.description || '-'}</td><td class="amount">${d.montant.toFixed(2)} DT</td></tr>`).join('');
+      const html = `<div class="details-modal-content"><table class="details-table"><thead><tr><th>${t.type}</th><th>${t.date}</th><th>${t.description}</th><th class="amount">${t.amount}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      Swal.fire({ title: t.title, html: html, width: '800px', showCloseButton: true, showConfirmButton: false });
+  }
+
+  // ✅ NOUVELLE MÉTHODE POUR ENREGISTRER UN PAIEMENT
+  async enregistrerPaiement(detail: DetailSalaireMarin): Promise<void> {
+    const { value: montant } = await Swal.fire({
+      title: this.translate.instant('SALAIRES.PAYMENT_MODAL_TITLE', { name: detail.marinNom }),
+      input: 'number',
+      inputLabel: this.translate.instant('SALAIRES.PAYMENT_MODAL_LABEL', { amount: detail.resteAPayer.toFixed(2) }),
+      inputValue: detail.resteAPayer > 0 ? detail.resteAPayer.toFixed(2) : 0,
+      showCancelButton: true,
+      confirmButtonText: this.translate.instant('FORM.SAVE'),
+      cancelButtonText: this.translate.instant('FORM.CANCEL'),
+      confirmButtonColor: '#10b981',
+      inputValidator: (value) => {
+        if (!value) { return this.translate.instant('FORM.REQUIRED'); }
+        const amount = parseFloat(value);
+        if (amount <= 0) { return this.translate.instant('SALAIRES.PAYMENT_MODAL.ERROR_POSITIVE'); }
+        if (amount > detail.resteAPayer) { return this.translate.instant('SALAIRES.PAYMENT_MODAL.ERROR_EXCEED'); }
+        return null;
+      }
+    });
+
+    if (montant) {
+      try {
+        this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
+        const montantPaye = parseFloat(montant);
+
+        await this.paiementService.addPaiement({
+          marinId: detail.marinId,
+          montant: montantPaye,
+          datePaiement: new Date(),
+          sortiesIds: this.dernierCalcul!.sortiesIds
+        });
+
+        // Mettre à jour l'état local pour un rafraîchissement instantané
+        detail.totalPaiements += montantPaye;
+        detail.resteAPayer -= montantPaye;
+
+        this.alertService.success(this.translate.instant('SALAIRES.PAYMENT_SUCCESS'));
+      } catch (error) {
+        console.error('Erreur:', error);
+        this.alertService.error();
+      }
+    }
   }
 
   private calculerNombreNuits(sortie: Sortie): number {
@@ -2410,31 +2471,29 @@ export class SalairesListComponent implements OnInit {
     if (date instanceof Date) return date.toLocaleDateString('fr-FR');
     return '';
   }
+
+  toggleAccordion(panel: string): void {
+    this.accordionState[panel] = !this.accordionState[panel];
+  }
 }
 
 ====================================
 FICHIER: ./src/app/services/alert.service.ts
-Lignes:       82
+Lignes:       58
 ====================================
 
 import { Injectable } from '@angular/core';
 import Swal from 'sweetalert2';
 import { TranslateService } from '@ngx-translate/core';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class AlertService {
-
   constructor(private translate: TranslateService) {}
 
   async success(message: string, title?: string): Promise<void> {
     await Swal.fire({
       title: title || this.translate.instant('MESSAGES.SUCCESS'),
-      text: message,
-      icon: 'success',
-      confirmButtonColor: '#3b82f6',
-      confirmButtonText: 'OK'
+      text: message, icon: 'success', confirmButtonColor: '#3b82f6', confirmButtonText: 'OK'
     });
   }
 
@@ -2442,19 +2501,14 @@ export class AlertService {
     await Swal.fire({
       title: title || this.translate.instant('MESSAGES.ERROR_TITLE'),
       text: message || this.translate.instant('MESSAGES.ERROR_GENERIC'),
-      icon: 'error',
-      confirmButtonColor: '#ef4444',
-      confirmButtonText: 'OK'
+      icon: 'error', confirmButtonColor: '#ef4444', confirmButtonText: 'OK'
     });
   }
 
   async warning(message: string, title?: string): Promise<void> {
     await Swal.fire({
       title: title || this.translate.instant('MESSAGES.WARNING_TITLE'),
-      text: message,
-      icon: 'warning',
-      confirmButtonColor: '#f59e0b',
-      confirmButtonText: 'OK'
+      text: message, icon: 'warning', confirmButtonColor: '#f59e0b', confirmButtonText: 'OK'
     });
   }
 
@@ -2462,11 +2516,8 @@ export class AlertService {
     const result = await Swal.fire({
       title: this.translate.instant('MESSAGES.AREYOUSURE'),
       html: `${this.translate.instant('MESSAGES.CONFIRMDELETEMESSAGE')} <b>${itemName}</b> ?<br>${this.translate.instant('MESSAGES.IRREVERSIBLE')}`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: this.translate.instant('FORM.DELETE'),
+      icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280', confirmButtonText: this.translate.instant('FORM.DELETE'),
       cancelButtonText: this.translate.instant('FORM.CANCEL')
     });
     return result.isConfirmed;
@@ -2475,27 +2526,17 @@ export class AlertService {
   loading(message?: string): void {
     Swal.fire({
       title: message || this.translate.instant('MESSAGES.LOADING'),
-      allowOutsideClick: false,
-      allowEscapeKey: false,
-      didOpen: () => {
-        Swal.showLoading();
-      }
+      allowOutsideClick: false, allowEscapeKey: false,
+      didOpen: () => { Swal.showLoading(); }
     });
   }
 
-  close(): void {
-    Swal.close();
-  }
+  close(): void { Swal.close(); }
 
   toast(message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success'): void {
     Swal.fire({
-      toast: true,
-      position: 'top-end',
-      icon: type,
-      title: message,
-      showConfirmButton: false,
-      timer: 3000,
-      timerProgressBar: true
+      toast: true, position: 'top-end', icon: type, title: message,
+      showConfirmButton: false, timer: 3000, timerProgressBar: true
     });
   }
 }
@@ -3264,55 +3305,32 @@ export class PointageService {
 
 ====================================
 FICHIER: ./src/app/services/salaire.service.ts
-Lignes:       49
+Lignes:       26
 ====================================
 
 import { Injectable } from '@angular/core';
-import { Firestore, collection, addDoc, doc, getDoc, setDoc, collectionData, query, where } from '@angular/fire/firestore';
+import { Firestore, collection, addDoc, collectionData, query, where } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
-import { CoeffSalaire, CalculSalaire } from '../models/salaire.model';
+import { CalculSalaire } from '../models/salaire.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SalaireService {
-  private collectionName = 'coefficients_salaire';
   private calculsSalaireCollection = 'calculs_salaire';
 
   constructor(private firestore: Firestore) {}
 
-  // Récupérer le coefficient d'un marin
-  async getCoefficient(marinId: string): Promise<number> {
-    const coeffDoc = doc(this.firestore, `${this.collectionName}/${marinId}`);
-    const docSnap = await getDoc(coeffDoc);
-    
-    if (docSnap.exists()) {
-      const data = docSnap.data() as CoeffSalaire;
-      return data.coefficient;
-    }
-    return 0; // Par défaut
-  }
-
-  // Sauvegarder le coefficient d'un marin
-  async saveCoefficient(marinId: string, coefficient: number): Promise<void> {
-    const coeffDoc = doc(this.firestore, `${this.collectionName}/${marinId}`);
-    const data: CoeffSalaire = {
-      marinId,
-      coefficient
-    };
-    return await setDoc(coeffDoc, data);
-  }
-
   // Sauvegarder un calcul de salaire
-  async saveCalculSalaire(calcul: CalculSalaire): Promise<any> {
+  async saveCalculSalaire(calcul: Omit<CalculSalaire, 'id'>): Promise<any> {
     const calculsCollection = collection(this.firestore, this.calculsSalaireCollection);
     return await addDoc(calculsCollection, calcul);
   }
 
-  // Récupérer les calculs de salaire d'une sortie
-  getCalculsBySortie(sortieId: string): Observable<CalculSalaire[]> {
+  // Récupérer les calculs de salaire contenant une sortie spécifique
+  getCalculsBySortieId(sortieId: string): Observable<CalculSalaire[]> {
     const calculsCollection = collection(this.firestore, this.calculsSalaireCollection);
-    const q = query(calculsCollection, where('sortieId', '==', sortieId));
+    const q = query(calculsCollection, where('sortiesIds', 'array-contains', sortieId));
     return collectionData(q, { idField: 'id' }) as Observable<CalculSalaire[]>;
   }
 }
@@ -4103,270 +4121,6 @@ export class PointageComponent implements OnInit {
 }
 
 ====================================
-FICHIER: ./src/app/sorties/salaires/salaires.component.ts
-Lignes:      258
-====================================
-
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import Swal from 'sweetalert2';
-
-import { SalaireService } from '../../services/salaire.service';
-import { MarinService } from '../../services/marin.service';
-import { SortieService } from '../../services/sortie.service';
-import { AvanceService } from '../../services/avance.service';
-import { DepenseService } from '../../services/depense.service'; // ✅ CORRECTION: DepenseService au lieu de ExpenseService
-import { AlertService } from '../../services/alert.service';
-
-import { CalculSalaire, DetailSalaireMarin } from '../../models/salaire.model';
-import { Marin } from '../../models/marin.model';
-import { Sortie } from '../../models/sortie.model';
-import { Depense } from '../../models/depense.model'; // ✅ AJOUT: Import du modèle Depense
-
-import { combineLatest } from 'rxjs';
-import { take } from 'rxjs/operators';
-
-@Component({
-  selector: 'app-salaires',
-  standalone: true,
-  imports: [CommonModule, TranslateModule, RouterModule],
-  templateUrl: './salaires.component.html',
-  styleUrls: ['./salaires.component.scss']
-})
-export class SalairesComponent implements OnInit {
-  sortieId!: string;
-  sortie?: Sortie;
-  marins: Marin[] = [];
-  coefficients: { [marinId: string]: number } = {};
-  calcul?: CalculSalaire;
-  loading = true;
-
-  constructor(
-    private route: ActivatedRoute,
-    private salaireService: SalaireService,
-    private marinService: MarinService,
-    private sortieService: SortieService,
-    private avanceService: AvanceService,
-    private depenseService: DepenseService, // ✅ CORRECTION: DepenseService
-    private alertService: AlertService,
-    private translate: TranslateService
-  ) {}
-
-  ngOnInit(): void {
-    this.sortieId = this.route.snapshot.paramMap.get('id')!;
-    this.loadData();
-  }
-
-  async loadData(): Promise<void> {
-    this.sortieService.getSortie(this.sortieId).pipe(take(1)).subscribe(async sortie => {
-      if (sortie && sortie.bateauId) {
-        this.sortie = sortie;
-        
-        this.marinService.getMarinsByBateau(sortie.bateauId).pipe(take(1)).subscribe(async marins => {
-          this.marins = marins;
-          
-          for (const marin of marins) {
-            this.coefficients[marin.id!] = await this.salaireService.getCoefficient(marin.id!);
-          }
-          
-          this.loading = false;
-        });
-      } else {
-        this.loading = false;
-      }
-    });
-  }
-
-  async configureCoefficients(): Promise<void> {
-    const marinsHtml = this.marins.map(marin => `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding: 0.75rem; background: #f9fafb; border-radius: 0.5rem;">
-        <span style="font-weight: 600;">${marin.prenom} ${marin.nom}</span>
-        <input id="coeff-${marin.id}" type="number" value="${this.coefficients[marin.id!] || 0}" min="0" max="100" step="1" 
-               style="width: 80px; padding: 0.5rem; border: 2px solid #e5e7eb; border-radius: 0.375rem; text-align: center;">
-      </div>
-    `).join('');
-
-    const { value: confirmed } = await Swal.fire({
-      title: 'Configuration des coefficients',
-      html: `
-        <div style="text-align: left; max-height: 400px; overflow-y: auto;">
-          <p style="color: #6b7280; margin-bottom: 1rem;">Définissez le pourcentage de la part équipage pour chaque marin (total doit = 100%)</p>
-          ${marinsHtml}
-          <div style="margin-top: 1rem; padding: 1rem; background: #dbeafe; border-radius: 0.5rem;">
-            <strong>Total: <span id="total-coeff">0</span>%</strong>
-          </div>
-        </div>
-        <script>
-          function updateTotal() {
-            let total = 0;
-            ${this.marins.map(m => `total += parseFloat(document.getElementById('coeff-${m.id}').value) || 0;`).join('')}
-            document.getElementById('total-coeff').textContent = total.toFixed(0);
-          }
-          ${this.marins.map(m => `document.getElementById('coeff-${m.id}').addEventListener('input', updateTotal);`).join('')}
-          updateTotal();
-        </script>
-      `,
-      width: '600px',
-      showCancelButton: true,
-      confirmButtonText: 'Enregistrer',
-      cancelButtonText: 'Annuler',
-      confirmButtonColor: '#10b981',
-      preConfirm: () => {
-        const coeffs: { [key: string]: number } = {};
-        let total = 0;
-        
-        for (const marin of this.marins) {
-          const value = parseFloat((document.getElementById(`coeff-${marin.id}`) as HTMLInputElement).value) || 0;
-          coeffs[marin.id!] = value;
-          total += value;
-        }
-        
-        if (Math.abs(total - 100) > 0.01) {
-          Swal.showValidationMessage(`Le total doit être égal à 100% (actuellement: ${total.toFixed(0)}%)`);
-          return false;
-        }
-        
-        return coeffs;
-      }
-    });
-
-    if (confirmed) {
-      try {
-        this.alertService.loading('Enregistrement...');
-        
-        for (const marinId in confirmed) {
-          await this.salaireService.saveCoefficient(marinId, confirmed[marinId]);
-          this.coefficients[marinId] = confirmed[marinId];
-        }
-        
-        this.alertService.close();
-        this.alertService.success('Coefficients enregistrés avec succès!');
-      } catch (error) {
-        console.error('Erreur:', error);
-        this.alertService.error('Erreur lors de l\'enregistrement');
-      }
-    }
-  }
-
-  async calculerSalaires(): Promise<void> {
-    if (!this.sortie) return;
-
-    try {
-      this.alertService.loading('Calcul des salaires en cours...');
-
-      // 1. Récupérer le revenu total
-      const revenuTotal = await this.getRevenuTotal();
-
-      // 2. Récupérer les dépenses - ✅ CORRECTION: typage correct
-      const depenses = await this.depenseService.getDepensesBySortie(this.sortieId).pipe(take(1)).toPromise();
-      const totalDepenses = depenses?.reduce((sum: number, d: Depense) => sum + d.montant, 0) || 0;
-
-      // 3. Calculer les parts
-      const beneficeNet = revenuTotal - totalDepenses;
-      const partProprietaire = beneficeNet * 0.5;
-      const partEquipage = beneficeNet * 0.5;
-
-      // 4. Calculer le nombre de nuits
-      const nbNuits = this.calculerNombreNuits();
-      const nbMarins = this.marins.length;
-      const deductionNuits = nbNuits * nbMarins * 5;
-
-      // 5. Montant à partager
-      const montantAPartager = partEquipage - deductionNuits;
-
-      // 6. Calculer pour chaque marin
-      const detailsMarins: DetailSalaireMarin[] = [];
-
-      for (const marin of this.marins) {
-        const coefficient = this.coefficients[marin.id!] || 0;
-        const salaireBase = (montantAPartager * coefficient) / 100;
-        const primeNuits = nbNuits * 5;
-        
-        // Récupérer les avances
-        const avances = await this.avanceService.getAvancesByMarin(marin.id!).pipe(take(1)).toPromise();
-        const totalAvances = avances?.reduce((sum, a) => sum + a.montant, 0) || 0;
-        
-        const salaireNet = salaireBase + primeNuits - totalAvances;
-
-        detailsMarins.push({
-          marinId: marin.id!,
-          marinNom: `${marin.prenom} ${marin.nom}`,
-          coefficient,
-          salaireBase,
-          primenuits: primeNuits,
-          avances: totalAvances,
-          salaireNet
-        });
-      }
-
-      // 7. Créer le calcul
-      this.calcul = {
-        sortieId: this.sortieId,
-        dateCalcul: new Date(),
-        revenuTotal,
-        totalDepenses,
-        partProprietaire,
-        partEquipage,
-        nbNuits,
-        nbMarins,
-        deductionNuits,
-        montantAPartager,
-        detailsMarins
-      };
-
-      // 8. Sauvegarder
-      await this.salaireService.saveCalculSalaire(this.calcul);
-
-      this.alertService.close();
-      this.alertService.success('Salaires calculés avec succès!');
-
-    } catch (error) {
-      console.error('Erreur:', error);
-      this.alertService.close();
-      this.alertService.error('Erreur lors du calcul');
-    }
-  }
-
-  private async getRevenuTotal(): Promise<number> {
-    const { value } = await Swal.fire({
-      title: 'Revenu total de la sortie',
-      input: 'number',
-      inputLabel: 'Montant en DT',
-      inputPlaceholder: '0.00',
-      showCancelButton: true,
-      confirmButtonText: 'Continuer',
-      cancelButtonText: 'Annuler'
-    });
-
-    return parseFloat(value) || 0;
-  }
-
-  private calculerNombreNuits(): number {
-    if (!this.sortie?.dateDepart || !this.sortie?.dateRetour) return 0;
-
-    const depart = this.sortie.dateDepart instanceof Date 
-      ? this.sortie.dateDepart 
-      : (this.sortie.dateDepart as any).toDate();
-    
-    const retour = this.sortie.dateRetour instanceof Date 
-      ? this.sortie.dateRetour 
-      : (this.sortie.dateRetour as any).toDate();
-
-    const diffTime = Math.abs(retour.getTime() - depart.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return diffDays;
-  }
-
-  getMarinName(marinId: string): string {
-    const marin = this.marins.find(m => m.id === marinId);
-    return marin ? `${marin.prenom} ${marin.nom}` : '';
-  }
-}
-
-====================================
 FICHIER: ./src/app/sorties/sortie-details.component.ts
 Lignes:       99
 ====================================
@@ -4473,7 +4227,7 @@ export class SortieDetailsComponent implements OnInit {
 
 ====================================
 FICHIER: ./src/app/sorties/sortie-form.component.ts
-Lignes:      126
+Lignes:      111
 ====================================
 
 import { Component, OnInit } from '@angular/core';
@@ -4483,6 +4237,7 @@ import { SelectedBoatService } from '../services/selected-boat.service';
 import { SortieService } from '../services/sortie.service';
 import { AlertService } from '../services/alert.service';
 import { Bateau } from '../models/bateau.model';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   standalone: false,
@@ -4503,7 +4258,8 @@ export class SortieFormComponent implements OnInit {
     private alertService: AlertService,
     private route: ActivatedRoute,
     private router: Router,
-    private selectedBoatService: SelectedBoatService
+    private selectedBoatService: SelectedBoatService,
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
@@ -4512,7 +4268,7 @@ export class SortieFormComponent implements OnInit {
     
     this.selectedBoat = this.selectedBoatService.getSelectedBoat();
     if (!this.selectedBoat && !this.isEditMode) {
-      this.alertService.error('Veuillez d\'abord sélectionner un bateau');
+      this.alertService.error(this.translate.instant('BOATS.NO_BOAT_SELECTED_DETAILS'));
       this.router.navigate(['/dashboard/bateaux']);
       return;
     }
@@ -4528,9 +4284,7 @@ export class SortieFormComponent implements OnInit {
 
     this.form.get('bateauId')?.disable();
 
-    if (this.isEditMode) {
-      this.loadSortie();
-    }
+    if (this.isEditMode) { this.loadSortie(); }
   }
 
   loadSortie(): void {
@@ -4544,46 +4298,37 @@ export class SortieFormComponent implements OnInit {
   }
 
   formatDate(date: any): string {
-    if (date?.toDate) {
-      return date.toDate().toISOString().split('T')[0];
-    }
-    if (date instanceof Date) {
-      return date.toISOString().split('T')[0];
-    }
+    if (date?.toDate) { return date.toDate().toISOString().split('T')[0]; }
+    if (date instanceof Date) { return date.toISOString().split('T')[0]; }
     return '';
   }
 
   async onSubmit(): Promise<void> {
     if (this.form.valid) {
       this.loading = true;
-      this.alertService.loading('Enregistrement en cours...');
-
+      this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
       const data = {
         ...this.form.getRawValue(),
         dateDepart: new Date(this.form.value.dateDepart),
         dateRetour: new Date(this.form.value.dateRetour)
       };
-
       try {
         if (this.isEditMode) {
           await this.sortieService.updateSortie(this.id!, data);
-          this.alertService.close();
-          await this.alertService.success('La sortie a été modifiée avec succès', 'Modification réussie!');
+          this.alertService.success(this.translate.instant('SORTIES.SUCCESS_UPDATE'));
         } else {
           await this.sortieService.addSortie(data);
-          this.alertService.close();
-          await this.alertService.success('La sortie a été ajoutée avec succès', 'Ajout réussi!');
+          this.alertService.success(this.translate.instant('SORTIES.SUCCESS_ADD'));
         }
         this.router.navigate(['/dashboard/sorties']);
       } catch (error) {
-        this.alertService.close();
-        this.alertService.error('Erreur lors de l\'enregistrement');
+        this.alertService.error();
       } finally {
         this.loading = false;
       }
     } else {
       this.markFormGroupTouched(this.form);
-      this.alertService.warning('Veuillez remplir tous les champs requis', 'Formulaire incomplet');
+      this.alertService.warning(this.translate.instant('FORM.REQUIRED_FIELDS'));
     }
   }
 
@@ -4593,14 +4338,8 @@ export class SortieFormComponent implements OnInit {
     });
   }
 
-  cancel(): void {
-    this.router.navigate(['/dashboard/sorties']);
-  }
-
-  // ✅ MÉTHODE POUR LE BOUTON "PRÉCÉDENT"
-  goBack(): void {
-    this.cancel();
-  }
+  cancel(): void { this.router.navigate(['/dashboard/sorties']); }
+  goBack(): void { this.cancel(); }
 }
 
 ====================================
@@ -4685,7 +4424,7 @@ export class SortiesListComponent implements OnInit {
 
 ====================================
 FICHIER: ./src/app/sorties/sorties-routing.module.ts
-Lignes:       21
+Lignes:       19
 ====================================
 
 import { NgModule } from '@angular/core';
@@ -4693,14 +4432,12 @@ import { RouterModule, Routes } from '@angular/router';
 import { SortiesListComponent } from './sorties-list.component';
 import { SortieDetailsComponent } from './sortie-details.component';
 import { PointageComponent } from './pointage/pointage.component';
-import { SalairesComponent } from './salaires/salaires.component';
 import { FacturesComponent } from './factures/factures.component';
 
 const routes: Routes = [
   { path: '', component: SortiesListComponent },
   { path: 'details/:id', component: SortieDetailsComponent },
   { path: 'pointage/:id', component: PointageComponent },
-  { path: 'salaires/:id', component: SalairesComponent },
   { path: 'factures/:id', component: FacturesComponent }
 ];
 
@@ -5747,90 +5484,51 @@ Lignes:      342
 
 ====================================
 FICHIER: ./src/app/auth/auth.component.html
-Lignes:       84
+Lignes:       45
 ====================================
 
 <div class="auth-container">
-  <!-- Sélecteur de langue en haut à droite -->
   <div class="language-selector-top">
     <div class="language-dropdown" [class.open]="languageDropdownOpen">
       <button class="language-button" (click)="toggleLanguageDropdown()">
         <span class="flag">{{ getCurrentLanguageFlag() }}</span>
         <span class="lang-name">{{ getCurrentLanguageName() }}</span>
-        <svg class="chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-        </svg>
+        <svg class="chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
       </button>
-      
       <div class="dropdown-menu" *ngIf="languageDropdownOpen">
-        <button 
-          *ngFor="let lang of languages"
-          class="language-option"
-          [class.active]="isCurrentLanguage(lang.code)"
-          (click)="changeLanguage(lang.code)"
-        >
+        <button *ngFor="let lang of languages" class="language-option" [class.active]="isCurrentLanguage(lang.code)" (click)="changeLanguage(lang.code)">
           <span class="flag">{{ lang.flag }}</span>
           <span class="lang-name">{{ lang.name }}</span>
-          <svg *ngIf="isCurrentLanguage(lang.code)" class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-          </svg>
+          <svg *ngIf="isCurrentLanguage(lang.code)" class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
         </button>
       </div>
     </div>
   </div>
-
   <div class="auth-box">
     <div class="auth-header">
-      <h1 class="auth-title">{{ isLoginMode ? ('AUTH.WELCOME' | translate) : ('AUTH.CREATE_ACCOUNT' | translate) }}</h1>
-      <p class="auth-subtitle">
-        {{ isLoginMode ? ('AUTH.SIGN_IN' | translate) : ('AUTH.SIGNUP' | translate) }}
-      </p>
+      <h1 class="auth-title">{{ (isLoginMode ? 'AUTH.WELCOME' : 'AUTH.CREATE_ACCOUNT') | translate }}</h1>
+      <p class="auth-subtitle">{{ (isLoginMode ? 'AUTH.SIGN_IN' : 'AUTH.SIGNUP') | translate }}</p>
     </div>
-
     <form [formGroup]="authForm" (ngSubmit)="onSubmit()" class="auth-form">
       <div class="form-group">
         <label class="form-label">{{ 'AUTH.EMAIL' | translate }}</label>
-        <input 
-          type="email" 
-          formControlName="email" 
-          class="form-input"
-          [placeholder]="'AUTH.EMAIL' | translate"
-        />
-        <span class="error-message" *ngIf="authForm.get('email')?.hasError('required') && authForm.get('email')?.touched">
-          {{ 'FORM.REQUIRED' | translate }}
-        </span>
-        <span class="error-message" *ngIf="authForm.get('email')?.hasError('email') && authForm.get('email')?.touched">
-          {{ 'FORM.INVALID_EMAIL' | translate }}
-        </span>
+        <input type="email" formControlName="email" class="form-input" [placeholder]="'AUTH.EMAIL' | translate"/>
+        <span class="error-message" *ngIf="authForm.get('email')?.hasError('required') && authForm.get('email')?.touched">{{ 'FORM.REQUIRED' | translate }}</span>
+        <span class="error-message" *ngIf="authForm.get('email')?.hasError('email') && authForm.get('email')?.touched">{{ 'FORM.INVALID_EMAIL' | translate }}</span>
       </div>
-
       <div class="form-group">
         <label class="form-label">{{ 'AUTH.PASSWORD' | translate }}</label>
-        <input 
-          type="password" 
-          formControlName="password" 
-          class="form-input"
-          [placeholder]="'AUTH.PASSWORD' | translate"
-        />
-        <span class="error-message" *ngIf="authForm.get('password')?.hasError('required') && authForm.get('password')?.touched">
-          {{ 'FORM.REQUIRED' | translate }}
-        </span>
+        <input type="password" formControlName="password" class="form-input" [placeholder]="'AUTH.PASSWORD' | translate"/>
+        <span class="error-message" *ngIf="authForm.get('password')?.hasError('required') && authForm.get('password')?.touched">{{ 'FORM.REQUIRED' | translate }}</span>
       </div>
-
       <button type="submit" class="auth-button" [disabled]="!authForm.valid || loading">
-        <span *ngIf="!loading">{{ isLoginMode ? ('AUTH.LOGIN' | translate) : ('AUTH.SIGNUP' | translate) }}</span>
+        <span *ngIf="!loading">{{ (isLoginMode ? 'AUTH.LOGIN' : 'AUTH.SIGNUP') | translate }}</span>
         <span *ngIf="loading">{{ 'MESSAGES.LOADING' | translate }}</span>
       </button>
-
-      <div class="auth-error" *ngIf="error">
-        {{ error }}
-      </div>
+      <div class="auth-error" *ngIf="error">{{ error }}</div>
     </form>
-
     <div class="auth-footer">
-      <button class="toggle-button" (click)="toggleMode()">
-        {{ isLoginMode ? ('AUTH.NO_ACCOUNT' | translate) : ('AUTH.HAVE_ACCOUNT' | translate) }}
-      </button>
+      <button class="toggle-button" (click)="toggleMode()">{{ (isLoginMode ? 'AUTH.NO_ACCOUNT' : 'AUTH.HAVE_ACCOUNT') | translate }}</button>
     </div>
   </div>
 </div>
@@ -5945,102 +5643,52 @@ Lignes:      102
 
 ====================================
 FICHIER: ./src/app/bateaux/bateau-form.component.html
-Lignes:      113
+Lignes:       60
 ====================================
 
 <div class="form-container">
   <div class="form-header">
     <button class="btn-back" (click)="goBack()">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-      </svg>
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
       {{ 'SAILORS.BACK' | translate }}
     </button>
     <h1 class="form-title">{{ (isEditMode ? 'BOATS.EDIT_BOAT' : 'BOATS.ADD_BOAT') | translate }}</h1>
   </div>
-
   <form [formGroup]="bateauForm" (ngSubmit)="onSubmit()" class="form">
     <div class="form-grid">
       <div class="form-group">
         <label class="form-label">{{ 'BOATS.NAME' | translate }} *</label>
-        <input 
-          type="text" 
-          formControlName="nom" 
-          class="form-input"
-          [class.error]="bateauForm.get('nom')?.invalid && bateauForm.get('nom')?.touched"
-        />
-        <span class="error-message" *ngIf="bateauForm.get('nom')?.hasError('required') && bateauForm.get('nom')?.touched">
-          {{ 'FORM.REQUIRED' | translate }}
-        </span>
+        <input type="text" formControlName="nom" class="form-input" [class.error]="bateauForm.get('nom')?.invalid && bateauForm.get('nom')?.touched"/>
+        <span class="error-message" *ngIf="bateauForm.get('nom')?.hasError('required') && bateauForm.get('nom')?.touched">{{ 'FORM.REQUIRED' | translate }}</span>
       </div>
-
       <div class="form-group">
         <label class="form-label">{{ 'BOATS.REGISTRATION' | translate }} *</label>
-        <input 
-          type="text" 
-          formControlName="immatriculation" 
-          class="form-input"
-        />
+        <input type="text" formControlName="immatriculation" class="form-input"/>
       </div>
-
       <div class="form-group">
         <label class="form-label">{{ 'BOATS.ENGINE_TYPE' | translate }} *</label>
-        <input 
-          type="text" 
-          formControlName="typeMoteur" 
-          class="form-input"
-        />
+        <input type="text" formControlName="typeMoteur" class="form-input"/>
       </div>
-
       <div class="form-group">
         <label class="form-label">{{ 'BOATS.POWER' | translate }} *</label>
-        <input 
-          type="number" 
-          formControlName="puissance" 
-          class="form-input"
-          min="1"
-        />
+        <input type="number" formControlName="puissance" class="form-input" min="1"/>
       </div>
-
       <div class="form-group">
         <label class="form-label">{{ 'BOATS.LENGTH' | translate }} *</label>
-        <input 
-          type="number" 
-          formControlName="longueur" 
-          class="form-input"
-          step="0.1"
-          min="1"
-        />
+        <input type="number" formControlName="longueur" class="form-input" step="0.1" min="1"/>
       </div>
-
       <div class="form-group">
         <label class="form-label">{{ 'BOATS.CAPACITY' | translate }} *</label>
-        <input 
-          type="number" 
-          formControlName="capaciteEquipage" 
-          class="form-input"
-          min="1"
-        />
+        <input type="number" formControlName="capaciteEquipage" class="form-input" min="1"/>
       </div>
-
       <div class="form-group">
         <label class="form-label">{{ 'BOATS.CONSTRUCTION_DATE' | translate }} *</label>
-        <input 
-          type="date" 
-          formControlName="dateConstruction" 
-          class="form-input"
-        />
+        <input type="date" formControlName="dateConstruction" class="form-input"/>
       </div>
-
       <div class="form-group">
         <label class="form-label">{{ 'BOATS.PORT' | translate }} *</label>
-        <input 
-          type="text" 
-          formControlName="portAttache" 
-          class="form-input"
-        />
+        <input type="text" formControlName="portAttache" class="form-input"/>
       </div>
-
       <div class="form-group">
         <label class="form-label">{{ 'BOATS.STATUS' | translate }} *</label>
         <select formControlName="statut" class="form-input">
@@ -6050,11 +5698,8 @@ Lignes:      113
         </select>
       </div>
     </div>
-
     <div class="form-actions">
-      <button type="button" (click)="cancel()" class="btn btn-secondary" [disabled]="loading">
-        {{ 'FORM.CANCEL' | translate }}
-      </button>
+      <button type="button" (click)="cancel()" class="btn btn-secondary" [disabled]="loading">{{ 'FORM.CANCEL' | translate }}</button>
       <button type="submit" class="btn btn-primary" [disabled]="loading">
         {{ loading ? ('MESSAGES.SAVING' | translate) : ((isEditMode ? 'FORM.EDIT' : 'FORM.ADD') | translate) }}
       </button>
@@ -6458,7 +6103,7 @@ Lignes:      149
 
 ====================================
 FICHIER: ./src/app/marins/marin-form.component.html
-Lignes:      139
+Lignes:      142
 ====================================
 
 <div class="form-container">
@@ -6594,6 +6239,9 @@ Lignes:      139
       <button type="button" (click)="cancel()" class="btn btn-secondary" [disabled]="loading">
         {{ 'FORM.CANCEL' | translate }}
       </button>
+      <button type="button" (click)="goBack()" class="btn btn-info" [disabled]="loading">
+        {{ 'SAILORS.BACK' | translate }}
+      </button>
       <button type="submit" class="btn btn-primary" [disabled]="loading">
         {{ loading ? ('MESSAGES.SAVING' | translate) : ((isEditMode ? 'FORM.EDIT' : 'FORM.ADD') | translate) }}
       </button>
@@ -6676,7 +6324,7 @@ Lignes:       67
 
 ====================================
 FICHIER: ./src/app/salaires/salaires-list.component.html
-Lignes:       77
+Lignes:      156
 ====================================
 
 <div class="salaires-container">
@@ -6701,57 +6349,136 @@ Lignes:       77
       </button>
     </div>
 
-    <div *ngIf="activeTab === 'ouvertes'" class="tab-content">
-      <div class="section-card">
-        <h2>{{ 'SORTIES.SELECTSORTIES' | translate }}</h2>
-        <div *ngIf="sortiesOuvertes.length > 0; else noOpenTrips" class="sorties-list">
-          <div *ngFor="let sortie of sortiesOuvertes" 
-               class="sortie-item"
-               [class.selected]="isSortieSelected(sortie.id!)"
-               (click)="toggleSortie(sortie.id!)">
-            <input type="checkbox" [checked]="isSortieSelected(sortie.id!)" (click)="$event.stopPropagation()">
-            <div class="sortie-info">
-              <strong>{{ sortie.destination }}</strong>
-              <span>{{ formatDate(sortie.dateDepart) }} - {{ formatDate(sortie.dateRetour) }}</span>
-            </div>
-          </div>
-        </div>
-        <ng-template #noOpenTrips>
-          <div class="no-data-small">
-            <p>{{ 'SALAIRES.NO_OPEN_TRIPS' | translate }}</p>
-          </div>
-        </ng-template>
-        
-        <button class="btn btn-success btn-lg" 
-               (click)="calculerSalaires()" 
-               [disabled]="selectedSortiesIds.length === 0 || marins.length === 0">
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-          </svg>
-          {{ 'SALAIRES.CALCULER' | translate }}
+    <div *ngIf="dernierCalcul" class="results-container">
+      <div class="results-header">
+        <h2>{{ 'SALAIRES.RESULTS.TITLE' | translate }} : {{ dernierCalcul.sortiesDestinations.join(', ') }}</h2>
+        <button class="btn-close-results" (click)="dernierCalcul = null" [title]="'SALAIRES.RESULTS.CLOSE' | translate">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
-    </div>
 
-    <div *ngIf="activeTab === 'historique'" class="tab-content">
-      <div class="section-card">
-        <h2>{{ 'SALAIRES.TABS.CALCULATED_TRIPS' | translate }}</h2>
-        <div *ngIf="sortiesCalculees.length > 0; else noCalculatedTrips" class="sorties-list-history">
-          <div *ngFor="let sortie of sortiesCalculees" class="sortie-item-history">
-            <div class="sortie-info">
-              <strong>{{ sortie.destination }}</strong>
-              <span>{{ formatDate(sortie.dateDepart) }} - {{ formatDate(sortie.dateRetour) }}</span>
+      <div class="accordion">
+        <div class="accordion-item">
+          <button class="accordion-header" (click)="toggleAccordion('summary')">
+            <span>{{ 'SALAIRES.RESULTS.FINANCIAL_SUMMARY' | translate }}</span>
+            <svg class="chevron" [class.rotate]="accordionState['summary']" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+          </button>
+          <div class="accordion-content" [class.open]="accordionState['summary']">
+            <div class="summary-grid">
+              <div class="summary-item">
+                <span>{{ 'SALAIRES.REVENU_TOTAL' | translate }}</span>
+                <strong class="revenue">
+                  {{ dernierCalcul.revenuTotal | number:'1.2-2' }} DT
+                  <button (click)="showRevenueDetails()" class="details-link">({{ 'COMMON.VIEW_DETAILS' | translate }})</button>
+                </strong>
+              </div>
+              <div class="summary-item">
+                <span>{{ 'SALAIRES.TOTAL_DEPENSES' | translate }}</span>
+                <strong class="expenses">
+                  {{ dernierCalcul.totalDepenses | number:'1.2-2' }} DT
+                  <button (click)="showExpenseDetails()" class="details-link">({{ 'COMMON.VIEW_DETAILS' | translate }})</button>
+                </strong>
+              </div>
+              <div class="summary-item"><span>{{ 'SALAIRES.BENEFICE_NET' | translate }}</span><strong class="benefit">{{ dernierCalcul.beneficeNet | number:'1.2-2' }} DT</strong></div>
             </div>
-            <button class="btn btn-secondary btn-sm" (click)="viewCalculDetails(sortie)">
-              {{ 'COMMON.VIEW_DETAILS' | translate }}
-            </button>
           </div>
         </div>
-        <ng-template #noCalculatedTrips>
-          <div class="no-data-small">
-            <p>{{ 'SALAIRES.NO_CALCULATED_TRIPS' | translate }}</p>
+
+        <div class="accordion-item">
+          <button class="accordion-header" (click)="toggleAccordion('sharing')">
+            <span>{{ 'SALAIRES.RESULTS.PROFIT_SHARING' | translate }}</span>
+            <svg class="chevron" [class.rotate]="accordionState['sharing']" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+          </button>
+          <div class="accordion-content" [class.open]="accordionState['sharing']">
+             <div class="summary-grid">
+              <div class="summary-item"><span>{{ 'SALAIRES.PART_PROPRIETAIRE' | translate }}</span><strong>{{ dernierCalcul.partProprietaire | number:'1.2-2' }} DT</strong></div>
+              <div class="summary-item"><span>{{ 'SALAIRES.PART_EQUIPAGE' | translate }}</span><strong>{{ dernierCalcul.partEquipage | number:'1.2-2' }} DT</strong></div>
+              <div class="summary-item"><span>- Déductions</span><strong class="expenses">{{ dernierCalcul.deductionNuits | number:'1.2-2' }} DT</strong></div>
+              <div class="summary-item net-share"><span>{{ 'SALAIRES.MONTANT_A_PARTAGER' | translate }}</span><strong>{{ dernierCalcul.montantAPartager | number:'1.2-2' }} DT</strong></div>
+            </div>
           </div>
-        </ng-template>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-header" (click)="toggleAccordion('details')">
+            <span>{{ 'SALAIRES.DETAILS_PAR_MARIN' | translate }}</span>
+            <svg class="chevron" [class.rotate]="accordionState['details']" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+          </button>
+          <div class="accordion-content" [class.open]="accordionState['details']">
+            <div class="table-container">
+              <table class="salaires-table">
+                <thead>
+                  <tr>
+                    <th>{{ 'SAILORS.TITLE' | translate }}</th>
+                    <th>{{ 'SAILORS.PART' | translate }}</th>
+                    <th>{{ 'SALAIRES.SALAIRE_BASE' | translate }}</th>
+                    <th>{{ 'SALAIRES.PRIME_NUITS' | translate }}</th>
+                    <th>{{ 'AVANCES.TITLE' | translate }}</th>
+                    <th>{{ 'SALAIRES.DEJA_PAYE' | translate }}</th>
+                    <th class="reste">{{ 'SALAIRES.RESTE_A_PAYER' | translate }}</th>
+                    <th>{{ 'BOATS.ACTIONS' | translate }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let detail of dernierCalcul.detailsMarins">
+                    <td class="marin-name">{{ detail.marinNom }}</td>
+                    <td>{{ detail.part }}</td>
+                    <td>{{ detail.salaireBrut | number:'1.2-2' }} DT</td>
+                    <td>{{ detail.primeNuits | number:'1.2-2' }} DT</td>
+                    <td class="avances">{{ detail.totalAvances | number:'1.2-2' }} DT</td>
+                    <td class="paiements">{{ detail.totalPaiements | number:'1.2-2' }} DT</td>
+                    <td class="reste"><strong>{{ detail.resteAPayer | number:'1.2-2' }} DT</strong></td>
+                    <td>
+                      <button class="btn btn-sm btn-pay" (click)="enregistrerPaiement(detail)" [disabled]="detail.resteAPayer <= 0.01">
+                        {{ detail.resteAPayer > 0.01 ? ('SALAIRES.PAYER' | translate) : ('SALAIRES.PAYE' | translate) }}
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div *ngIf="!dernierCalcul">
+      <div *ngIf="activeTab === 'ouvertes'" class="tab-content">
+        <div class="section-card">
+          <h2>{{ 'SORTIES.SELECTSORTIES' | translate }}</h2>
+          <div *ngIf="sortiesOuvertes.length > 0; else noOpenTrips" class="sorties-list">
+            <div *ngFor="let sortie of sortiesOuvertes" 
+                 class="sortie-item" [class.selected]="isSortieSelected(sortie.id!)" (click)="toggleSortie(sortie.id!)">
+              <input type="checkbox" [checked]="isSortieSelected(sortie.id!)" (click)="$event.stopPropagation()">
+              <div class="sortie-info">
+                <strong>{{ sortie.destination }}</strong>
+                <span>{{ formatDate(sortie.dateDepart) }} - {{ formatDate(sortie.dateRetour) }}</span>
+              </div>
+            </div>
+          </div>
+          <ng-template #noOpenTrips><div class="no-data-small"><p>{{ 'SALAIRES.NO_OPEN_TRIPS' | translate }}</p></div></ng-template>
+          
+          <button class="btn btn-success btn-lg" (click)="calculerSalaires()" [disabled]="selectedSortiesIds.length === 0 || marins.length === 0">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            {{ 'SALAIRES.CALCULER' | translate }}
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="activeTab === 'historique'" class="tab-content">
+        <div class="section-card">
+          <h2>{{ 'SALAIRES.TABS.CALCULATED_TRIPS' | translate }}</h2>
+          <div *ngIf="sortiesCalculees.length > 0; else noCalculatedTrips" class="sorties-list-history">
+            <div *ngFor="let sortie of sortiesCalculees" class="sortie-item-history">
+              <div class="sortie-info">
+                <strong>{{ sortie.destination }}</strong>
+                <span>{{ formatDate(sortie.dateDepart) }} - {{ formatDate(sortie.dateRetour) }}</span>
+              </div>
+              <button class="btn btn-secondary btn-sm" (click)="viewCalculDetails(sortie)">{{ 'COMMON.VIEW_DETAILS' | translate }}</button>
+            </div>
+          </div>
+          <ng-template #noCalculatedTrips><div class="no-data-small"><p>{{ 'SALAIRES.NO_CALCULATED_TRIPS' | translate }}</p></div></ng-template>
+        </div>
       </div>
     </div>
   </div>
@@ -7109,144 +6836,6 @@ Lignes:      121
 </div>
 
 ====================================
-FICHIER: ./src/app/sorties/salaires/salaires.component.html
-Lignes:      132
-====================================
-
-<div class="salaires-container">
-  <div class="header">
-    <a routerLink="/dashboard/sorties/details/{{sortieId}}" class="btn-back">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-      </svg>
-      {{ 'SAILORS.BACK' | translate }}
-    </a>
-    <h1 class="title">{{ 'SALAIRES.TITLE' | translate }}</h1>
-  </div>
-
-  <div *ngIf="loading" class="loading">
-    <div class="spinner"></div>
-    <p>{{ 'MESSAGES.LOADING' | translate }}</p>
-  </div>
-
-  <div *ngIf="!loading && sortie" class="content">
-    <!-- Configuration -->
-    <div class="config-section">
-      <button class="btn btn-primary" (click)="configureCoefficients()">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-        </svg>
-        {{ 'SALAIRES.CONFIG_COEFF' | translate }}
-      </button>
-
-      <button class="btn btn-success" (click)="calculerSalaires()" [disabled]="marins.length === 0">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-        </svg>
-        {{ 'SALAIRES.CALCULER' | translate }}
-      </button>
-    </div>
-
-    <!-- Résultat du calcul -->
-    <div *ngIf="calcul" class="calcul-result">
-      <!-- Résumé général -->
-      <div class="summary-cards">
-        <div class="summary-card revenue">
-          <div class="card-icon">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-          </div>
-          <div class="card-content">
-            <p class="card-label">{{ 'SALAIRES.REVENU_TOTAL' | translate }}</p>
-            <p class="card-value">{{ calcul.revenuTotal | number:'1.2-2' }} DT</p>
-          </div>
-        </div>
-
-        <div class="summary-card expenses">
-          <div class="card-icon">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
-            </svg>
-          </div>
-          <div class="card-content">
-            <p class="card-label">{{ 'SALAIRES.TOTAL_DEPENSES' | translate }}</p>
-            <p class="card-value">{{ calcul.totalDepenses | number:'1.2-2' }} DT</p>
-          </div>
-        </div>
-
-        <div class="summary-card owner">
-          <div class="card-icon">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-            </svg>
-          </div>
-          <div class="card-content">
-            <p class="card-label">{{ 'SALAIRES.PART_PROPRIETAIRE' | translate }}</p>
-            <p class="card-value">{{ calcul.partProprietaire | number:'1.2-2' }} DT</p>
-          </div>
-        </div>
-
-        <div class="summary-card crew">
-          <div class="card-icon">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-            </svg>
-          </div>
-          <div class="card-content">
-            <p class="card-label">{{ 'SALAIRES.PART_EQUIPAGE' | translate }}</p>
-            <p class="card-value">{{ calcul.partEquipage | number:'1.2-2' }} DT</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Détails déductions -->
-      <div class="deductions-card">
-        <h3>{{ 'SALAIRES.DEDUCTIONS' | translate }}</h3>
-        <div class="deduction-item">
-          <span>{{ calcul.nbNuits }} {{ 'SALAIRES.NUITS' | translate }} × {{ calcul.nbMarins }} {{ 'SALAIRES.MARINS' | translate }} × 5 DT</span>
-          <strong>{{ calcul.deductionNuits | number:'1.2-2' }} DT</strong>
-        </div>
-        <div class="montant-partager">
-          <span>{{ 'SALAIRES.MONTANT_A_PARTAGER' | translate }}</span>
-          <strong>{{ calcul.montantAPartager | number:'1.2-2' }} DT</strong>
-        </div>
-      </div>
-
-      <!-- Détails par marin -->
-      <div class="marins-salaires">
-        <h3>{{ 'SALAIRES.DETAILS_PAR_MARIN' | translate }}</h3>
-        <div class="table-container">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>{{ 'SAILORS.TITLE' | translate }}</th>
-                <th>{{ 'SALAIRES.COEFFICIENT' | translate }}</th>
-                <th>{{ 'SALAIRES.SALAIRE_BASE' | translate }}</th>
-                <th>{{ 'SALAIRES.PRIME_NUITS' | translate }}</th>
-                <th>{{ 'AVANCES.TITLE' | translate }}</th>
-                <th class="salaire-net">{{ 'SALAIRES.SALAIRE_NET' | translate }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let detail of calcul.detailsMarins">
-                <td class="font-bold">{{ detail.marinNom }}</td>
-                <td>{{ detail.coefficient }}%</td>
-                <td>{{ detail.salaireBase | number:'1.2-2' }} DT</td>
-                <td>{{ detail.primenuits | number:'1.2-2' }} DT</td>
-                <td class="text-danger">-{{ detail.avances | number:'1.2-2' }} DT</td>
-                <td class="salaire-net"><strong>{{ detail.salaireNet | number:'1.2-2' }} DT</strong></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-====================================
 FICHIER: ./src/app/sorties/sortie-details.component.html
 Lignes:      137
 ====================================
@@ -7477,21 +7066,24 @@ Lignes:       80
 
 ====================================
 FICHIER: ./src/app/sorties/sorties-list.component.html
-Lignes:       49
+Lignes:       48
 ====================================
 
 <div class="bateaux-container">
   <div class="header">
     <h1 class="title">{{ 'SORTIES.TITLE' | translate }}</h1>
-    <button class="btn btn-primary" (click)="addSortie()">
-      <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-      </svg>
+    <button class="btn btn-primary" (click)="addSortie()" *ngIf="selectedBoat">
+      <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
       {{ 'SORTIES.ADD' | translate }}
     </button>
   </div>
 
-  <div class="table-container">
+  <div *ngIf="!selectedBoat" class="no-data">
+    <svg class="no-data-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <p>{{ 'BOATS.NO_BOAT_SELECTED' | translate }}</p>
+  </div>
+
+  <div *ngIf="selectedBoat" class="table-container">
     <table class="data-table">
       <thead>
         <tr>
@@ -7503,109 +7095,87 @@ Lignes:       49
         </tr>
       </thead>
       <tbody>
-        <!-- Correction ici: utilisation de sorties$ au lieu de sorties -->
         <tr *ngFor="let sortie of sorties$ | async">
           <td class="font-bold">{{ sortie.destination }}</td>
           <td>{{ formatDate(sortie.dateDepart) }}</td>
           <td>{{ formatDate(sortie.dateRetour) }}</td>
           <td>
             <span class="status-badge" [ngClass]="getStatutClass(sortie.statut)">
-              {{ sortie.statut }}
+              {{ 'SORTIES.STATUS.' + sortie.statut.toUpperCase() | translate }}
             </span>
           </td>
           <td class="actions">
-            <button (click)="viewDetails(sortie.id!)" class="btn-icon btn-info" title="{{ 'Gérer la sortie' | translate }}">
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-            </button>
-            <button (click)="editSortie(sortie.id!)" class="btn-icon btn-warning" title="{{ 'BOATS.EDIT' | translate }}">
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-            </button>
-            <button (click)="deleteSortie(sortie)" class="btn-icon btn-danger" title="{{ 'BOATS.DELETE' | translate }}">
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-            </button>
+            <button (click)="viewDetails(sortie.id!)" class="btn-icon btn-info" [title]="'SORTIES.MANAGE' | translate"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg></button>
+            <button (click)="editSortie(sortie.id!)" class="btn-icon btn-warning" [title]="'FORM.EDIT' | translate"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>
+            <button (click)="deleteSortie(sortie)" class="btn-icon btn-danger" [title]="'FORM.DELETE' | translate"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
           </td>
         </tr>
       </tbody>
     </table>
+    <div *ngIf="(sorties$ | async)?.length === 0" class="no-data">
+      <p>{{ 'SORTIES.NOSORTIES' | translate }}</p>
+    </div>
   </div>
 </div>
 
 ====================================
 FICHIER: ./src/app/ventes/ventes-list.component.html
-Lignes:      104
+Lignes:       82
 ====================================
 
 <div class="ventes-container">
   <div class="header">
     <h1 class="title">{{ 'MENU.VENTES' | translate }}</h1>
-    <!-- ✅ BOUTON GLOBAL -->
     <button class="btn btn-primary" (click)="ajouterFactureGlobale()" *ngIf="!loading && sortiesWithFactures.length > 0">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-      </svg>
-      Nouvelle facture
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+      {{ 'VENTES.ADD_INVOICE' | translate }}
     </button>
   </div>
 
   <div *ngIf="loading" class="loading">
-    <div class="spinner"></div>
-    <p>{{ 'MESSAGES.LOADING' | translate }}</p>
+    <div class="spinner"></div><p>{{ 'MESSAGES.LOADING' | translate }}</p>
   </div>
 
   <div *ngIf="!loading && !selectedBoat" class="no-data">
-    <svg class="no-data-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-    </svg>
+    <svg class="no-data-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
     <p>{{ 'BOATS.NO_BOAT_SELECTED' | translate }}</p>
   </div>
 
   <div *ngIf="!loading && selectedBoat" class="content">
-    <!-- Total général -->
     <div class="total-general-card">
       <div class="total-icon">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       </div>
       <div class="total-content">
-        <h3>Total général des ventes</h3>
+        <h3>{{ 'VENTES.GENERAL_TOTAL' | translate }}</h3>
         <p class="total-amount">{{ getTotalGeneral() | number:'1.2-2' }} DT</p>
       </div>
     </div>
 
-    <!-- Aucune sortie -->
     <div *ngIf="sortiesWithFactures.length === 0" class="no-data">
-      <svg class="no-data-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-      </svg>
-      <p>Aucune sortie en mer disponible</p>
+      <svg class="no-data-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      <p>{{ 'VENTES.NO_TRIPS_AVAILABLE' | translate }}</p>
     </div>
 
-    <!-- Liste des sorties avec factures -->
     <div class="sorties-list" *ngIf="sortiesWithFactures.length > 0">
       <div *ngFor="let item of sortiesWithFactures" class="sortie-section">
         <div class="sortie-header">
           <div class="sortie-info">
             <h2>{{ item.sortie.destination }}</h2>
-            <p class="sortie-dates">
-              {{ formatDisplayDate(item.sortie.dateDepart) }} - {{ formatDisplayDate(item.sortie.dateRetour) }}
-            </p>
+            <p class="sortie-dates">{{ formatDisplayDate(item.sortie.dateDepart) }} - {{ formatDisplayDate(item.sortie.dateRetour) }}</p>
           </div>
           <div class="sortie-total">
-            <span class="total-label">Total ventes</span>
+            <span class="total-label">{{ 'VENTES.TRIP_TOTAL' | translate }}</span>
             <span class="total-value">{{ item.totalVentes | number:'1.2-2' }} DT</span>
           </div>
           <button class="btn btn-secondary" (click)="ajouterFacture(item.sortie)">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-            </svg>
-            Ajouter
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+            {{ 'FORM.ADD' | translate }}
           </button>
         </div>
 
-        <!-- Factures de cette sortie -->
         <div *ngIf="item.factures.length === 0" class="no-factures">
-          <p>Aucune facture enregistrée pour cette sortie</p>
+          <p>{{ 'VENTES.NO_INVOICES_FOR_TRIP' | translate }}</p>
         </div>
 
         <div *ngIf="item.factures.length > 0" class="factures-grid">
@@ -7615,22 +7185,18 @@ Lignes:      104
               <span class="facture-montant">{{ facture.montantTotal | number:'1.2-2' }} DT</span>
             </div>
             <div class="facture-body">
-              <p><strong>Client:</strong> {{ facture.client }}</p>
-              <p><strong>Date:</strong> {{ formatDisplayDate(facture.dateVente) }}</p>
-              <p *ngIf="facture.details" class="facture-details"><strong>Détails:</strong> {{ facture.details }}</p>
+              <p><strong>{{ 'VENTES.DETAILS_MODAL.CLIENT' | translate }}:</strong> {{ facture.client }}</p>
+              <p><strong>{{ 'COMMON.DATE' | translate }}:</strong> {{ formatDisplayDate(facture.dateVente) }}</p>
+              <p *ngIf="facture.details" class="facture-details"><strong>{{ 'COMMON.DETAILS' | translate }}:</strong> {{ facture.details }}</p>
             </div>
             <div class="facture-actions">
               <button class="btn btn-sm btn-warning" (click)="modifierFacture(facture)">
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                </svg>
-                Modifier
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                {{ 'FORM.EDIT' | translate }}
               </button>
               <button class="btn btn-sm btn-danger" (click)="supprimerFacture(facture)">
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                </svg>
-                Supprimer
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                {{ 'FORM.DELETE' | translate }}
               </button>
             </div>
           </div>
@@ -10295,7 +9861,7 @@ Lignes:      259
 
 ====================================
 FICHIER: ./src/app/salaires/salaires-list.component.scss
-Lignes:      438
+Lignes:      632
 ====================================
 
 .salaires-container {
@@ -10734,6 +10300,200 @@ Lignes:      438
 
   &:hover:not(:disabled) {
     background-color: #4b5563;
+  }
+}
+
+/* Styles pour la modale d'historique */
+.calcul-details-popup {
+  .swal2-html-container {
+    padding: 0 !important;
+    margin: 1rem 0 0 0 !important;
+  }
+}
+
+.swal-calcul-details {
+  text-align: left;
+  .summary-cards, .table-container {
+    margin-bottom: 1.5rem;
+  }
+  .salaires-table td, .salaires-table th {
+    padding: 0.75rem;
+  }
+}
+
+/* Styles pour la vue des résultats et l'accordéon */
+.results-container {
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-top: 2rem;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #10b981;
+  }
+}
+
+.btn-close-results {
+  background: #e5e7eb;
+  border: none;
+  border-radius: 9999px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  svg {
+    width: 20px;
+    height: 20px;
+    color: #6b7280;
+  }
+  &:hover {
+    background: #d1d5db;
+    transform: rotate(90deg);
+  }
+}
+
+.accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.accordion-item {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.accordion-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  
+  .chevron {
+    width: 20px;
+    height: 20px;
+    color: #9ca3af;
+    transition: transform 0.3s ease;
+    &.rotate {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+  padding: 0 1.5rem;
+  &.open {
+    max-height: 2000px; /* Large value to allow content to expand */
+    padding: 1.5rem;
+    padding-top: 0;
+    transition: max-height 0.5s ease-in, padding 0.5s ease-in;
+  }
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  .summary-item {
+    background: #f9fafb;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    span { color: #6b7280; }
+    strong { font-size: 1.25rem; }
+    &.net-share strong { color: #10b981; }
+  }
+  .revenue { color: #10b981; }
+  .expenses { color: #ef4444; }
+  .benefit { color: #3b82f6; }
+}
+
+/* Styles pour les détails interactifs */
+.details-link {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.8rem;
+  margin-left: 0.5rem;
+  padding: 0;
+  &:hover {
+    color: #1d4ed8;
+  }
+}
+.summary-item strong {
+  display: flex;
+  align-items: center;
+}
+
+/* Styles pour la modale des détails */
+.details-modal-content {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 1rem 0;
+}
+.details-table {
+  width: 100%;
+  border-collapse: collapse;
+  th, td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  th {
+    background: #f9fafb;
+    font-weight: 600;
+  }
+  .amount {
+    text-align: right;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+}
+
+/* Styles pour le bouton Payer */
+.btn-pay {
+  background-color: #3b82f6;
+  color: white;
+  &:hover:not(:disabled) {
+    background-color: #2563eb;
+  }
+  &:disabled {
+    background-color: #d1d5db;
+    cursor: not-allowed;
   }
 }
 
@@ -11591,301 +11351,6 @@ body.rtl,
 
     &:active {
       transform: translateX(2px) translateY(0);
-    }
-  }
-}
-
-====================================
-FICHIER: ./src/app/sorties/salaires/salaires.component.scss
-Lignes:      289
-====================================
-
-.salaires-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.header {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0;
-}
-
-.loading {
-  text-align: center;
-  padding: 3rem;
-
-  .spinner {
-    width: 40px;
-    height: 40px;
-    margin: 0 auto 1rem;
-    border: 4px solid #f3f4f6;
-    border-top-color: #3b82f6;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.config-section {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-
-  svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
-
-.btn-primary {
-  background-color: #3b82f6;
-  color: white;
-
-  &:hover:not(:disabled) {
-    background-color: #2563eb;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
-  }
-}
-
-.btn-success {
-  background-color: #10b981;
-  color: white;
-
-  &:hover:not(:disabled) {
-    background-color: #059669;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
-  }
-}
-
-.summary-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.summary-card {
-  background: white;
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  display: flex;
-  gap: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-
-  .card-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 0.75rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    svg {
-      width: 32px;
-      height: 32px;
-    }
-  }
-
-  &.revenue .card-icon {
-    background: #d1fae5;
-    color: #059669;
-  }
-
-  &.expenses .card-icon {
-    background: #fee2e2;
-    color: #dc2626;
-  }
-
-  &.owner .card-icon {
-    background: #dbeafe;
-    color: #2563eb;
-  }
-
-  &.crew .card-icon {
-    background: #fef3c7;
-    color: #f59e0b;
-  }
-
-  .card-content {
-    flex: 1;
-
-    .card-label {
-      font-size: 0.875rem;
-      color: #6b7280;
-      margin: 0 0 0.5rem;
-    }
-
-    .card-value {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #1f2937;
-      margin: 0;
-    }
-  }
-}
-
-.deductions-card {
-  background: white;
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-
-  h3 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #1f2937;
-    margin: 0 0 1rem;
-  }
-
-  .deduction-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid #e5e7eb;
-    color: #6b7280;
-  }
-
-  .montant-partager {
-    display: flex;
-    justify-content: space-between;
-    padding: 1rem 0 0;
-    font-size: 1.125rem;
-    color: #1f2937;
-
-    strong {
-      color: #10b981;
-      font-size: 1.25rem;
-    }
-  }
-}
-
-.marins-salaires {
-  background: white;
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-
-  h3 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #1f2937;
-    margin: 0 0 1rem;
-  }
-}
-
-.table-container {
-  overflow-x: auto;
-}
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-
-  thead {
-    background-color: #f9fafb;
-
-    th {
-      padding: 1rem;
-      text-align: left;
-      font-weight: 600;
-      color: #374151;
-      border-bottom: 2px solid #e5e7eb;
-      white-space: nowrap;
-
-      &.salaire-net {
-        background-color: #d1fae5;
-        color: #065f46;
-      }
-    }
-  }
-
-  tbody {
-    tr {
-      border-bottom: 1px solid #e5e7eb;
-
-      &:hover {
-        background-color: #f9fafb;
-      }
-
-      td {
-        padding: 1rem;
-        color: #6b7280;
-
-        &.font-bold {
-          font-weight: 600;
-          color: #1f2937;
-        }
-
-        &.text-danger {
-          color: #dc2626;
-        }
-
-        &.salaire-net {
-          background-color: #f0fdf4;
-
-          strong {
-            color: #059669;
-            font-size: 1.125rem;
-          }
-        }
-      }
-    }
-  }
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .salaires-container {
-    padding: 1rem;
-  }
-
-  .title {
-    font-size: 1.5rem;
-  }
-
-  .summary-cards {
-    grid-template-columns: 1fr;
-  }
-
-  .data-table {
-    font-size: 0.875rem;
-
-    thead th, tbody td {
-      padding: 0.75rem 0.5rem;
     }
   }
 }
@@ -13587,288 +13052,121 @@ Lignes:      281
 
 ====================================
 FICHIER: ./src/assets/i18n/fr.json
-Lignes:      281
+Lignes:      114
 ====================================
 
 {
   "AUTH": {
-    "WELCOME": "Bienvenue",
-    "SIGN_IN": "Veuillez vous connecter à votre compte",
-    "SIGNUP": "Remplissez les informations pour vous inscrire",
-    "CREATE_ACCOUNT": "Créer un compte",
-    "EMAIL": "Adresse e-mail",
-    "PASSWORD": "Mot de passe",
-    "LOGIN": "Se connecter",
-    "NO_ACCOUNT": "Vous n'avez pas de compte ? S'inscrire",
-    "HAVE_ACCOUNT": "Vous avez déjà un compte ? Se connecter"
+    "WELCOME": "Bienvenue", "SIGN_IN": "Veuillez vous connecter à votre compte", "SIGNUP": "Remplissez les informations pour vous inscrire",
+    "CREATE_ACCOUNT": "Créer un compte", "EMAIL": "Adresse e-mail", "PASSWORD": "Mot de passe", "LOGIN": "Se connecter",
+    "NO_ACCOUNT": "Vous n'avez pas de compte ? S'inscrire", "HAVE_ACCOUNT": "Vous avez déjà un compte ? Se connecter"
   },
   "DASHBOARD": {
-    "TITLE": "Tableau de bord",
-    "WELCOME": "Bienvenue sur votre tableau de bord",
-    "ACTIVITIES": "Activités",
-    "RECENT_ACTIVITIES": "Activité Récente",
-    "NO_ACTIVITIES": "Aucune activité récente à afficher",
-    "TOTAL_BOATS": "Bateaux au total",
-    "TOTAL_SAILORS": "Marins au total",
-    "ACTIVE_BOATS": "Bateaux Actifs",
-    "MAINTENANCE": "En Maintenance",
-    "BOAT_ADDED": "Bateau ajouté",
-    "BOAT_UPDATED": "Bateau mis à jour",
-    "SAILOR_ADDED": "Marin ajouté",
-    "SAILOR_UPDATED": "Marin mis à jour"
+    "TITLE": "Tableau de bord", "WELCOME": "Bienvenue sur votre tableau de bord", "ACTIVITIES": "Activités", "RECENT_ACTIVITIES": "Activité Récente",
+    "NO_ACTIVITIES": "Aucune activité récente à afficher", "TOTAL_BOATS": "Bateaux au total", "TOTAL_SAILORS": "Marins au total",
+    "ACTIVE_BOATS": "Bateaux Actifs", "MAINTENANCE": "En Maintenance", "BOAT_ADDED": "Bateau ajouté", "BOAT_UPDATED": "Bateau mis à jour",
+    "SAILOR_ADDED": "Marin ajouté", "SAILOR_UPDATED": "Marin mis à jour"
   },
   "MENU": {
-    "HOME": "Accueil",
-    "BOATS": "Bateaux",
-    "SORTIES": "Sorties en mer",
-    "AVANCES": "Avances",
-    "SALAIRES": "Salaires",
-    "VENTES": "Ventes",
-    "MOCK_DATA": "Données Test",
-    "SELECT_BOAT_FIRST": "Sélectionnez un bateau pour accéder à cette section"
+    "HOME": "Accueil", "BOATS": "Bateaux", "SORTIES": "Sorties en mer", "AVANCES": "Avances", "SALAIRES": "Salaires", "VENTES": "Ventes",
+    "MOCK_DATA": "Données Test", "SELECT_BOAT_FIRST": "Sélectionnez un bateau pour accéder à cette section"
   },
   "BOATS": {
-    "TITLE": "Gestion des Bateaux",
-    "BOAT": "Bateau",
-    "ADD_BOAT": "Ajouter un Bateau",
-    "EDIT_BOAT": "Modifier le Bateau",
-    "DELETE": "Supprimer",
-    "NAME": "Nom du bateau",
-    "REGISTRATION": "Immatriculation",
-    "ENGINE_TYPE": "Type de moteur",
-    "POWER": "Puissance (CV)",
-    "LENGTH": "Longueur (m)",
-    "CAPACITY": "Capacité équipage",
-    "CONSTRUCTION_DATE": "Date de construction",
-    "PORT": "Port d'attache",
-    "STATUS": "Statut",
-    "ACTIVE": "Actif",
-    "MAINTENANCE": "Maintenance",
-    "INACTIVE": "Inactif",
-    "NO_BOAT_SELECTED": "Aucun bateau n'est sélectionné",
-    "NO_BOAT_SELECTED_DETAILS": "Veuillez d'abord sélectionner un bateau depuis la page 'Bateaux'.",
-    "CLICK_TO_SELECT": "Cliquez pour en sélectionner un",
-    "SELECTED_BOAT": "Bateau Actif",
-    "SELECTED": "Sélectionné",
-    "SEARCH": "Rechercher un bateau par nom...",
-    "ACTIONS": "Actions",
-    "VIEWCREW": "Voir l'équipage",
-    "SELECT_INFO": "Veuillez sélectionner un bateau dans la liste pour continuer.",
-    "CHANGE_SELECTION": "Changer de bateau",
-    "SUCCESS_ADD": "Bateau ajouté avec succès.",
-    "SUCCESS_UPDATE": "Bateau mis à jour avec succès.",
-    "SUCCESS_DELETE": "Bateau supprimé avec succès.",
-    "TOAST_SELECTED": "Bateau \"{{boatName}}\" sélectionné.",
-    "TOAST_SELECTION_CLEARED": "Sélection du bateau annulée.",
+    "TITLE": "Gestion des Bateaux", "BOAT": "Bateau", "ADD_BOAT": "Ajouter un Bateau", "EDIT_BOAT": "Modifier le Bateau", "DELETE": "Supprimer",
+    "NAME": "Nom du bateau", "REGISTRATION": "Immatriculation", "ENGINE_TYPE": "Type de moteur", "POWER": "Puissance (CV)", "LENGTH": "Longueur (m)",
+    "CAPACITY": "Capacité équipage", "CONSTRUCTION_DATE": "Date de construction", "PORT": "Port d'attache", "STATUS": "Statut",
+    "ACTIVE": "Actif", "MAINTENANCE": "Maintenance", "INACTIVE": "Inactif", "NO_BOAT_SELECTED": "Aucun bateau n'est sélectionné",
+    "NO_BOAT_SELECTED_DETAILS": "Veuillez d'abord sélectionner un bateau depuis la page 'Bateaux'.", "CLICK_TO_SELECT": "Cliquez pour en sélectionner un",
+    "SELECTED_BOAT": "Bateau Actif", "SELECTED": "Sélectionné", "SEARCH": "Rechercher un bateau par nom...", "ACTIONS": "Actions", "VIEWCREW": "Voir l'équipage",
+    "SELECT_INFO": "Veuillez sélectionner un bateau dans la liste pour continuer.", "CHANGE_SELECTION": "Changer de bateau",
+    "SUCCESS_ADD": "Bateau ajouté avec succès.", "SUCCESS_UPDATE": "Bateau mis à jour avec succès.", "SUCCESS_DELETE": "Bateau supprimé avec succès.",
+    "TOAST_SELECTED": "Bateau \"{{boatName}}\" sélectionné.", "TOAST_SELECTION_CLEARED": "Sélection du bateau annulée.",
     "BOAT_NAME_CONFIRM": "le bateau \"{{boatName}}\""
   },
   "SAILORS": {
-    "TITLE": "Marins",
-    "ADD_SAILOR": "Ajouter un Marin",
-    "ADD_NEW_SAILOR": "Ajouter un nouveau marin",
-    "EDIT_SAILOR": "Modifier le Marin",
-    "FIRST_NAME": "Prénom",
-    "LAST_NAME": "Nom",
-    "FUNCTION": "Fonction",
-    "PART": "Part",
-    "SELECT_FUNCTION": "Sélectionner une fonction",
-    "SELECT_SAILOR": "Sélectionner un marin",
-    "PHONE": "Téléphone",
-    "EMAIL": "Email",
-    "ADDRESS": "Adresse",
-    "BIRTH_DATE": "Date de naissance",
-    "HIRE_DATE": "Date d'embauche",
-    "LICENSE_NUMBER": "Numéro de permis",
-    "CREW_OF": "Équipage du bateau",
-    "BACK": "Retour",
-    "ON_LEAVE": "En congé",
-    "SUCCESS_ADD": "Marin ajouté avec succès.",
-    "SUCCESS_UPDATE": "Marin mis à jour avec succès.",
-    "SUCCESS_DELETE": "Marin supprimé avec succès.",
-    "CAPITAINE": "Capitaine",
-    "SECOND": "Second",
-    "MECANICIEN": "Mécanicien",
-    "MATELOT": "Matelot",
-    "PLACEHOLDER": {
-      "LASTNAME": "Entrez le nom",
-      "FIRSTNAME": "Entrez le prénom",
-      "PHONE": "Numéro de téléphone"
-    }
+    "TITLE": "Marins", "ADD_SAILOR": "Ajouter un Marin", "ADD_NEW_SAILOR": "Ajouter un nouveau marin", "EDIT_SAILOR": "Modifier le Marin",
+    "FIRST_NAME": "Prénom", "LAST_NAME": "Nom", "FUNCTION": "Fonction", "PART": "Part", "SELECT_FUNCTION": "Sélectionner une fonction",
+    "SELECT_SAILOR": "Sélectionner un marin", "PHONE": "Téléphone", "EMAIL": "Email", "ADDRESS": "Adresse", "BIRTH_DATE": "Date de naissance",
+    "HIRE_DATE": "Date d'embauche", "LICENSE_NUMBER": "Numéro de permis", "CREW_OF": "Équipage du bateau", "BACK": "Retour", "ON_LEAVE": "En congé",
+    "SUCCESS_ADD": "Marin ajouté avec succès.", "SUCCESS_UPDATE": "Marin mis à jour avec succès.", "SUCCESS_DELETE": "Marin supprimé avec succès.",
+    "CAPITAINE": "Capitaine", "SECOND": "Second", "MECANICIEN": "Mécanicien", "MATELOT": "Matelot",
+    "PLACEHOLDER": { "LASTNAME": "Entrez le nom", "FIRSTNAME": "Entrez le prénom", "PHONE": "Numéro de téléphone" }
   },
   "SORTIES": {
-    "TITLE": "Sorties en mer",
-    "ADD": "Ajouter une Sortie",
-    "EDIT": "Modifier la Sortie",
-    "DETAILSTITLE": "Détails de la Sortie",
-    "DESTINATION": "Destination",
-    "DATEDEPART": "Date de départ",
-    "DATERETOUR": "Date de retour",
-    "STATUT": "Statut",
-    "STATUS": {
-      "EN-COURS": "En cours",
-      "TERMINEE": "Terminée",
-      "ANNULEE": "Annulée"
-    },
-    "GENERALINFO": "Informations Générales",
-    "OBSERVATIONS": "Observations",
-    "MANAGE": "Gérer la sortie",
-    "NOSORTIES": "Aucune sortie enregistrée pour ce bateau.",
-    "SELECTSORTIES": "Sélectionner les sorties en mer"
+    "TITLE": "Sorties en mer", "ADD": "Ajouter une Sortie", "EDIT": "Modifier la Sortie", "DETAILSTITLE": "Détails de la Sortie",
+    "DESTINATION": "Destination", "DATEDEPART": "Date de départ", "DATERETOUR": "Date de retour", "STATUT": "Statut",
+    "STATUS": { "EN-COURS": "En cours", "TERMINEE": "Terminée", "ANNULEE": "Annulée" },
+    "GENERALINFO": "Informations Générales", "OBSERVATIONS": "Observations", "MANAGE": "Gérer la sortie",
+    "NOSORTIES": "Aucune sortie enregistrée pour ce bateau.", "SELECTSORTIES": "Sélectionner les sorties en mer",
+    "SUCCESS_ADD": "Sortie ajoutée avec succès.", "SUCCESS_UPDATE": "Sortie modifiée avec succès.", "SUCCESS_DELETE": "Sortie supprimée avec succès."
   },
   "EXPENSES": {
-    "TITLE": "Dépenses",
-    "ADD": "Ajouter une Dépense",
-    "EDIT": "Modifier la Dépense",
-    "TYPE": "Type de dépense",
-    "AMOUNT": "Montant",
-    "DATE": "Date",
-    "DESCRIPTION": "Description",
-    "NOEXPENSE": "Aucune dépense enregistrée pour cette sortie.",
-    "TYPES": {
-      "FUEL": "Carburant",
-      "ICE": "Glace",
-      "OIL_CHANGE": "Vidange",
-      "CREW_CNSS": "CNSS Équipage",
-      "CREW_BONUS": "Prime Équipage",
-      "FOOD": "Alimentation",
-      "VMS": "VMS",
-      "MISC": "Divers"
-    },
-    "SUCCESS_ADD": "Dépense ajoutée avec succès",
-    "SUCCESS_UPDATE": "Dépense mise à jour avec succès"
+    "TITLE": "Dépenses", "ADD": "Ajouter une Dépense", "EDIT": "Modifier la Dépense", "TYPE": "Type de dépense", "AMOUNT": "Montant",
+    "DATE": "Date", "DESCRIPTION": "Description", "NOEXPENSE": "Aucune dépense enregistrée pour cette sortie.",
+    "TYPES": { "FUEL": "Carburant", "ICE": "Glace", "OIL_CHANGE": "Vidange", "CREW_CNSS": "CNSS Équipage", "CREW_BONUS": "Prime Équipage", "FOOD": "Alimentation", "VMS": "VMS", "MISC": "Divers" },
+    "SUCCESS_ADD": "Dépense ajoutée avec succès", "SUCCESS_UPDATE": "Dépense mise à jour avec succès"
   },
   "POINTAGE": {
-    "TITLE": "Pointage de l'Équipage",
-    "CREW": "Gérer le pointage",
-    "PRESENT": "Présent",
-    "ABSENT": "Absent",
-    "NOCREW": "Aucun marin n'est affecté à ce bateau.",
-    "OBSERVATIONS": "Observations",
-    "ADDOBS": "Ajouter une observation...",
-    "TOTAL": "Total",
-    "SUCCESS_PRESENCE": "Présence enregistrée",
-    "SUCCESS_ABSENCE": "Absence enregistrée",
-    "SUCCESS_OBS": "Observations mises à jour",
-    "ERROR_ADD": "Erreur lors de l'enregistrement du pointage"
+    "TITLE": "Pointage de l'Équipage", "CREW": "Gérer le pointage", "PRESENT": "Présent", "ABSENT": "Absent",
+    "NOCREW": "Aucun marin n'est affecté à ce bateau.", "OBSERVATIONS": "Observations", "ADDOBS": "Ajouter une observation...",
+    "TOTAL": "Total", "SUCCESS_PRESENCE": "Présence enregistrée", "SUCCESS_ABSENCE": "Absence enregistrée",
+    "SUCCESS_OBS": "Observations mises à jour", "ERROR_ADD": "Erreur lors de l'enregistrement du pointage"
   },
   "AVANCES": {
-    "TITLE": "Avances sur Salaire",
-    "ADD": "Ajouter une Avance",
-    "EDIT": "Modifier l'Avance",
-    "TOTAL": "Total Avances",
-    "TOTAL_GENERAL": "Total Général des Avances",
-    "NO_AVANCES": "Aucune avance pour ce marin.",
-    "SUCCESS_ADD": "Avance ajoutée avec succès.",
-    "SUCCESS_UPDATE": "Avance mise à jour avec succès.",
-    "SUCCESS_DELETE": "Avance supprimée avec succès.",
-    "AMOUNT_POSITIVE": "Le montant doit être un nombre positif.",
-    "ADD_MODAL": {
-      "TITLE": "Ajouter une nouvelle avance"
-    },
-    "EDIT_MODAL": {
-      "TITLE": "Modifier l'avance"
-    },
+    "TITLE": "Avances sur Salaire", "ADD": "Ajouter une Avance", "EDIT": "Modifier l'Avance", "TOTAL": "Total Avances",
+    "TOTAL_GENERAL": "Total Général des Avances", "NO_AVANCES": "Aucune avance pour ce marin.", "SUCCESS_ADD": "Avance ajoutée avec succès.",
+    "SUCCESS_UPDATE": "Avance mise à jour avec succès.", "SUCCESS_DELETE": "Avance supprimée avec succès.", "AMOUNT_POSITIVE": "Le montant doit être un nombre positif.",
+    "ADD_MODAL": { "TITLE": "Ajouter une nouvelle avance" }, "EDIT_MODAL": { "TITLE": "Modifier l'avance" },
     "DELETE_CONFIRM_ITEM": "l'avance de {{amount}} DT pour {{name}}"
   },
   "SALAIRES": {
-    "TITLE": "Calcul des Salaires",
-    "CALCULER": "Calculer les Salaires",
-    "REVENU_TOTAL": "Revenu Total",
-    "TOTAL_DEPENSES": "Total des Dépenses",
-    "BENEFICE_NET": "Bénéfice Net",
-    "PART_PROPRIETAIRE": "Part Propriétaire (50%)",
-    "PART_EQUIPAGE": "Part Équipage (50%)",
-    "DEDUCTIONS": "Déductions de la part équipage",
-    "NUITS": "Nuits",
-    "MARINS": "Marins",
-    "MONTANT_A_PARTAGER": "Montant Net à Partager",
-    "DETAILS_PAR_MARIN": "Détails par Marin",
-    "SALAIRE_BASE": "Salaire de Base (selon part)",
-    "PRIME_NUITS": "Prime de Nuits",
-    "SALAIRE_NET": "Salaire Net",
-    "DEJA_PAYE": "Déjà Payé",
-    "RESTE_A_PAYER": "Reste à Payer",
-    "PAYER": "Payer",
-    "PAYE": "Payé",
+    "TITLE": "Calcul des Salaires", "CALCULER": "Calculer les Salaires", "REVENU_TOTAL": "Revenu Total", "TOTAL_DEPENSES": "Total des Dépenses",
+    "BENEFICE_NET": "Bénéfice Net", "PART_PROPRIETAIRE": "Part Propriétaire (50%)", "PART_EQUIPAGE": "Part Équipage (50%)", "DEDUCTIONS": "Déductions de la part équipage",
+    "NUITS": "Nuits", "MARINS": "Marins", "MONTANT_A_PARTAGER": "Montant Net à Partager", "DETAILS_PAR_MARIN": "Détails par Marin",
+    "SALAIRE_BASE": "Salaire de Base (selon part)", "PRIME_NUITS": "Prime de Nuits", "SALAIRE_NET": "Salaire Net",
+    "DEJA_PAYE": "Déjà Payé", "RESTE_A_PAYER": "Reste à Payer", "PAYER": "Payer", "PAYE": "Payé",
     "ERROR_NO_SORTIE": "Veuillez sélectionner au moins une sortie",
     "ERROR_NO_PARTS": "La somme des parts des marins est de 0. Veuillez définir les parts dans la section 'Marins' de chaque bateau.",
-    "CALCUL_SUCCESS_TITLE": "Calcul terminé !",
-    "PAYMENT_SUCCESS": "Paiement enregistré!",
-    "PAYMENT_MODAL_TITLE": "Paiement pour {{name}}",
-    "PAYMENT_MODAL_LABEL": "Montant à payer (Reste: {{amount}} DT)"
+    "CALCUL_SUCCESS_TITLE": "Calcul terminé !", "PAYMENT_SUCCESS": "Paiement enregistré!",
+    "PAYMENT_MODAL_TITLE": "Paiement pour {{name}}", "PAYMENT_MODAL_LABEL": "Montant à payer (Reste: {{amount}} DT)",
+    "PAYMENT_MODAL": { "ERROR_POSITIVE": "Le montant doit être positif.", "ERROR_EXCEED": "Le montant ne peut pas dépasser le reste à payer." },
+    "TABS": { "OPEN_TRIPS": "Voyages Ouverts", "HISTORY": "Historique", "CALCULATED_TRIPS": "Voyages Calculés" },
+    "NO_OPEN_TRIPS": "Aucun voyage terminé n'est en attente de calcul.", "NO_CALCULATED_TRIPS": "Aucun calcul de salaire n'a encore été effectué.",
+    "HISTORY": { "MODAL_TITLE": "Détails du Calcul pour : {{destinations}}", "NO_DATA_FOUND": "Aucun détail de calcul sauvegardé pour cette sortie.", "NO_DATA_FOUND_TITLE": "Détails non trouvés", "NO_DATA_FOUND_TEXT": "Les détails pour ce calcul n'ont pas été trouvés. Il s'agit peut-être d'un ancien calcul. Voulez-vous marquer ce voyage comme 'ouvert' pour le recalculer ?", "RECALCULATE_BTN": "Recalculer", "MOVED_FOR_RECALC": "Le voyage a été déplacé vers l'onglet 'Voyages Ouverts' pour être recalculé." },
+    "RESULTS": { "TITLE": "Résultats du Calcul", "CLOSE": "Fermer", "FINANCIAL_SUMMARY": "Résumé Financier", "PROFIT_SHARING": "Partage des Bénéfices" },
+    "DETAILS_MODAL": { "REVENUE_TITLE": "Détails des Revenus", "EXPENSE_TITLE": "Détails des Dépenses", "INVOICE_NUM": "N° Facture", "CLIENT": "Client" }
   },
   "VENTES": {
-    "TITLE": "Gestion des Ventes",
-    "ADD_INVOICE": "Nouvelle Facture",
-    "ADD_INVOICE_FOR_TRIP": "Ajouter une facture pour cette sortie",
-    "NO_INVOICES_FOR_TRIP": "Aucune facture enregistrée pour cette sortie",
-    "TRIP_TOTAL": "Total des ventes pour la sortie",
-    "GENERAL_TOTAL": "Total général des ventes",
-    "NO_TRIPS_AVAILABLE": "Aucune sortie en mer disponible pour ajouter une facture.",
-    "SUCCESS_ADD": "Facture ajoutée avec succès !",
-    "SUCCESS_UPDATE": "Facture modifiée avec succès !",
-    "SUCCESS_DELETE": "Facture supprimée avec succès.",
-    "DELETE_CONFIRM_ITEM": "la facture {{number}} ({{amount}} DT)"
+    "TITLE": "Gestion des Ventes", "ADD_INVOICE": "Nouvelle Facture", "ADD_INVOICE_FOR_TRIP": "Ajouter une facture pour cette sortie",
+    "NO_INVOICES_FOR_TRIP": "Aucune facture enregistrée pour cette sortie", "TRIP_TOTAL": "Total des ventes pour la sortie", "GENERAL_TOTAL": "Total général des ventes",
+    "NO_TRIPS_AVAILABLE": "Aucune sortie en mer n'est disponible.", "SUCCESS_ADD": "Facture ajoutée avec succès !", "SUCCESS_UPDATE": "Facture modifiée avec succès !",
+    "SUCCESS_DELETE": "Facture supprimée avec succès.", "DELETE_CONFIRM_ITEM": "la facture {{number}} ({{amount}} DT)",
+    "ADD_MODAL": { "TITLE": "Nouvelle Facture de Vente", "SELECT_TRIP": "Sélectionner une sortie" }, "EDIT_MODAL": { "TITLE": "Modifier la Facture" },
+    "DETAILS_MODAL": { "INVOICE_NUM": "N° Facture", "CLIENT": "Client" }
   },
   "FORM": {
-    "ADD": "Ajouter",
-    "EDIT": "Modifier",
-    "DELETE": "Supprimer",
-    "CANCEL": "Annuler",
-    "SAVE": "Enregistrer",
-    "REQUIRED": "Ce champ est requis.",
-    "REQUIRED_FIELDS": "Veuillez remplir tous les champs obligatoires.",
-    "INVALID_PHONE": "Numéro de téléphone invalide.",
-    "INVALID_EMAIL": "Adresse e-mail invalide."
+    "ADD": "Ajouter", "EDIT": "Modifier", "DELETE": "Supprimer", "CANCEL": "Annuler", "SAVE": "Enregistrer", "REQUIRED": "Ce champ est requis.",
+    "REQUIRED_FIELDS": "Veuillez remplir tous les champs obligatoires.", "INVALID_PHONE": "Numéro de téléphone invalide.", "INVALID_EMAIL": "Adresse e-mail invalide."
   },
   "MESSAGES": {
-    "LOADING": "Chargement...",
-    "SAVING": "Enregistrement...",
-    "UPDATING": "Modification...",
-    "DELETING": "Suppression...",
-    "CALCULATING": "Calcul en cours...",
-    "ADDING_SAILOR": "Ajout du marin...",
-    "SUCCESS": "Opération réussie !",
-    "ERROR_TITLE": "Erreur",
-    "WARNING_TITLE": "Attention",
-    "ERROR_GENERIC": "Une erreur inattendue est survenue. Veuillez réessayer.",
-    "AREYOUSURE": "Êtes-vous sûr ?",
-    "CONFIRMDELETEMESSAGE": "Vous êtes sur le point de supprimer",
-    "IRREVERSIBLE": "Cette action est irréversible.",
+    "LOADING": "Chargement...", "SAVING": "Enregistrement...", "UPDATING": "Modification...", "DELETING": "Suppression...", "CALCULATING": "Calcul en cours...",
+    "LOADING_DETAILS": "Chargement des détails...", "ADDING_SAILOR": "Ajout du marin...", "SUCCESS": "Opération réussie !", "ERROR_TITLE": "Erreur",
+    "WARNING_TITLE": "Attention", "ERROR_GENERIC": "Une erreur inattendue est survenue. Veuillez réessayer.", "AREYOUSURE": "Êtes-vous sûr ?",
+    "CONFIRMDELETEMESSAGE": "Vous êtes sur le point de supprimer", "IRREVERSIBLE": "Cette action est irréversible.",
     "SAILOR_ADDED_SUCCESS": "Le marin {{name}} a été ajouté avec succès."
   },
-  "LANGUAGE": {
-    "AR": "Arabe",
-    "FR": "Français",
-    "EN": "Anglais"
-  },
+  "LANGUAGE": { "AR": "Arabe", "FR": "Français", "EN": "Anglais" },
   "COMMON": {
-    "UNKNOWN": "Inconnu",
-    "AMOUNT": "Montant",
-    "AMOUNT_D T": "Montant (DT)",
-    "AMOUNT_IN_TND": "Montant en dinars tunisiens",
-    "DATE": "Date",
-    "DESCRIPTION": "Description",
-    "DESCRIPTION_OPTIONAL": "Description (optionnel)"
+    "UNKNOWN": "Inconnu", "AMOUNT": "Montant", "AMOUNT_D T": "Montant (DT)", "AMOUNT_IN_TND": "Montant en dinars tunisiens", "DATE": "Date",
+    "DESCRIPTION": "Description", "DETAILS": "Détails", "DETAILS_OPTIONAL": "Détails (optionnel)", "VIEW_DETAILS": "Voir Détails"
   },
   "MOCK_DATA": {
-    "TITLE": "🎲 Générateur de Données Fictives",
-    "SUBTITLE": "Créez rapidement des données de test complètes pour votre application.",
-    "ITEM_1": "✓ 2 bateaux de pêche",
-    "ITEM_2": "✓ Plusieurs marins avec des parts différentes",
-    "ITEM_3": "✓ Des sorties en mer multiples",
-    "ITEM_4": "✓ Dépenses, ventes et avances associées",
-    "GENERATE_BUTTON": "Générer les Données",
-    "GENERATING_BUTTON": "Génération en cours...",
-    "CONFIRM_TITLE": "Générer des données fictives ?",
-    "CONFIRM_TEXT": "Cela va d'abord supprimer toutes les données existantes avant de créer de nouveaux enregistrements de test.",
-    "CONFIRM_BUTTON": "Oui, générer",
-    "CANCEL_BUTTON": "Annuler",
-    "LOADING_TITLE": "Génération en cours...",
-    "LOADING_TEXT": "Veuillez patienter pendant la création des données.",
-    "SUCCESS_TITLE": "Succès !",
-    "SUCCESS_TEXT": "Les données de test ont été générées avec succès.",
-    "ERROR_TITLE": "Erreur"
+    "TITLE": "🎲 Générateur de Données Fictives", "SUBTITLE": "Créez rapidement des données de test complètes pour votre application.",
+    "ITEM_1": "✓ 2 bateaux de pêche", "ITEM_2": "✓ Plusieurs marins avec des parts différentes", "ITEM_3": "✓ Des sorties en mer multiples",
+    "ITEM_4": "✓ Dépenses, ventes et avances associées", "GENERATE_BUTTON": "Générer les Données", "GENERATING_BUTTON": "Génération en cours...",
+    "CONFIRM_TITLE": "Générer des données fictives ?", "CONFIRM_TEXT": "Cela va d'abord supprimer toutes les données existantes avant de créer de nouveaux enregistrements de test.",
+    "CONFIRM_BUTTON": "Oui, générer", "LOADING_TITLE": "Génération en cours...", "LOADING_TEXT": "Veuillez patienter pendant la création des données.",
+    "SUCCESS_TITLE": "Succès !", "SUCCESS_TEXT": "Les données de test ont été générées avec succès.", "ERROR_TITLE": "Erreur"
   }
 }
 
@@ -13876,7 +13174,7 @@ Lignes:      281
 ====================================
   RÉSUMÉ
 ====================================
-Total fichiers: 121
-Total lignes: 12907
-Date: Sat Oct 18 22:24:34 CET 2025
+Total fichiers: 118
+Total lignes: 12229
+Date: Sat Oct 18 23:11:30 CET 2025
 ====================================

@@ -9,7 +9,6 @@ const routes: Routes = [
   { path: '', component: SortiesListComponent },
   { path: 'details/:id', component: SortieDetailsComponent },
   { path: 'pointage/:id', component: PointageComponent },
-  // La route obsolète vers SalairesComponent est maintenant supprimée
   { path: 'factures/:id', component: FacturesComponent }
 ];
 
