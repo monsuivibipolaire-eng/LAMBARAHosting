@@ -5,6 +5,7 @@ export interface Marin {
   prenom: string;
   dateNaissance: Date;
   fonction: 'capitaine' | 'second' | 'mecanicien' | 'matelot';
+  part: number; // Part du marin pour le calcul des salaires
   numeroPermis: string;
   telephone: string;
   email: string;

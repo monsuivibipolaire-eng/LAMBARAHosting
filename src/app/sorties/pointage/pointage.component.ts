@@ -38,7 +38,7 @@ export class PointageComponent implements OnInit {
     private pointageService: PointageService,
     private sortieService: SortieService,
     private alertService: AlertService,
-    private translate: TranslateService // ✅ Ajout du service de traduction
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
@@ -51,18 +51,11 @@ export class PointageComponent implements OnInit {
       .pipe(
         take(1),
         switchMap((sortie) => {
-          if (!sortie) {
-            this.errorMessage = 'Sortie introuvable';
+          if (!sortie || !sortie.bateauId) {
+            this.errorMessage = sortie ? 'Aucun bateau associé à cette sortie' : 'Sortie introuvable';
             return of([[], []] as [Marin[], Pointage[]]);
           }
-          
-          if (!sortie.bateauId) {
-            this.errorMessage = 'Aucun bateau associé à cette sortie';
-            return of([[], []] as [Marin[], Pointage[]]);
-          }
-          
           this.sortie = sortie;
-          
           return combineLatest([
             this.marinService.getMarinsByBateau(sortie.bateauId),
             this.pointageService.getPointagesBySortie(this.sortieId)
@@ -73,11 +66,9 @@ export class PointageComponent implements OnInit {
         next: ([marins, pointages]) => {
           this.marins = marins;
           this.pointages = pointages;
-          
           if (marins.length === 0) {
             this.errorMessage = 'Aucun marin affecté à ce bateau';
           }
-          
           this.loading = false;
         },
         error: (error) => {
@@ -95,12 +86,12 @@ export class PointageComponent implements OnInit {
       return;
     }
 
-    // ✅ Récupération des traductions
     const translations = {
       title: this.translate.instant('SAILORS.ADD_NEW_SAILOR'),
       lastname: this.translate.instant('SAILORS.LASTNAME'),
       firstname: this.translate.instant('SAILORS.FIRSTNAME'),
       function: this.translate.instant('SAILORS.FUNCTION'),
+      part: this.translate.instant('SAILORS.PART'), // ✅ Traduction ajoutée
       selectFunction: this.translate.instant('SAILORS.SELECT_FUNCTION'),
       phone: this.translate.instant('SAILORS.PHONE'),
       birthdate: this.translate.instant('SAILORS.BIRTHDATE'),
@@ -140,6 +131,12 @@ export class PointageComponent implements OnInit {
               <option value="matelot">${translations.sailor}</option>
             </select>
           </div>
+
+          <!-- ✅ CHAMP AJOUTÉ POUR LA PART -->
+          <div style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">${translations.part} *</label>
+            <input id="swal-part" type="number" value="1" step="0.1" min="0" class="swal2-input" style="width: 90%;">
+          </div>
           
           <div style="margin-bottom: 1rem;">
             <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">${translations.phone}</label>
@@ -163,15 +160,16 @@ export class PointageComponent implements OnInit {
         const nom = (document.getElementById('swal-nom') as HTMLInputElement).value;
         const prenom = (document.getElementById('swal-prenom') as HTMLInputElement).value;
         const fonction = (document.getElementById('swal-fonction') as HTMLSelectElement).value;
+        const part = parseFloat((document.getElementById('swal-part') as HTMLInputElement).value);
         const phone = (document.getElementById('swal-phone') as HTMLInputElement).value;
         const birthdate = (document.getElementById('swal-birthdate') as HTMLInputElement).value;
 
-        if (!nom || !prenom || !fonction || !birthdate) {
+        if (!nom || !prenom || !fonction || !birthdate || isNaN(part)) {
           Swal.showValidationMessage(translations.requiredFields);
           return false;
         }
 
-        return { nom, prenom, fonction, phone, birthdate };
+        return { nom, prenom, fonction, part, phone, birthdate };
       }
     });
 
@@ -179,17 +177,19 @@ export class PointageComponent implements OnInit {
       try {
         this.alertService.loading(this.translate.instant('MESSAGES.ADDING_SAILOR'));
 
+        // ✅ CORRECTION: Ajout de la propriété 'part'
         const newMarin: Omit<Marin, 'id'> = {
           nom: formValues.nom,
           prenom: formValues.prenom,
           fonction: formValues.fonction as 'capitaine' | 'second' | 'mecanicien' | 'matelot',
+          part: formValues.part,
           telephone: formValues.phone || '',
           dateNaissance: new Date(formValues.birthdate),
           bateauId: this.sortie!.bateauId,
-          email: '',
-          numeroPermis: '',
+          email: `${formValues.prenom}.${formValues.nom}@email.com`.toLowerCase(),
+          numeroPermis: 'N/A',
           dateEmbauche: new Date(),
-          adresse: '',
+          adresse: 'N/A',
           statut: 'actif'
         };
 
@@ -233,25 +233,17 @@ export class PointageComponent implements OnInit {
           present: isChecked,
           datePointage: new Date()
         });
-        
         existingPointage.present = isChecked;
-        existingPointage.datePointage = new Date();
       } else {
-        const newPointage: Omit<Pointage, 'id'> = {
+        const newPointageData: Omit<Pointage, 'id'> = {
           sortieId: this.sortieId,
           marinId: marinId,
           present: isChecked,
           datePointage: new Date()
         };
-        
-        const result = await this.pointageService.addPointage(newPointage);
-        
-        this.pointages.push({
-          ...newPointage,
-          id: result.id
-        } as Pointage);
+        const result = await this.pointageService.addPointage(newPointageData);
+        this.pointages.push({ id: result.id, ...newPointageData });
       }
-
       this.alertService.toast(
         isChecked ? 'Présence enregistrée' : 'Absence enregistrée',
         'success'
@@ -271,10 +263,9 @@ export class PointageComponent implements OnInit {
     const existingPointage = this.pointages.find(p => p.marinId === marinId);
     
     if (existingPointage && existingPointage.id) {
+      if (existingPointage.observations === observations) return;
       try {
-        await this.pointageService.updatePointage(existingPointage.id, {
-          observations: observations
-        });
+        await this.pointageService.updatePointage(existingPointage.id, { observations });
         existingPointage.observations = observations;
         this.alertService.toast('Observations mises à jour', 'success');
       } catch (error) {

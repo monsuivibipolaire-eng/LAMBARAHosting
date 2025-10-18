@@ -43,6 +43,7 @@ export class MarinFormComponent implements OnInit {
       prenom: ['', [Validators.required, Validators.minLength(2)]],
       dateNaissance: ['', [Validators.required]],
       fonction: ['matelot', [Validators.required]],
+      part: [1, [Validators.required, Validators.min(0)]], // ✅ CHAMP AJOUTÉ
       numeroPermis: ['', [Validators.required]],
       telephone: ['', [Validators.required, Validators.pattern(/^[0-9]{8,}$/)]],
       email: ['', [Validators.required, Validators.email]],
@@ -83,6 +84,7 @@ export class MarinFormComponent implements OnInit {
       const marinData: Marin = {
         ...formValue,
         bateauId: this.bateauId,
+        part: +formValue.part, // ✅ Assurer que la part est un nombre
         dateNaissance: new Date(formValue.dateNaissance),
         dateEmbauche: new Date(formValue.dateEmbauche)
       };

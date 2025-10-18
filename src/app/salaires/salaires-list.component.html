@@ -1,14 +1,7 @@
 <div class="salaires-container">
   <div class="header">
     <h1 class="title">{{ 'MENU.SALAIRES' | translate }}</h1>
-    <button class="btn btn-primary" (click)="configureCoefficients()" *ngIf="!loading">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-      </svg>
-      Configurer coefficients
-    </button>
-  </div>
+    </div>
 
   <div *ngIf="loading" class="loading">
     <div class="spinner"></div>
@@ -23,9 +16,8 @@
   </div>
 
   <div *ngIf="!loading && selectedBoat" class="content">
-    <!-- Sélection des sorties -->
     <div class="section-card">
-      <h2>1. Sélectionnez les sorties en mer</h2>
+      <h2>1. {{ 'SORTIES.SELECTSORTIES' | translate }}</h2>
       <div class="sorties-list">
         <div *ngFor="let sortie of sorties" 
              class="sortie-item"
@@ -37,31 +29,29 @@
             <span>{{ formatDate(sortie.dateDepart) }} - {{ formatDate(sortie.dateRetour) }}</span>
           </div>
           <span class="status-badge" [ngClass]="'status-' + sortie.statut">
-            {{ sortie.statut }}
+            {{ 'SORTIES.STATUS.' + sortie.statut.toUpperCase() | translate }}
           </span>
         </div>
       </div>
       
       <button class="btn btn-success btn-lg" 
-              (click)="calculerSalaires()" 
-              [disabled]="selectedSortiesIds.length === 0">
+             (click)="calculerSalaires()" 
+             [disabled]="selectedSortiesIds.length === 0 || marins.length === 0">
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
         </svg>
-        Calculer les salaires
+        {{ 'SALAIRES.CALCULER' | translate }}
       </button>
     </div>
 
-    <!-- Résultats du calcul -->
     <div *ngIf="calculated" class="results">
-      <!-- Résumé financier -->
       <div class="summary-cards">
         <div class="summary-card revenue">
-          <h3>Revenu total</h3>
+          <h3>{{ 'SALAIRES.REVENU_TOTAL' | translate }}</h3>
           <p class="amount">{{ revenuTotal | number:'1.2-2' }} DT</p>
         </div>
         <div class="summary-card expenses">
-          <h3>Dépenses</h3>
+          <h3>{{ 'EXPENSES.TITLE' | translate }}</h3>
           <p class="amount">{{ totalDepenses | number:'1.2-2' }} DT</p>
         </div>
         <div class="summary-card benefit">
@@ -72,29 +62,27 @@
 
       <div class="summary-cards">
         <div class="summary-card owner">
-          <h3>Part propriétaire (50%)</h3>
+          <h3>{{ 'SALAIRES.PART_PROPRIETAIRE' | translate }}</h3>
           <p class="amount big">{{ partProprietaire | number:'1.2-2' }} DT</p>
         </div>
         <div class="summary-card crew">
-          <h3>Part équipage (50%)</h3>
+          <h3>{{ 'SALAIRES.PART_EQUIPAGE' | translate }}</h3>
           <p class="amount">{{ partEquipage | number:'1.2-2' }} DT</p>
           <p class="detail">- Déduction nuits: {{ deductionNuits | number:'1.2-2' }} DT</p>
-          <p class="detail">= À partager: {{ montantAPartager | number:'1.2-2' }} DT</p>
+          <p class="detail">= {{ 'SALAIRES.MONTANT_A_PARTAGER' | translate }}: {{ montantAPartager | number:'1.2-2' }} DT</p>
         </div>
       </div>
 
-      <!-- Tableau des salaires -->
       <div class="section-card">
-        <h2>2. Salaires de l'équipage</h2>
+        <h2>2. {{ 'SALAIRES.TITLE' | translate }}</h2>
         <div class="table-container">
           <table class="salaires-table">
             <thead>
               <tr>
-                <th>Marin</th>
-                <th>Coeff %</th>
-                <th>Salaire brut</th>
-                <th>Prime nuits</th>
-                <th>Avances</th>
+                <th>{{ 'SAILORS.TITLE' | translate }}</th>
+                <th>{{ 'SAILORS.PART' | translate }}</th> <th>{{ 'SALAIRES.SALAIRE_BASE' | translate }}</th>
+                <th>{{ 'SALAIRES.PRIME_NUITS' | translate }}</th>
+                <th>{{ 'AVANCES.TITLE' | translate }}</th>
                 <th>Déjà payé</th>
                 <th class="reste">Reste à payer</th>
                 <th>Action</th>
@@ -103,8 +91,7 @@
             <tbody>
               <tr *ngFor="let detail of salairesDetails">
                 <td class="marin-name">{{ detail.marinNom }}</td>
-                <td>{{ detail.coefficient }}%</td>
-                <td>{{ detail.salaireBrut | number:'1.2-2' }} DT</td>
+                <td>{{ detail.part }}</td> <td>{{ detail.salaireBrut | number:'1.2-2' }} DT</td>
                 <td>{{ detail.primeNuits | number:'1.2-2' }} DT</td>
                 <td class="avances">{{ detail.totalAvances | number:'1.2-2' }} DT</td>
                 <td class="paiements">{{ detail.totalPaiements | number:'1.2-2' }} DT</td>
@@ -114,8 +101,8 @@
                 <td>
                   <button class="btn btn-sm btn-pay" 
                           (click)="enregistrerPaiement(detail)"
-                          [disabled]="detail.resteAPayer <= 0">
-                    {{ detail.resteAPayer > 0 ? 'Payer' : 'Payé' }}
+                          [disabled]="detail.resteAPayer <= 0.01">
+                    {{ detail.resteAPayer > 0.01 ? 'Payer' : 'Payé' }}
                   </button>
                 </td>
               </tr>

@@ -26,9 +26,7 @@
           <th>{{ 'SAILORS.LAST_NAME' | translate }}</th>
           <th>{{ 'SAILORS.FIRST_NAME' | translate }}</th>
           <th>{{ 'SAILORS.FUNCTION' | translate }}</th>
-          <th>{{ 'SAILORS.LICENSE_NUMBER' | translate }}</th>
-          <th>{{ 'SAILORS.PHONE' | translate }}</th>
-          <th>{{ 'SAILORS.EMAIL' | translate }}</th>
+          <th>{{ 'SAILORS.PART' | translate }}</th> <th>{{ 'SAILORS.PHONE' | translate }}</th>
           <th>{{ 'SAILORS.HIRE_DATE' | translate }}</th>
           <th>{{ 'BOATS.STATUS' | translate }}</th>
           <th>{{ 'BOATS.ACTIONS' | translate }}</th>
@@ -43,9 +41,7 @@
               {{ 'SAILORS.' + marin.fonction.toUpperCase() | translate }}
             </span>
           </td>
-          <td>{{ marin.numeroPermis }}</td>
-          <td>{{ marin.telephone }}</td>
-          <td>{{ marin.email }}</td>
+          <td class="font-bold">{{ marin.part }}</td> <td>{{ marin.telephone }}</td>
           <td>{{ formatDate(marin.dateEmbauche) | date:'dd/MM/yyyy' }}</td>
           <td>
             <span class="status-badge" [ngClass]="getStatutClass(marin.statut)">

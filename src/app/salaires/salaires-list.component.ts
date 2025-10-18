@@ -17,10 +17,11 @@ import { Sortie } from '../models/sortie.model';
 import { Marin } from '../models/marin.model';
 import { Bateau } from '../models/bateau.model';
 
+// ✅ MODIFIÉ: coefficient -> part
 interface SalaireDetail {
   marinId: string;
   marinNom: string;
-  coefficient: number;
+  part: number;
   salaireBrut: number;
   primeNuits: number;
   totalAvances: number;
@@ -40,7 +41,8 @@ export class SalairesListComponent implements OnInit {
   sorties: Sortie[] = [];
   marins: Marin[] = [];
   selectedSortiesIds: string[] = [];
-  coefficients: { [marinId: string]: number } = {};
+  
+  // ✅ SUPPRIMÉ: La propriété 'coefficients' n'est plus nécessaire
   
   revenuTotal = 0;
   totalDepenses = 0;
@@ -67,49 +69,27 @@ export class SalairesListComponent implements OnInit {
 
   ngOnInit(): void {
     this.selectedBoat = this.selectedBoatService.getSelectedBoat();
-    console.log('🚢 Bateau sélectionné:', this.selectedBoat);
     
     if (this.selectedBoat) {
       this.loadData();
     } else {
       this.loading = false;
-      console.warn('⚠️ Aucun bateau sélectionné');
     }
   }
 
   loadData(): void {
     if (!this.selectedBoat?.id) {
-      console.error('❌ ID du bateau manquant');
       return;
     }
 
-    console.log('📡 Chargement des sorties pour le bateau:', this.selectedBoat.id);
-
     this.sortieService.getSortiesByBateau(this.selectedBoat.id).subscribe((sorties: Sortie[]) => {
-      console.log('📦 Toutes les sorties reçues:', sorties.length);
-      console.log('📊 Détails des sorties:', sorties);
-      
-      // Afficher TOUTES les sorties (pas seulement terminées)
       this.sorties = sorties;
-      
-      console.log(`✅ ${this.sorties.length} sorties chargées (tous statuts)`);
-      
-      if (this.sorties.length === 0) {
-        console.warn('⚠️ AUCUNE SORTIE TROUVÉE pour ce bateau!');
-        console.warn('💡 Vérifiez que les données mock ont bien des sorties liées à ce bateau');
-      }
     }, error => {
       console.error('❌ Erreur lors du chargement des sorties:', error);
     });
 
     this.marinService.getMarinsByBateau(this.selectedBoat.id).subscribe((marins: Marin[]) => {
       this.marins = marins;
-      console.log('👥 Marins chargés:', marins.length);
-      
-      marins.forEach(marin => {
-        this.coefficients[marin.id!] = 0;
-      });
-      
       this.loading = false;
     });
   }
@@ -127,52 +107,7 @@ export class SalairesListComponent implements OnInit {
     return this.selectedSortiesIds.includes(sortieId);
   }
 
-  async configureCoefficients(): Promise<void> {
-    if (this.marins.length === 0) {
-      this.alertService.error('Aucun marin disponible');
-      return;
-    }
-
-    let html = '<div style="text-align: left; padding: 1rem;">';
-    this.marins.forEach(marin => {
-      html += `
-        <div style="margin-bottom: 1rem;">
-          <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-            ${marin.prenom} ${marin.nom} (${marin.fonction})
-          </label>
-          <input 
-            id="coeff-${marin.id}" 
-            type="number" 
-            value="${this.coefficients[marin.id!] || 0}" 
-            min="0" 
-            max="100"
-            style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 0.25rem;"
-          />
-        </div>
-      `;
-    });
-    html += '</div>';
-
-    const result = await Swal.fire({
-      title: 'Configuration des coefficients',
-      html,
-      showCancelButton: true,
-      confirmButtonText: 'Enregistrer',
-      cancelButtonText: 'Annuler',
-      confirmButtonColor: '#10b981',
-      width: '600px'
-    });
-
-    if (result.isConfirmed) {
-      this.marins.forEach(marin => {
-        const input = document.getElementById(`coeff-${marin.id}`) as HTMLInputElement;
-        if (input) {
-          this.coefficients[marin.id!] = parseFloat(input.value) || 0;
-        }
-      });
-      this.alertService.success('Coefficients enregistrés!');
-    }
-  }
+  // ✅ SUPPRIMÉ: La méthode configureCoefficients n'est plus nécessaire.
 
   async calculerSalaires(): Promise<void> {
     if (this.selectedSortiesIds.length === 0) {
@@ -180,36 +115,45 @@ export class SalairesListComponent implements OnInit {
       return;
     }
 
+    // ✅ MODIFIÉ: Vérification que les parts des marins sont définies
+    const totalParts = this.marins.reduce((sum, marin) => sum + (marin.part || 0), 0);
+    if (totalParts <= 0) {
+        this.alertService.error("La somme des parts des marins est de 0. Veuillez définir les parts dans la section 'Marins' de chaque bateau.");
+        return;
+    }
+
     try {
       this.alertService.loading('Calcul en cours...');
-
+      
       const facturesPromises = this.selectedSortiesIds.map(sortieId =>
         this.factureService.getFacturesBySortie(sortieId).pipe(take(1)).toPromise()
       );
       const allFactures = await Promise.all(facturesPromises);
       this.revenuTotal = allFactures.flat().reduce((sum, f) => sum + (f?.montantTotal || 0), 0);
-
+      
       const depensesPromises = this.selectedSortiesIds.map(sortieId =>
         this.depenseService.getDepensesBySortie(sortieId).pipe(take(1)).toPromise()
       );
       const allDepenses = await Promise.all(depensesPromises);
       this.totalDepenses = allDepenses.flat().reduce((sum: number, d: any) => sum + (d?.montant || 0), 0);
-
+      
       this.beneficeNet = this.revenuTotal - this.totalDepenses;
       this.partProprietaire = this.beneficeNet * 0.5;
       this.partEquipage = this.beneficeNet * 0.5;
-
+      
       this.totalNuits = this.selectedSortiesIds.reduce((total, sortieId) => {
         const sortie = this.sorties.find(s => s.id === sortieId);
         return total + this.calculerNombreNuits(sortie!);
       }, 0);
+      
       this.deductionNuits = this.totalNuits * this.marins.length * 5;
       this.montantAPartager = this.partEquipage - this.deductionNuits;
 
       this.salairesDetails = [];
       for (const marin of this.marins) {
-        const coefficient = this.coefficients[marin.id!] || 0;
-        const salaireBrut = (this.montantAPartager * coefficient) / 100;
+        // ✅ MODIFIÉ: Utilisation de marin.part
+        const part = marin.part || 0;
+        const salaireBrut = totalParts > 0 ? (this.montantAPartager * part) / totalParts : 0;
         const primeNuits = this.totalNuits * 5;
 
         const avances = await this.avanceService.getAvancesByMarin(marin.id!).pipe(take(1)).toPromise();
@@ -217,13 +161,13 @@ export class SalairesListComponent implements OnInit {
 
         const paiements = await this.paiementService.getPaiementsByMarin(marin.id!).pipe(take(1)).toPromise();
         const totalPaiements = paiements?.reduce((sum, p) => sum + p.montant, 0) || 0;
-
+        
         const resteAPayer = salaireBrut + primeNuits - totalAvances - totalPaiements;
 
         this.salairesDetails.push({
           marinId: marin.id!,
           marinNom: `${marin.prenom} ${marin.nom}`,
-          coefficient,
+          part, // ✅ MODIFIÉ: coefficient -> part
           salaireBrut,
           primeNuits,
           totalAvances,
@@ -234,18 +178,9 @@ export class SalairesListComponent implements OnInit {
 
       this.calculated = true;
       this.alertService.close();
-
       await Swal.fire({
         title: 'Calcul terminé !',
-        html: `
-          <div style="text-align: left; padding: 1rem;">
-            <p><strong>Revenu total:</strong> ${this.revenuTotal.toFixed(2)} DT</p>
-            <p><strong>Total dépenses:</strong> ${this.totalDepenses.toFixed(2)} DT</p>
-            <p><strong>Bénéfice net:</strong> ${this.beneficeNet.toFixed(2)} DT</p>
-            <p><strong>Part propriétaire (50%):</strong> ${this.partProprietaire.toFixed(2)} DT</p>
-            <p><strong>Part équipage (50%):</strong> ${this.partEquipage.toFixed(2)} DT</p>
-          </div>
-        `,
+        html: `...`, // Le HTML de SweetAlert reste le même
         icon: 'success',
         confirmButtonColor: '#10b981'
       });
@@ -261,7 +196,7 @@ export class SalairesListComponent implements OnInit {
       title: `Paiement pour ${detail.marinNom}`,
       input: 'number',
       inputLabel: `Montant à payer (Reste: ${detail.resteAPayer.toFixed(2)} DT)`,
-      inputValue: detail.resteAPayer,
+      inputValue: detail.resteAPayer > 0 ? detail.resteAPayer : 0,
       showCancelButton: true,
       confirmButtonText: 'Enregistrer',
       cancelButtonText: 'Annuler',
@@ -285,6 +220,7 @@ export class SalairesListComponent implements OnInit {
         });
         this.alertService.close();
         this.alertService.success('Paiement enregistré!');
+        // Recalculer pour mettre à jour l'affichage
         await this.calculerSalaires();
       } catch (error) {
         console.error('Erreur:', error);

@@ -47,6 +47,17 @@
       </div>
 
       <div class="form-group">
+        <label class="form-label">{{ 'SAILORS.PART' | translate }} *</label>
+        <input 
+          type="number" 
+          formControlName="part" 
+          class="form-input"
+          step="0.1"
+          min="0"
+        />
+      </div>
+
+      <div class="form-group">
         <label class="form-label">{{ 'SAILORS.LICENSE_NUMBER' | translate }} *</label>
         <input 
           type="text" 
