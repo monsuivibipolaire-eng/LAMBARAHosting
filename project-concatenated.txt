@@ -1,6 +1,6 @@
 ====================================
   Projet Angular - Code Source
-  Date: Sat Oct 18 17:16:36 CET 2025
+  Date: Sat Oct 18 22:24:33 CET 2025
 ====================================
 
 Arborescence du projet:
@@ -918,7 +918,7 @@ export class AvancesComponent implements OnInit {
 
 ====================================
 FICHIER: ./src/app/bateaux/bateau-form.component.ts
-Lignes:      115
+Lignes:      120
 ====================================
 
 import { Component, OnInit } from '@angular/core';
@@ -1034,6 +1034,11 @@ export class BateauFormComponent implements OnInit {
 
   cancel(): void {
     this.router.navigate(['/dashboard/bateaux']);
+  }
+
+  // ✅ MÉTHODE POUR LE BOUTON "PRÉCÉDENT"
+  goBack(): void {
+    this.cancel();
   }
 }
 
@@ -1559,7 +1564,7 @@ export class BoatSelectionGuard implements CanActivate {
 
 ====================================
 FICHIER: ./src/app/marins/marin-form.component.ts
-Lignes:      128
+Lignes:      132
 ====================================
 
 import { Component, OnInit } from '@angular/core';
@@ -1590,10 +1595,6 @@ export class MarinFormComponent implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private translate: TranslateService
-  scrollToTop() {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
   ) {}
 
   ngOnInit(): void {
@@ -1688,6 +1689,14 @@ export class MarinFormComponent implements OnInit {
 
   cancel(): void {
     this.router.navigate(['/dashboard/bateaux', this.bateauId, 'marins']);
+  }
+
+  goBack(): void {
+    this.cancel();
+  }
+
+  scrollToTop() {
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 }
 
@@ -2175,7 +2184,7 @@ export interface DetailSalaireMarin {
 
 ====================================
 FICHIER: ./src/app/models/sortie.model.ts
-Lignes:       11
+Lignes:       12
 ====================================
 
 export interface Sortie {
@@ -2185,6 +2194,7 @@ export interface Sortie {
   dateRetour: Date;
   destination: string;
   statut: 'en-cours' | 'terminee' | 'annulee';
+  salaireCalcule?: boolean; // ✅ Propriété ajoutée pour le suivi des calculs
   observations?: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -2192,13 +2202,13 @@ export interface Sortie {
 
 ====================================
 FICHIER: ./src/app/salaires/salaires-list.component.ts
-Lignes:      246
+Lignes:      206
 ====================================
 
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import Swal from 'sweetalert2';
 import { take } from 'rxjs/operators';
 
@@ -2213,8 +2223,9 @@ import { AlertService } from '../services/alert.service';
 import { Sortie } from '../models/sortie.model';
 import { Marin } from '../models/marin.model';
 import { Bateau } from '../models/bateau.model';
+import { SalaireService } from '../services/salaire.service';
+import { CalculSalaire } from '../models/salaire.model';
 
-// ✅ MODIFIÉ: coefficient -> part
 interface SalaireDetail {
   marinId: string;
   marinNom: string;
@@ -2235,22 +2246,14 @@ interface SalaireDetail {
 })
 export class SalairesListComponent implements OnInit {
   selectedBoat: Bateau | null = null;
-  sorties: Sortie[] = [];
   marins: Marin[] = [];
   selectedSortiesIds: string[] = [];
   
-  // ✅ SUPPRIMÉ: La propriété 'coefficients' n'est plus nécessaire
-  
-  revenuTotal = 0;
-  totalDepenses = 0;
-  beneficeNet = 0;
-  partProprietaire = 0;
-  partEquipage = 0;
-  totalNuits = 0;
-  deductionNuits = 0;
-  montantAPartager = 0;
-  salairesDetails: SalaireDetail[] = [];
-  calculated = false;
+  activeTab: 'ouvertes' | 'historique' = 'ouvertes';
+  sortiesOuvertes: Sortie[] = [];
+  sortiesCalculees: Sortie[] = [];
+  historiqueCalculs: { [sortieId: string]: CalculSalaire[] } = {};
+
   loading = true;
 
   constructor(
@@ -2260,8 +2263,10 @@ export class SalairesListComponent implements OnInit {
     private avanceService: AvanceService,
     private paiementService: PaiementService,
     private factureService: FactureVenteService,
+    private salaireService: SalaireService,
     private selectedBoatService: SelectedBoatService,
-    private alertService: AlertService
+    private alertService: AlertService,
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
@@ -2275,20 +2280,31 @@ export class SalairesListComponent implements OnInit {
   }
 
   loadData(): void {
-    if (!this.selectedBoat?.id) {
-      return;
-    }
+    if (!this.selectedBoat?.id) return;
+    this.loading = true;
 
-    this.sortieService.getSortiesByBateau(this.selectedBoat.id).subscribe((sorties: Sortie[]) => {
-      this.sorties = sorties;
-    }, error => {
-      console.error('❌ Erreur lors du chargement des sorties:', error);
-    });
+    const boatId = this.selectedBoat.id;
 
-    this.marinService.getMarinsByBateau(this.selectedBoat.id).subscribe((marins: Marin[]) => {
-      this.marins = marins;
-      this.loading = false;
+    this.sortieService.getSortiesByBateau(boatId).subscribe((sorties: Sortie[]) => {
+      this.sortiesOuvertes = sorties.filter(s => s.statut === 'terminee' && !s.salaireCalcule);
+      
+      // ✅ CORRECTION: Gère correctement la conversion de Timestamp ou Date
+      this.sortiesCalculees = sorties.filter(s => s.salaireCalcule === true)
+        .sort((a, b) => {
+          const dateA = (a.dateRetour as any).toDate ? (a.dateRetour as any).toDate().getTime() : new Date(a.dateRetour).getTime();
+          const dateB = (b.dateRetour as any).toDate ? (b.dateRetour as any).toDate().getTime() : new Date(b.dateRetour).getTime();
+          return dateB - dateA;
+        });
+      
+      this.marinService.getMarinsByBateau(boatId).subscribe((marins: Marin[]) => {
+        this.marins = marins;
+        this.loading = false;
+      });
     });
+  }
+
+  selectTab(tabName: 'ouvertes' | 'historique'): void {
+    this.activeTab = tabName;
   }
 
   toggleSortie(sortieId: string): void {
@@ -2304,133 +2320,87 @@ export class SalairesListComponent implements OnInit {
     return this.selectedSortiesIds.includes(sortieId);
   }
 
-  // ✅ SUPPRIMÉ: La méthode configureCoefficients n'est plus nécessaire.
-
   async calculerSalaires(): Promise<void> {
     if (this.selectedSortiesIds.length === 0) {
-      this.alertService.error('Veuillez sélectionner au moins une sortie');
+      this.alertService.error(this.translate.instant('SALAIRES.ERROR_NO_SORTIE'));
       return;
     }
 
-    // ✅ MODIFIÉ: Vérification que les parts des marins sont définies
     const totalParts = this.marins.reduce((sum, marin) => sum + (marin.part || 0), 0);
     if (totalParts <= 0) {
-        this.alertService.error("La somme des parts des marins est de 0. Veuillez définir les parts dans la section 'Marins' de chaque bateau.");
+        this.alertService.error(this.translate.instant('SALAIRES.ERROR_NO_PARTS'));
         return;
     }
 
     try {
-      this.alertService.loading('Calcul en cours...');
+      this.alertService.loading(this.translate.instant('MESSAGES.CALCULATING'));
       
+      const allSorties = [...this.sortiesOuvertes, ...this.sortiesCalculees];
+      const selectedSorties = allSorties.filter(s => this.selectedSortiesIds.includes(s.id!));
+
       const facturesPromises = this.selectedSortiesIds.map(sortieId =>
         this.factureService.getFacturesBySortie(sortieId).pipe(take(1)).toPromise()
       );
       const allFactures = await Promise.all(facturesPromises);
-      this.revenuTotal = allFactures.flat().reduce((sum, f) => sum + (f?.montantTotal || 0), 0);
+      const revenuTotal = allFactures.flat().reduce((sum, f) => sum + (f?.montantTotal || 0), 0);
       
       const depensesPromises = this.selectedSortiesIds.map(sortieId =>
         this.depenseService.getDepensesBySortie(sortieId).pipe(take(1)).toPromise()
       );
       const allDepenses = await Promise.all(depensesPromises);
-      this.totalDepenses = allDepenses.flat().reduce((sum: number, d: any) => sum + (d?.montant || 0), 0);
+      const totalDepenses = allDepenses.flat().reduce((sum: number, d: any) => sum + (d?.montant || 0), 0);
       
-      this.beneficeNet = this.revenuTotal - this.totalDepenses;
-      this.partProprietaire = this.beneficeNet * 0.5;
-      this.partEquipage = this.beneficeNet * 0.5;
+      const beneficeNet = revenuTotal - totalDepenses;
+      const partProprietaire = beneficeNet * 0.5;
+      const partEquipage = beneficeNet * 0.5;
       
-      this.totalNuits = this.selectedSortiesIds.reduce((total, sortieId) => {
-        const sortie = this.sorties.find(s => s.id === sortieId);
-        return total + this.calculerNombreNuits(sortie!);
-      }, 0);
+      const totalNuits = selectedSorties.reduce((total, sortie) => total + this.calculerNombreNuits(sortie), 0);
       
-      this.deductionNuits = this.totalNuits * this.marins.length * 5;
-      this.montantAPartager = this.partEquipage - this.deductionNuits;
+      const deductionNuits = totalNuits * this.marins.length * 5;
+      const montantAPartager = partEquipage - deductionNuits;
 
-      this.salairesDetails = [];
       for (const marin of this.marins) {
-        // ✅ MODIFIÉ: Utilisation de marin.part
         const part = marin.part || 0;
-        const salaireBrut = totalParts > 0 ? (this.montantAPartager * part) / totalParts : 0;
-        const primeNuits = this.totalNuits * 5;
+        const salaireBrut = totalParts > 0 ? (montantAPartager * part) / totalParts : 0;
+        const primeNuits = totalNuits * 5;
 
         const avances = await this.avanceService.getAvancesByMarin(marin.id!).pipe(take(1)).toPromise();
         const totalAvances = avances?.reduce((sum, a) => sum + a.montant, 0) || 0;
 
         const paiements = await this.paiementService.getPaiementsByMarin(marin.id!).pipe(take(1)).toPromise();
         const totalPaiements = paiements?.reduce((sum, p) => sum + p.montant, 0) || 0;
-        
-        const resteAPayer = salaireBrut + primeNuits - totalAvances - totalPaiements;
-
-        this.salairesDetails.push({
-          marinId: marin.id!,
-          marinNom: `${marin.prenom} ${marin.nom}`,
-          part, // ✅ MODIFIÉ: coefficient -> part
-          salaireBrut,
-          primeNuits,
-          totalAvances,
-          totalPaiements,
-          resteAPayer
-        });
       }
 
-      this.calculated = true;
+      for (const sortieId of this.selectedSortiesIds) {
+        await this.sortieService.updateSortie(sortieId, { salaireCalcule: true });
+      }
+
       this.alertService.close();
+      this.selectedSortiesIds = [];
+      this.loadData(); 
+      this.activeTab = 'historique'; 
+
       await Swal.fire({
-        title: 'Calcul terminé !',
-        html: `...`, // Le HTML de SweetAlert reste le même
+        title: this.translate.instant('SALAIRES.CALCUL_SUCCESS_TITLE'),
         icon: 'success',
         confirmButtonColor: '#10b981'
       });
+
     } catch (error) {
       console.error('Erreur:', error);
       this.alertService.close();
-      this.alertService.error('Erreur lors du calcul');
+      this.alertService.error();
     }
   }
 
-  async enregistrerPaiement(detail: SalaireDetail): Promise<void> {
-    const { value: montant } = await Swal.fire({
-      title: `Paiement pour ${detail.marinNom}`,
-      input: 'number',
-      inputLabel: `Montant à payer (Reste: ${detail.resteAPayer.toFixed(2)} DT)`,
-      inputValue: detail.resteAPayer > 0 ? detail.resteAPayer : 0,
-      showCancelButton: true,
-      confirmButtonText: 'Enregistrer',
-      cancelButtonText: 'Annuler',
-      confirmButtonColor: '#10b981',
-      inputValidator: (value) => {
-        const amount = parseFloat(value);
-        if (!value || amount <= 0) return 'Veuillez entrer un montant valide';
-        if (amount > detail.resteAPayer) return 'Le montant ne peut pas dépasser le reste à payer';
-        return null;
-      }
-    });
-
-    if (montant) {
-      try {
-        this.alertService.loading('Enregistrement du paiement...');
-        await this.paiementService.addPaiement({
-          marinId: detail.marinId,
-          montant: parseFloat(montant),
-          datePaiement: new Date(),
-          sortiesIds: this.selectedSortiesIds
-        });
-        this.alertService.close();
-        this.alertService.success('Paiement enregistré!');
-        // Recalculer pour mettre à jour l'affichage
-        await this.calculerSalaires();
-      } catch (error) {
-        console.error('Erreur:', error);
-        this.alertService.close();
-        this.alertService.error('Erreur lors de l\'enregistrement');
-      }
-    }
+  async viewCalculDetails(sortie: Sortie): Promise<void> {
+    this.alertService.warning('Fonctionnalité à venir', 'Historique');
   }
 
   private calculerNombreNuits(sortie: Sortie): number {
     if (!sortie?.dateDepart || !sortie?.dateRetour) return 0;
-    const depart = sortie.dateDepart instanceof Date ? sortie.dateDepart : (sortie.dateDepart as any).toDate();
-    const retour = sortie.dateRetour instanceof Date ? sortie.dateRetour : (sortie.dateRetour as any).toDate();
+    const depart = (sortie.dateDepart as any).toDate ? (sortie.dateDepart as any).toDate() : new Date(sortie.dateDepart);
+    const retour = (sortie.dateRetour as any).toDate ? (sortie.dateRetour as any).toDate() : new Date(sortie.dateRetour);
     const diffTime = Math.abs(retour.getTime() - depart.getTime());
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }
@@ -4503,7 +4473,7 @@ export class SortieDetailsComponent implements OnInit {
 
 ====================================
 FICHIER: ./src/app/sorties/sortie-form.component.ts
-Lignes:      124
+Lignes:      126
 ====================================
 
 import { Component, OnInit } from '@angular/core';
@@ -4540,9 +4510,7 @@ export class SortieFormComponent implements OnInit {
     this.id = this.route.snapshot.paramMap.get('id') ?? undefined;
     this.isEditMode = !!this.id;
     
-    // Récupérer le bateau sélectionné
     this.selectedBoat = this.selectedBoatService.getSelectedBoat();
-    
     if (!this.selectedBoat && !this.isEditMode) {
       this.alertService.error('Veuillez d\'abord sélectionner un bateau');
       this.router.navigate(['/dashboard/bateaux']);
@@ -4558,7 +4526,6 @@ export class SortieFormComponent implements OnInit {
       observations: ['']
     });
 
-    // Désactiver le champ bateau (il est automatiquement sélectionné)
     this.form.get('bateauId')?.disable();
 
     if (this.isEditMode) {
@@ -4592,7 +4559,7 @@ export class SortieFormComponent implements OnInit {
       this.alertService.loading('Enregistrement en cours...');
 
       const data = {
-        ...this.form.getRawValue(),  // getRawValue() pour inclure les champs désactivés
+        ...this.form.getRawValue(),
         dateDepart: new Date(this.form.value.dateDepart),
         dateRetour: new Date(this.form.value.dateRetour)
       };
@@ -4628,6 +4595,11 @@ export class SortieFormComponent implements OnInit {
 
   cancel(): void {
     this.router.navigate(['/dashboard/sorties']);
+  }
+
+  // ✅ MÉTHODE POUR LE BOUTON "PRÉCÉDENT"
+  goBack(): void {
+    this.cancel();
   }
 }
 
@@ -5973,11 +5945,17 @@ Lignes:      102
 
 ====================================
 FICHIER: ./src/app/bateaux/bateau-form.component.html
-Lignes:      107
+Lignes:      113
 ====================================
 
 <div class="form-container">
   <div class="form-header">
+    <button class="btn-back" (click)="goBack()">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      {{ 'SAILORS.BACK' | translate }}
+    </button>
     <h1 class="form-title">{{ (isEditMode ? 'BOATS.EDIT_BOAT' : 'BOATS.ADD_BOAT') | translate }}</h1>
   </div>
 
@@ -6480,12 +6458,17 @@ Lignes:      149
 
 ====================================
 FICHIER: ./src/app/marins/marin-form.component.html
-Lignes:      134
+Lignes:      139
 ====================================
 
-<button style="position:fixed;right:20px;bottom:20px;z-index:9999" (click)="scrollToTop()">Retour en haut</button>
 <div class="form-container">
   <div class="form-header">
+    <button class="btn-back" (click)="goBack()">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      {{ 'SAILORS.BACK' | translate }}
+    </button>
     <h1 class="form-title">{{ (isEditMode ? 'SAILORS.EDIT_SAILOR' : 'SAILORS.ADD_SAILOR') | translate }}</h1>
   </div>
 
@@ -6693,120 +6676,82 @@ Lignes:       67
 
 ====================================
 FICHIER: ./src/app/salaires/salaires-list.component.html
-Lignes:      115
+Lignes:       77
 ====================================
 
 <div class="salaires-container">
   <div class="header">
-    <h1 class="title">{{ 'MENU.SALAIRES' | translate }}</h1>
-    </div>
+    <h1 class="title">{{ 'SALAIRES.TITLE' | translate }}</h1>
+  </div>
 
   <div *ngIf="loading" class="loading">
     <div class="spinner"></div>
     <p>{{ 'MESSAGES.LOADING' | translate }}</p>
   </div>
 
-  <div *ngIf="!loading && !selectedBoat" class="no-data">
-    <svg class="no-data-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-    </svg>
-    <p>{{ 'BOATS.NO_BOAT_SELECTED' | translate }}</p>
-  </div>
-
   <div *ngIf="!loading && selectedBoat" class="content">
-    <div class="section-card">
-      <h2>1. {{ 'SORTIES.SELECTSORTIES' | translate }}</h2>
-      <div class="sorties-list">
-        <div *ngFor="let sortie of sorties" 
-             class="sortie-item"
-             [class.selected]="isSortieSelected(sortie.id!)"
-             (click)="toggleSortie(sortie.id!)">
-          <input type="checkbox" [checked]="isSortieSelected(sortie.id!)" (click)="$event.stopPropagation()">
-          <div class="sortie-info">
-            <strong>{{ sortie.destination }}</strong>
-            <span>{{ formatDate(sortie.dateDepart) }} - {{ formatDate(sortie.dateRetour) }}</span>
-          </div>
-          <span class="status-badge" [ngClass]="'status-' + sortie.statut">
-            {{ 'SORTIES.STATUS.' + sortie.statut.toUpperCase() | translate }}
-          </span>
-        </div>
-      </div>
-      
-      <button class="btn btn-success btn-lg" 
-             (click)="calculerSalaires()" 
-             [disabled]="selectedSortiesIds.length === 0 || marins.length === 0">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-        </svg>
-        {{ 'SALAIRES.CALCULER' | translate }}
+    <div class="tabs">
+      <button class="tab-button" [class.active]="activeTab === 'ouvertes'" (click)="selectTab('ouvertes')">
+        {{ 'SALAIRES.TABS.OPEN_TRIPS' | translate }}
+        <span class="badge">{{ sortiesOuvertes.length }}</span>
+      </button>
+      <button class="tab-button" [class.active]="activeTab === 'historique'" (click)="selectTab('historique')">
+        {{ 'SALAIRES.TABS.HISTORY' | translate }}
+        <span class="badge">{{ sortiesCalculees.length }}</span>
       </button>
     </div>
 
-    <div *ngIf="calculated" class="results">
-      <div class="summary-cards">
-        <div class="summary-card revenue">
-          <h3>{{ 'SALAIRES.REVENU_TOTAL' | translate }}</h3>
-          <p class="amount">{{ revenuTotal | number:'1.2-2' }} DT</p>
-        </div>
-        <div class="summary-card expenses">
-          <h3>{{ 'EXPENSES.TITLE' | translate }}</h3>
-          <p class="amount">{{ totalDepenses | number:'1.2-2' }} DT</p>
-        </div>
-        <div class="summary-card benefit">
-          <h3>Bénéfice net</h3>
-          <p class="amount">{{ beneficeNet | number:'1.2-2' }} DT</p>
-        </div>
-      </div>
-
-      <div class="summary-cards">
-        <div class="summary-card owner">
-          <h3>{{ 'SALAIRES.PART_PROPRIETAIRE' | translate }}</h3>
-          <p class="amount big">{{ partProprietaire | number:'1.2-2' }} DT</p>
-        </div>
-        <div class="summary-card crew">
-          <h3>{{ 'SALAIRES.PART_EQUIPAGE' | translate }}</h3>
-          <p class="amount">{{ partEquipage | number:'1.2-2' }} DT</p>
-          <p class="detail">- Déduction nuits: {{ deductionNuits | number:'1.2-2' }} DT</p>
-          <p class="detail">= {{ 'SALAIRES.MONTANT_A_PARTAGER' | translate }}: {{ montantAPartager | number:'1.2-2' }} DT</p>
-        </div>
-      </div>
-
+    <div *ngIf="activeTab === 'ouvertes'" class="tab-content">
       <div class="section-card">
-        <h2>2. {{ 'SALAIRES.TITLE' | translate }}</h2>
-        <div class="table-container">
-          <table class="salaires-table">
-            <thead>
-              <tr>
-                <th>{{ 'SAILORS.TITLE' | translate }}</th>
-                <th>{{ 'SAILORS.PART' | translate }}</th> <th>{{ 'SALAIRES.SALAIRE_BASE' | translate }}</th>
-                <th>{{ 'SALAIRES.PRIME_NUITS' | translate }}</th>
-                <th>{{ 'AVANCES.TITLE' | translate }}</th>
-                <th>Déjà payé</th>
-                <th class="reste">Reste à payer</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let detail of salairesDetails">
-                <td class="marin-name">{{ detail.marinNom }}</td>
-                <td>{{ detail.part }}</td> <td>{{ detail.salaireBrut | number:'1.2-2' }} DT</td>
-                <td>{{ detail.primeNuits | number:'1.2-2' }} DT</td>
-                <td class="avances">{{ detail.totalAvances | number:'1.2-2' }} DT</td>
-                <td class="paiements">{{ detail.totalPaiements | number:'1.2-2' }} DT</td>
-                <td class="reste" [class.paid]="detail.resteAPayer <= 0">
-                  <strong>{{ detail.resteAPayer | number:'1.2-2' }} DT</strong>
-                </td>
-                <td>
-                  <button class="btn btn-sm btn-pay" 
-                          (click)="enregistrerPaiement(detail)"
-                          [disabled]="detail.resteAPayer <= 0.01">
-                    {{ detail.resteAPayer > 0.01 ? 'Payer' : 'Payé' }}
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <h2>{{ 'SORTIES.SELECTSORTIES' | translate }}</h2>
+        <div *ngIf="sortiesOuvertes.length > 0; else noOpenTrips" class="sorties-list">
+          <div *ngFor="let sortie of sortiesOuvertes" 
+               class="sortie-item"
+               [class.selected]="isSortieSelected(sortie.id!)"
+               (click)="toggleSortie(sortie.id!)">
+            <input type="checkbox" [checked]="isSortieSelected(sortie.id!)" (click)="$event.stopPropagation()">
+            <div class="sortie-info">
+              <strong>{{ sortie.destination }}</strong>
+              <span>{{ formatDate(sortie.dateDepart) }} - {{ formatDate(sortie.dateRetour) }}</span>
+            </div>
+          </div>
         </div>
+        <ng-template #noOpenTrips>
+          <div class="no-data-small">
+            <p>{{ 'SALAIRES.NO_OPEN_TRIPS' | translate }}</p>
+          </div>
+        </ng-template>
+        
+        <button class="btn btn-success btn-lg" 
+               (click)="calculerSalaires()" 
+               [disabled]="selectedSortiesIds.length === 0 || marins.length === 0">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+          </svg>
+          {{ 'SALAIRES.CALCULER' | translate }}
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="activeTab === 'historique'" class="tab-content">
+      <div class="section-card">
+        <h2>{{ 'SALAIRES.TABS.CALCULATED_TRIPS' | translate }}</h2>
+        <div *ngIf="sortiesCalculees.length > 0; else noCalculatedTrips" class="sorties-list-history">
+          <div *ngFor="let sortie of sortiesCalculees" class="sortie-item-history">
+            <div class="sortie-info">
+              <strong>{{ sortie.destination }}</strong>
+              <span>{{ formatDate(sortie.dateDepart) }} - {{ formatDate(sortie.dateRetour) }}</span>
+            </div>
+            <button class="btn btn-secondary btn-sm" (click)="viewCalculDetails(sortie)">
+              {{ 'COMMON.VIEW_DETAILS' | translate }}
+            </button>
+          </div>
+        </div>
+        <ng-template #noCalculatedTrips>
+          <div class="no-data-small">
+            <p>{{ 'SALAIRES.NO_CALCULATED_TRIPS' | translate }}</p>
+          </div>
+        </ng-template>
       </div>
     </div>
   </div>
@@ -7446,15 +7391,20 @@ Lignes:      137
 
 ====================================
 FICHIER: ./src/app/sorties/sortie-form.component.html
-Lignes:       75
+Lignes:       80
 ====================================
 
 <div class="form-container">
   <div class="form-header">
+    <button class="btn-back" (click)="goBack()">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      {{ 'SAILORS.BACK' | translate }}
+    </button>
     <h1 class="form-title">{{ (isEditMode ? 'SORTIES.EDIT' : 'SORTIES.ADD') | translate }}</h1>
   </div>
 
-  <!-- Affichage du bateau sélectionné -->
   <div class="selected-boat-info" *ngIf="selectedBoat">
     <div class="boat-badge">
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -8402,7 +8352,7 @@ Lignes:      359
 
 ====================================
 FICHIER: ./src/app/bateaux/bateau-form.component.scss
-Lignes:      217
+Lignes:      127
 ====================================
 
 .form-container {
@@ -8416,16 +8366,22 @@ Lignes:      217
 }
 
 .form-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
   margin-bottom: 2rem;
   border-bottom: 2px solid #e5e7eb;
   padding-bottom: 1rem;
-}
 
-.form-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0;
+  .form-title {
+    flex-grow: 1;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+    text-align: center;
+    margin-right: -120px;
+  }
 }
 
 .form-grid {
@@ -8516,111 +8472,15 @@ Lignes:      217
   }
 }
 
-/* ===================================
-   RESPONSIVE
-   =================================== */
-
 @media (max-width: 768px) {
-  .form-container {
-    padding: 1.5rem;
-    border-radius: 0.5rem;
-  }
-
-  .form-title {
+  .form-header .form-title {
     font-size: 1.5rem;
+    margin-right: 0;
   }
-
-  .form-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .form-actions {
-    flex-direction: column-reverse;
-    gap: 0.75rem;
-  }
-
-  .btn {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-@media (max-width: 480px) {
-  .form-container {
-    padding: 1rem;
-  }
-
-  .form-title {
-    font-size: 1.25rem;
-  }
-
-  .form-input {
-    padding: 0.625rem;
-    font-size: 0.9375rem;
-  }
-
-  .btn {
-    padding: 0.625rem 1.5rem;
-  }
-}
-
-/* AMÉLIORATION RESPONSIVE */
-@media (max-width: 1024px) {
-  .form-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .form-container {
-    padding: 1.5rem 1rem;
-    border-radius: 0.5rem;
-  }
-
-  .form-title {
-    font-size: 1.5rem;
-  }
-
-  .form-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .form-actions {
-    flex-direction: column-reverse;
-    gap: 0.75rem;
-  }
-
-  .btn {
-    width: 100%;
-    justify-content: center;
-    padding: 0.875rem 1.5rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .form-container {
-    padding: 1rem 0.75rem;
-  }
-
-  .form-title {
-    font-size: 1.25rem;
-  }
-
-  .form-label {
-    font-size: 0.8125rem;
-  }
-
-  .form-input {
-    padding: 0.625rem 0.75rem;
-    font-size: 0.9375rem;
-  }
-
-  .btn {
-    padding: 0.75rem 1.25rem;
-    font-size: 0.9375rem;
-  }
+  .form-container { padding: 1.5rem; }
+  .form-grid { grid-template-columns: 1fr; gap: 1rem; }
+  .form-actions { flex-direction: column-reverse; gap: 0.75rem; }
+  .btn { width: 100%; justify-content: center; }
 }
 
 ====================================
@@ -10034,7 +9894,7 @@ body.rtl,
 
 ====================================
 FICHIER: ./src/app/marins/marin-form.component.scss
-Lignes:      159
+Lignes:      130
 ====================================
 
 .form-container {
@@ -10047,17 +9907,25 @@ Lignes:      159
   margin: 0 auto;
 }
 
+// ✅ MISE À JOUR DU STYLE DE L'EN-TÊTE
 .form-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
   margin-bottom: 2rem;
   border-bottom: 2px solid #e5e7eb;
   padding-bottom: 1rem;
-}
 
-.form-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0;
+  .form-title {
+    flex-grow: 1;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+    text-align: center;
+    // On retire de la marge pour que le bouton ne décale pas trop le titre
+    margin-right: -120px;
+  }
 }
 
 .form-grid {
@@ -10148,53 +10016,16 @@ Lignes:      159
   }
 }
 
-/* ===================================
-   RESPONSIVE
-   =================================== */
-
+/* RESPONSIVE */
 @media (max-width: 768px) {
-  .form-container {
-    padding: 1.5rem;
-    border-radius: 0.5rem;
-  }
-
-  .form-title {
+  .form-header .form-title {
     font-size: 1.5rem;
+    margin-right: 0; // Annuler la marge sur petit écran
   }
-
-  .form-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .form-actions {
-    flex-direction: column-reverse;
-    gap: 0.75rem;
-  }
-
-  .btn {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-@media (max-width: 480px) {
-  .form-container {
-    padding: 1rem;
-  }
-
-  .form-title {
-    font-size: 1.25rem;
-  }
-
-  .form-input {
-    padding: 0.625rem;
-    font-size: 0.9375rem;
-  }
-
-  .btn {
-    padding: 0.625rem 1.5rem;
-  }
+  .form-container { padding: 1.5rem; }
+  .form-grid { grid-template-columns: 1fr; gap: 1rem; }
+  .form-actions { flex-direction: column-reverse; gap: 0.75rem; }
+  .btn { width: 100%; justify-content: center; }
 }
 
 ====================================
@@ -10464,7 +10295,7 @@ Lignes:      259
 
 ====================================
 FICHIER: ./src/app/salaires/salaires-list.component.scss
-Lignes:      359
+Lignes:      438
 ====================================
 
 .salaires-container {
@@ -10824,6 +10655,85 @@ Lignes:      359
 
   .salaires-table {
     font-size: 0.875rem;
+  }
+}
+
+/* Styles pour les onglets */
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 2rem;
+}
+
+.tab-button {
+  padding: 1rem 1.5rem;
+  border: none;
+  background: none;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.3s;
+  border-bottom: 4px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  &:hover {
+    color: #1f2937;
+    background-color: #f9fafb;
+  }
+
+  &.active {
+    color: #10b981;
+    border-bottom-color: #10b981;
+  }
+}
+
+.badge {
+  background-color: #e5e7eb;
+  color: #4b5563;
+  border-radius: 9999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.tab-button.active .badge {
+  background-color: #10b981;
+  color: white;
+}
+
+.no-data-small {
+  text-align: center;
+  padding: 2rem;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.sorties-list-history {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sortie-item-history {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+}
+
+.btn-secondary {
+  background-color: #6b7280;
+  color: white;
+
+  &:hover:not(:disabled) {
+    background-color: #4b5563;
   }
 }
 
@@ -12252,16 +12162,22 @@ Lignes:      161
 }
 
 .form-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
   margin-bottom: 2rem;
   border-bottom: 2px solid #e5e7eb;
   padding-bottom: 1rem;
-}
 
-.form-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0;
+  .form-title {
+    flex-grow: 1;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+    text-align: center;
+    margin-right: -120px;
+  }
 }
 
 .form-grid {
@@ -12294,7 +12210,6 @@ Lignes:      161
   font-size: 1rem;
   transition: all 0.2s;
   width: 100%;
-
   &:focus {
     outline: none;
     border-color: #3b82f6;
@@ -12362,18 +12277,14 @@ textarea.form-input {
 }
 
 @media (max-width: 768px) {
-  .form-container { padding: 1.5rem; border-radius: 0.5rem; }
-  .form-title { font-size: 1.5rem; }
+  .form-header .form-title {
+    font-size: 1.5rem;
+    margin-right: 0;
+  }
+  .form-container { padding: 1.5rem; }
   .form-grid { grid-template-columns: 1fr; gap: 1rem; }
   .form-actions { flex-direction: column-reverse; gap: 0.75rem; }
   .btn { width: 100%; justify-content: center; }
-}
-
-@media (max-width: 480px) {
-  .form-container { padding: 1rem; }
-  .form-title { font-size: 1.25rem; }
-  .form-input { padding: 0.625rem; font-size: 0.9375rem; }
-  .btn { padding: 0.625rem 1.5rem; }
 }
 
 .selected-boat-info {
@@ -12389,7 +12300,6 @@ textarea.form-input {
     border-radius: 0.75rem;
     border: 2px solid #10b981;
     font-size: 1rem;
-
     svg {
       width: 24px;
       height: 24px;
@@ -13967,6 +13877,6 @@ Lignes:      281
   RÉSUMÉ
 ====================================
 Total fichiers: 121
-Total lignes: 12997
-Date: Sat Oct 18 17:16:37 CET 2025
+Total lignes: 12907
+Date: Sat Oct 18 22:24:34 CET 2025
 ====================================

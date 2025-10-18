@@ -1,40 +1,39 @@
-export interface CoeffSalaire {
-  marinId: string;
-  coefficient: number; // Pourcentage du partage équipage (ex: 20 pour 20%)
-}
+import { Depense } from "./depense.model";
+import { FactureVente } from "./facture-vente.model";
 
+// Modèle pour sauvegarder un calcul complet
 export interface CalculSalaire {
-  sortieId: string;
+  id?: string;
+  bateauId: string;
+  sortiesIds: string[];
+  sortiesDestinations: string[]; // Pour un affichage facile
   dateCalcul: Date;
   
-  // Revenus
+  // Résumé financier
   revenuTotal: number;
-  
-  // Dépenses
   totalDepenses: number;
-  
-  // Part propriétaire et équipage
-  partProprietaire: number; // 50%
-  partEquipage: number; // 50%
-  
-  // Déduction nuits (5 DT par nuit par marin)
-  nbNuits: number;
-  nbMarins: number;
+  beneficeNet: number;
+  partProprietaire: number;
+  partEquipage: number;
   deductionNuits: number;
-  
-  // Montant à partager entre équipage
   montantAPartager: number;
   
   // Détails par marin
   detailsMarins: DetailSalaireMarin[];
+
+  // ✅ Transactions utilisées pour le calcul
+  factures?: FactureVente[];
+  depenses?: Depense[];
 }
 
+// Modèle pour les détails de chaque marin au sein d'un calcul
 export interface DetailSalaireMarin {
   marinId: string;
   marinNom: string;
-  coefficient: number;
-  salaireBase: number; // Part selon coefficient
-  primenuits: number; // 5 DT × nombre de nuits
-  avances: number;
-  salaireNet: number; // salaireBase + primeNuits - avances
+  part: number;
+  salaireBrut: number;
+  primeNuits: number;
+  totalAvances: number;
+  totalPaiements: number;
+  resteAPayer: number;
 }

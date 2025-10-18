@@ -51,6 +51,7 @@
     "PORT": "Port d'attache",
     "STATUS": "Statut",
     "ACTIVE": "Actif",
+    "MAINTENANCE": "Maintenance",
     "INACTIVE": "Inactif",
     "NO_BOAT_SELECTED": "Aucun bateau n'est sélectionné",
     "NO_BOAT_SELECTED_DETAILS": "Veuillez d'abord sélectionner un bateau depuis la page 'Bateaux'.",
@@ -92,12 +93,10 @@
     "SUCCESS_ADD": "Marin ajouté avec succès.",
     "SUCCESS_UPDATE": "Marin mis à jour avec succès.",
     "SUCCESS_DELETE": "Marin supprimé avec succès.",
-    "FUNCTION_TYPE": {
-      "CAPITAINE": "Capitaine",
-      "SECOND": "Second",
-      "MECANICIEN": "Mécanicien",
-      "MATELOT": "Matelot"
-    },
+    "CAPITAINE": "Capitaine",
+    "SECOND": "Second",
+    "MECANICIEN": "Mécanicien",
+    "MATELOT": "Matelot",
     "PLACEHOLDER": {
       "LASTNAME": "Entrez le nom",
       "FIRSTNAME": "Entrez le prénom",
@@ -105,13 +104,60 @@
     }
   },
   "SORTIES": {
-    "TITLE": "Sorties en mer"
+    "TITLE": "Sorties en mer",
+    "ADD": "Ajouter une Sortie",
+    "EDIT": "Modifier la Sortie",
+    "DETAILSTITLE": "Détails de la Sortie",
+    "DESTINATION": "Destination",
+    "DATEDEPART": "Date de départ",
+    "DATERETOUR": "Date de retour",
+    "STATUT": "Statut",
+    "STATUS": {
+      "EN-COURS": "En cours",
+      "TERMINEE": "Terminée",
+      "ANNULEE": "Annulée"
+    },
+    "GENERALINFO": "Informations Générales",
+    "OBSERVATIONS": "Observations",
+    "MANAGE": "Gérer la sortie",
+    "NOSORTIES": "Aucune sortie enregistrée pour ce bateau.",
+    "SELECTSORTIES": "Sélectionner les sorties en mer"
   },
   "EXPENSES": {
-    "TITLE": "Dépenses"
+    "TITLE": "Dépenses",
+    "ADD": "Ajouter une Dépense",
+    "EDIT": "Modifier la Dépense",
+    "TYPE": "Type de dépense",
+    "AMOUNT": "Montant",
+    "DATE": "Date",
+    "DESCRIPTION": "Description",
+    "NOEXPENSE": "Aucune dépense enregistrée pour cette sortie.",
+    "TYPES": {
+      "FUEL": "Carburant",
+      "ICE": "Glace",
+      "OIL_CHANGE": "Vidange",
+      "CREW_CNSS": "CNSS Équipage",
+      "CREW_BONUS": "Prime Équipage",
+      "FOOD": "Alimentation",
+      "VMS": "VMS",
+      "MISC": "Divers"
+    },
+    "SUCCESS_ADD": "Dépense ajoutée avec succès",
+    "SUCCESS_UPDATE": "Dépense mise à jour avec succès"
   },
   "POINTAGE": {
-    "TITLE": "Pointage de l'Équipage"
+    "TITLE": "Pointage de l'Équipage",
+    "CREW": "Gérer le pointage",
+    "PRESENT": "Présent",
+    "ABSENT": "Absent",
+    "NOCREW": "Aucun marin n'est affecté à ce bateau.",
+    "OBSERVATIONS": "Observations",
+    "ADDOBS": "Ajouter une observation...",
+    "TOTAL": "Total",
+    "SUCCESS_PRESENCE": "Présence enregistrée",
+    "SUCCESS_ABSENCE": "Absence enregistrée",
+    "SUCCESS_OBS": "Observations mises à jour",
+    "ERROR_ADD": "Erreur lors de l'enregistrement du pointage"
   },
   "AVANCES": {
     "TITLE": "Avances sur Salaire",
@@ -133,13 +179,72 @@
     "DELETE_CONFIRM_ITEM": "l'avance de {{amount}} DT pour {{name}}"
   },
   "SALAIRES": {
-    "TITLE": "Calcul des Salaires"
+    "DETAILS_MODAL": {
+      "REVENUE_TITLE": "Détails des Revenus",
+      "EXPENSE_TITLE": "Détails des Dépenses",
+      "INVOICE_NUM": "N° Facture",
+      "CLIENT": "Client"
+    },
+    "RESULTS": {
+      "TITLE": "Résultats du Calcul",
+      "CLOSE": "Fermer",
+      "FINANCIAL_SUMMARY": "Résumé Financier",
+      "PROFIT_SHARING": "Partage des Bénéfices"
+    },
+    "TITLE": "Calcul des Salaires",
+    "CALCULER": "Calculer les Salaires",
+    "REVENU_TOTAL": "Revenu Total",
+    "TOTAL_DEPENSES": "Total des Dépenses",
+    "BENEFICE_NET": "Bénéfice Net",
+    "PART_PROPRIETAIRE": "Part Propriétaire (50%)",
+    "PART_EQUIPAGE": "Part Équipage (50%)",
+    "DEDUCTIONS": "Déductions de la part équipage",
+    "NUITS": "Nuits",
+    "MARINS": "Marins",
+    "MONTANT_A_PARTAGER": "Montant Net à Partager",
+    "DETAILS_PAR_MARIN": "Détails par Marin",
+    "SALAIRE_BASE": "Salaire de Base (selon part)",
+    "PRIME_NUITS": "Prime de Nuits",
+    "SALAIRE_NET": "Salaire Net",
+    "DEJA_PAYE": "Déjà Payé",
+    "RESTE_A_PAYER": "Reste à Payer",
+    "PAYER": "Payer",
+    "PAYE": "Payé",
+    "ERROR_NO_SORTIE": "Veuillez sélectionner au moins une sortie",
+    "ERROR_NO_PARTS": "La somme des parts des marins est de 0. Veuillez définir les parts dans la section 'Marins' de chaque bateau.",
+    "CALCUL_SUCCESS_TITLE": "Calcul terminé !",
+    "PAYMENT_SUCCESS": "Paiement enregistré!",
+    "PAYMENT_MODAL_TITLE": "Paiement pour {{name}}",
+    "PAYMENT_MODAL_LABEL": "Montant à payer (Reste: {{amount}} DT)",
+    "TABS": {
+      "OPEN_TRIPS": "Voyages Ouverts",
+      "HISTORY": "Historique",
+      "CALCULATED_TRIPS": "Voyages Calculés"
+    },
+    "NO_OPEN_TRIPS": "Aucun voyage terminé n'est en attente de calcul.",
+    "NO_CALCULATED_TRIPS": "Aucun calcul de salaire n'a encore été effectué.",
+    "HISTORY": {
+      "MODAL_TITLE": "Détails du Calcul pour : {{destinations}}",
+      "NO_DATA_FOUND": "Aucun détail de calcul sauvegardé pour cette sortie.",
+      "NO_DATA_FOUND_TITLE": "Détails non trouvés",
+      "NO_DATA_FOUND_TEXT": "Les détails pour ce calcul n'ont pas été trouvés. Il s'agit peut-être d'un ancien calcul. Voulez-vous marquer ce voyage comme 'ouvert' pour le recalculer ?",
+      "RECALCULATE_BTN": "Recalculer",
+      "MOVED_FOR_RECALC": "Le voyage a été déplacé vers l'onglet 'Voyages Ouverts' pour être recalculé."
+    }
+  },    "PAYMENT_MODAL_LABEL": "Montant à payer (Reste: {{amount}} DT)"
   },
   "VENTES": {
-    "TITLE": "Ventes"
-  },
-  "FACTURES": {
-    "TITLE": "Factures"
+    "TITLE": "Gestion des Ventes",
+    "ADD_INVOICE": "Nouvelle Facture",
+    "ADD_INVOICE_FOR_TRIP": "Ajouter une facture pour cette sortie",
+    "NO_INVOICES_FOR_TRIP": "Aucune facture enregistrée pour cette sortie",
+    "TRIP_TOTAL": "Total des ventes pour la sortie",
+    "GENERAL_TOTAL": "Total général des ventes",
+    "NO_TRIPS_AVAILABLE": "Aucune sortie en mer disponible pour ajouter une facture.",
+    "SUCCESS_ADD": "Facture ajoutée avec succès !",
+    "SUCCESS_UPDATE": "Facture modifiée avec succès !",
+    "SUCCESS_DELETE": "Facture supprimée avec succès.",
+    "DELETE_CONFIRM_ITEM": "la facture {{number}} ({{amount}} DT)"
   },
   "FORM": {
     "ADD": "Ajouter",
@@ -153,11 +258,16 @@
     "INVALID_EMAIL": "Adresse e-mail invalide."
   },
   "MESSAGES": {
-    "LOADING": "Chargement...",
+    "LOADING_DETAILS": "Chargement des détails...",    "LOADING": "Chargement...",
     "SAVING": "Enregistrement...",
+    "UPDATING": "Modification...",
+    "DELETING": "Suppression...",
+    "CALCULATING": "Calcul en cours...",
     "ADDING_SAILOR": "Ajout du marin...",
     "SUCCESS": "Opération réussie !",
-    "ERROR": "Une erreur est survenue",
+    "ERROR_TITLE": "Erreur",
+    "WARNING_TITLE": "Attention",
+    "ERROR_GENERIC": "Une erreur inattendue est survenue. Veuillez réessayer.",
     "AREYOUSURE": "Êtes-vous sûr ?",
     "CONFIRMDELETEMESSAGE": "Vous êtes sur le point de supprimer",
     "IRREVERSIBLE": "Cette action est irréversible.",

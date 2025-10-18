@@ -131,6 +131,9 @@
       <button type="button" (click)="cancel()" class="btn btn-secondary" [disabled]="loading">
         {{ 'FORM.CANCEL' | translate }}
       </button>
+      <button type="button" (click)="goBack()" class="btn btn-info" [disabled]="loading">
+        {{ 'SAILORS.BACK' | translate }}
+      </button>
       <button type="submit" class="btn btn-primary" [disabled]="loading">
         {{ loading ? ('MESSAGES.SAVING' | translate) : ((isEditMode ? 'FORM.EDIT' : 'FORM.ADD') | translate) }}
       </button>

@@ -179,6 +179,18 @@
     "DELETE_CONFIRM_ITEM": "l'avance de {{amount}} DT pour {{name}}"
   },
   "SALAIRES": {
+    "DETAILS_MODAL": {
+      "REVENUE_TITLE": "Détails des Revenus",
+      "EXPENSE_TITLE": "Détails des Dépenses",
+      "INVOICE_NUM": "N° Facture",
+      "CLIENT": "Client"
+    },
+    "RESULTS": {
+      "TITLE": "Résultats du Calcul",
+      "CLOSE": "Fermer",
+      "FINANCIAL_SUMMARY": "Résumé Financier",
+      "PROFIT_SHARING": "Partage des Bénéfices"
+    },
     "TITLE": "Calcul des Salaires",
     "CALCULER": "Calculer les Salaires",
     "REVENU_TOTAL": "Revenu Total",
@@ -203,7 +215,24 @@
     "CALCUL_SUCCESS_TITLE": "Calcul terminé !",
     "PAYMENT_SUCCESS": "Paiement enregistré!",
     "PAYMENT_MODAL_TITLE": "Paiement pour {{name}}",
-    "PAYMENT_MODAL_LABEL": "Montant à payer (Reste: {{amount}} DT)"
+    "PAYMENT_MODAL_LABEL": "Montant à payer (Reste: {{amount}} DT)",
+    ,"PAYMENT_MODAL": { "ERROR_POSITIVE": "Le montant doit être positif.", "ERROR_EXCEED": "Le montant ne peut pas dépasser le reste à payer." }
+    "TABS": {
+      "OPEN_TRIPS": "Voyages Ouverts",
+      "HISTORY": "Historique",
+      "CALCULATED_TRIPS": "Voyages Calculés"
+    },
+    "NO_OPEN_TRIPS": "Aucun voyage terminé n'est en attente de calcul.",
+    "NO_CALCULATED_TRIPS": "Aucun calcul de salaire n'a encore été effectué.",
+    "HISTORY": {
+      "MODAL_TITLE": "Détails du Calcul pour : {{destinations}}",
+      "NO_DATA_FOUND": "Aucun détail de calcul sauvegardé pour cette sortie.",
+      "NO_DATA_FOUND_TITLE": "Détails non trouvés",
+      "NO_DATA_FOUND_TEXT": "Les détails pour ce calcul n'ont pas été trouvés. Il s'agit peut-être d'un ancien calcul. Voulez-vous marquer ce voyage comme 'ouvert' pour le recalculer ?",
+      "RECALCULATE_BTN": "Recalculer",
+      "MOVED_FOR_RECALC": "Le voyage a été déplacé vers l'onglet 'Voyages Ouverts' pour être recalculé."
+    }
+  },    "PAYMENT_MODAL_LABEL": "Montant à payer (Reste: {{amount}} DT)"
   },
   "VENTES": {
     "TITLE": "Gestion des Ventes",
@@ -230,7 +259,7 @@
     "INVALID_EMAIL": "Adresse e-mail invalide."
   },
   "MESSAGES": {
-    "LOADING": "Chargement...",
+    "LOADING_DETAILS": "Chargement des détails...",    "LOADING": "Chargement...",
     "SAVING": "Enregistrement...",
     "UPDATING": "Modification...",
     "DELETING": "Suppression...",

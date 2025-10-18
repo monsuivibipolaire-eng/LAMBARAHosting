@@ -80,7 +80,7 @@ export class MockDataComponent {
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: this.translate.instant('MOCK_DATA.CONFIRM_BUTTON'),
-      cancelButtonText: this.translate.instant('MOCK_DATA.CANCEL_BUTTON'),
+      cancelButtonText: this.translate.instant('FORM.CANCEL'),
       confirmButtonColor: '#3b82f6'
     });
 
