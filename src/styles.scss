@@ -1,6 +1,7 @@
+@use "tailwindcss";
+@use './styles/btn-back';
 /* You can add global styles to this file, and also import other style files */
 
-@use "tailwindcss";
 
 /* ============================================
    SUPPORT RTL (RIGHT-TO-LEFT) POUR L'ARABE
@@ -102,4 +103,3 @@ body.rtl select {
 }
 
 /* Import des styles pour boutons Retour */
-@use './styles/btn-back';
