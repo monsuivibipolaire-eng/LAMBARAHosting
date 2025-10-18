@@ -32,7 +32,9 @@ export class SortieFormComponent implements OnInit {
     this.id = this.route.snapshot.paramMap.get('id') ?? undefined;
     this.isEditMode = !!this.id;
     
+    // Récupérer le bateau sélectionné
     this.selectedBoat = this.selectedBoatService.getSelectedBoat();
+    
     if (!this.selectedBoat && !this.isEditMode) {
       this.alertService.error('Veuillez d\'abord sélectionner un bateau');
       this.router.navigate(['/dashboard/bateaux']);
@@ -48,6 +50,7 @@ export class SortieFormComponent implements OnInit {
       observations: ['']
     });
 
+    // Désactiver le champ bateau (il est automatiquement sélectionné)
     this.form.get('bateauId')?.disable();
 
     if (this.isEditMode) {
@@ -81,7 +84,7 @@ export class SortieFormComponent implements OnInit {
       this.alertService.loading('Enregistrement en cours...');
 
       const data = {
-        ...this.form.getRawValue(),
+        ...this.form.getRawValue(),  // getRawValue() pour inclure les champs désactivés
         dateDepart: new Date(this.form.value.dateDepart),
         dateRetour: new Date(this.form.value.dateRetour)
       };
@@ -117,10 +120,5 @@ export class SortieFormComponent implements OnInit {
 
   cancel(): void {
     this.router.navigate(['/dashboard/sorties']);
-  }
-
-  // ✅ MÉTHODE POUR LE BOUTON "PRÉCÉDENT"
-  goBack(): void {
-    this.cancel();
   }
 }

@@ -1,6 +1,6 @@
 ====================================
   Projet Angular - Code Source
-  Date: Sat Oct 18 16:48:30 CET 2025
+  Date: Sat Oct 18 17:16:36 CET 2025
 ====================================
 
 Arborescence du projet:
@@ -11,9 +11,11 @@ Arborescence du projet:
 │   ├── app-routing.module.ts
 │   ├── app-routing.module.ts.fix_backup
 │   ├── app.component.html
+│   ├── app.component.html.bak
 │   ├── app.component.scss
 │   ├── app.component.scss.tmp
 │   ├── app.component.ts
+│   ├── app.component.ts.bak
 │   ├── app.config.ts
 │   ├── app.html
 │   ├── app.module.ts
@@ -21,23 +23,31 @@ Arborescence du projet:
 │   ├── app.ts
 │   ├── auth
 │   │   ├── auth.component.html
+│   │   ├── auth.component.html.bak
 │   │   ├── auth.component.scss
-│   │   └── auth.component.ts
+│   │   ├── auth.component.ts
+│   │   └── auth.component.ts.bak
 │   ├── auth-guard.ts
 │   ├── auth.guard.ts
 │   ├── auth.service.ts
 │   ├── auth.ts
 │   ├── avances
 │   │   ├── avances.component.html
+│   │   ├── avances.component.html.bak
 │   │   ├── avances.component.scss
-│   │   └── avances.component.ts
+│   │   ├── avances.component.ts
+│   │   └── avances.component.ts.bak
 │   ├── bateaux
 │   │   ├── bateau-form.component.html
+│   │   ├── bateau-form.component.html.bak
 │   │   ├── bateau-form.component.scss
 │   │   ├── bateau-form.component.ts
+│   │   ├── bateau-form.component.ts.bak
 │   │   ├── bateaux-list.component.html
+│   │   ├── bateaux-list.component.html.bak
 │   │   ├── bateaux-list.component.scss
 │   │   ├── bateaux-list.component.ts
+│   │   ├── bateaux-list.component.ts.bak
 │   │   ├── bateaux.module.ts
 │   │   ├── bateaux.module.ts.backup
 │   │   ├── bateaux.module.ts.backup_routes_20251018_153018
@@ -48,25 +58,32 @@ Arborescence du projet:
 │   ├── components
 │   │   └── language-selector
 │   │       ├── language-selector.component.html
+│   │       ├── language-selector.component.html.bak
 │   │       ├── language-selector.component.scss
-│   │       └── language-selector.component.ts
+│   │       ├── language-selector.component.ts
+│   │       └── language-selector.component.ts.bak
 │   ├── dashboard
 │   │   ├── dashboard-home
 │   │   │   ├── dashboard-home.component.html
+│   │   │   ├── dashboard-home.component.html.bak
 │   │   │   ├── dashboard-home.component.scss
-│   │   │   └── dashboard-home.component.ts
+│   │   │   ├── dashboard-home.component.ts
+│   │   │   └── dashboard-home.component.ts.bak
 │   │   ├── dashboard-routing.module.ts
 │   │   ├── dashboard-routing.module.ts.backup
 │   │   ├── dashboard-routing.module.ts.fix_backup
 │   │   ├── dashboard.component.html
+│   │   ├── dashboard.component.html.bak
 │   │   ├── dashboard.component.scss
 │   │   ├── dashboard.component.ts
+│   │   ├── dashboard.component.ts.bak
 │   │   └── dashboard.module.ts
 │   ├── guards
 │   │   ├── boat-selection.guard.ts
 │   │   └── boat-selection.guard.ts.backup
 │   ├── marins
 │   │   ├── marin-form.component.html
+│   │   ├── marin-form.component.html.bak
 │   │   ├── marin-form.component.scss
 │   │   ├── marin-form.component.ts
 │   │   ├── marin-form.component.ts.backup
@@ -76,17 +93,21 @@ Arborescence du projet:
 │   │   ├── marin-form.component.ts.backup_fix
 │   │   ├── marin-form.component.ts.backup_routes_20251018_153018
 │   │   ├── marin-form.component.ts.backup_routes_final
+│   │   ├── marin-form.component.ts.bak
 │   │   ├── marins-list.component.html
+│   │   ├── marins-list.component.html.bak
 │   │   ├── marins-list.component.scss
 │   │   ├── marins-list.component.ts
 │   │   ├── marins-list.component.ts.backup_20251018_143344
 │   │   ├── marins-list.component.ts.backup_bateauid
 │   │   ├── marins-list.component.ts.backup_routes_20251018_153019
 │   │   ├── marins-list.component.ts.backup_routes_final
+│   │   ├── marins-list.component.ts.bak
 │   │   ├── marins-list.component.ts.fix_final
 │   │   └── marins.module.ts
 │   ├── mock-data
-│   │   └── mock-data.component.ts
+│   │   ├── mock-data.component.ts
+│   │   └── mock-data.component.ts.bak
 │   ├── models
 │   │   ├── avance.model.ts
 │   │   ├── bateau.model.ts
@@ -101,8 +122,10 @@ Arborescence du projet:
 │   │   └── sortie.model.ts
 │   ├── salaires
 │   │   ├── salaires-list.component.html
+│   │   ├── salaires-list.component.html.bak
 │   │   ├── salaires-list.component.scss
-│   │   └── salaires-list.component.ts
+│   │   ├── salaires-list.component.ts
+│   │   └── salaires-list.component.ts.bak
 │   ├── services
 │   │   ├── alert.service.ts
 │   │   ├── avance.service.ts
@@ -122,50 +145,72 @@ Arborescence du projet:
 │   ├── sorties
 │   │   ├── depense-form
 │   │   │   ├── depense-form.component.html
+│   │   │   ├── depense-form.component.html.bak
 │   │   │   ├── depense-form.component.scss
-│   │   │   └── depense-form.component.ts
+│   │   │   ├── depense-form.component.ts
+│   │   │   └── depense-form.component.ts.bak
 │   │   ├── details
 │   │   │   ├── sorties-details.component.html
+│   │   │   ├── sorties-details.component.html.bak
 │   │   │   ├── sorties-details.component.scss
 │   │   │   ├── sorties-details.component.scss.tmp
-│   │   │   └── sorties-details.component.ts
+│   │   │   ├── sorties-details.component.ts
+│   │   │   └── sorties-details.component.ts.bak
 │   │   ├── factures
 │   │   │   ├── factures.component.html
+│   │   │   ├── factures.component.html.bak
 │   │   │   ├── factures.component.scss
-│   │   │   └── factures.component.ts
+│   │   │   ├── factures.component.ts
+│   │   │   └── factures.component.ts.bak
 │   │   ├── form
 │   │   │   ├── sorties-form.component.html
+│   │   │   ├── sorties-form.component.html.bak
 │   │   │   ├── sorties-form.component.scss
 │   │   │   ├── sorties-form.component.scss.tmp
-│   │   │   └── sorties-form.component.ts
+│   │   │   ├── sorties-form.component.ts
+│   │   │   └── sorties-form.component.ts.bak
 │   │   ├── list
 │   │   │   ├── sorties-list.component.html
+│   │   │   ├── sorties-list.component.html.bak
 │   │   │   ├── sorties-list.component.scss
 │   │   │   ├── sorties-list.component.scss.tmp
-│   │   │   └── sorties-list.component.ts
+│   │   │   ├── sorties-list.component.ts
+│   │   │   └── sorties-list.component.ts.bak
 │   │   ├── pointage
 │   │   │   ├── pointage.component.html
+│   │   │   ├── pointage.component.html.bak
 │   │   │   ├── pointage.component.scss
-│   │   │   └── pointage.component.ts
+│   │   │   ├── pointage.component.ts
+│   │   │   └── pointage.component.ts.bak
 │   │   ├── salaires
 │   │   │   ├── salaires.component.html
+│   │   │   ├── salaires.component.html.bak
 │   │   │   ├── salaires.component.scss
-│   │   │   └── salaires.component.ts
+│   │   │   ├── salaires.component.ts
+│   │   │   └── salaires.component.ts.bak
 │   │   ├── sortie-details.component.html
+│   │   ├── sortie-details.component.html.bak
 │   │   ├── sortie-details.component.scss
 │   │   ├── sortie-details.component.ts
+│   │   ├── sortie-details.component.ts.bak
 │   │   ├── sortie-form.component.html
+│   │   ├── sortie-form.component.html.bak
 │   │   ├── sortie-form.component.scss
 │   │   ├── sortie-form.component.ts
+│   │   ├── sortie-form.component.ts.bak
 │   │   ├── sorties-list.component.html
+│   │   ├── sorties-list.component.html.bak
 │   │   ├── sorties-list.component.scss
 │   │   ├── sorties-list.component.ts
+│   │   ├── sorties-list.component.ts.bak
 │   │   ├── sorties-routing.module.ts
 │   │   └── sorties.module.ts
 │   └── ventes
 │       ├── ventes-list.component.html
+│       ├── ventes-list.component.html.bak
 │       ├── ventes-list.component.scss
-│       └── ventes-list.component.ts
+│       ├── ventes-list.component.ts
+│       └── ventes-list.component.ts.bak
 ├── assets
 │   └── i18n
 │       ├── ar.json
@@ -187,7 +232,7 @@ Arborescence du projet:
 │   └── _btn-back.scss
 └── styles.scss
 
-29 directories, 152 files
+29 directories, 197 files
 
 ====================================
   FICHIERS SOURCE
@@ -283,7 +328,7 @@ export const appConfig: ApplicationConfig = {
 
 ====================================
 FICHIER: ./src/app/app.module.ts
-Lignes:       61
+Lignes:       60
 ====================================
 
 import { NgModule } from '@angular/core';
@@ -292,7 +337,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { HttpClient, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -303,7 +348,6 @@ import { provideFirestore, getFirestore } from '@angular/fire/firestore';
 
 import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
 import { TranslateHttpLoader } from '@ngx-translate/http-loader';
-
 import { environment } from '../environments/environment';
 
 import { AuthComponent } from './auth/auth.component';
@@ -327,6 +371,7 @@ export function createTranslateLoader(http: HttpClient) {
     ReactiveFormsModule,
     BrowserAnimationsModule,
     AppRoutingModule,
+    HttpClientModule,
     TranslateModule.forRoot({
       defaultLanguage: 'ar',
       loader: {
@@ -339,7 +384,6 @@ export function createTranslateLoader(http: HttpClient) {
   providers: [
     AuthService,
     AuthGuard,
-    provideHttpClient(withInterceptorsFromDi()),
     provideFirebaseApp(() => initializeApp(environment.firebase)),
     provideAuth(() => getAuth()),
     provideFirestore(() => getFirestore())
@@ -1014,7 +1058,7 @@ import { TranslateService } from '@ngx-translate/core';
   styleUrls: ['./bateaux-list.component.scss']
 })
 export class BateauxListComponent implements OnInit {
-  bateaux!: Observable<Bateau[]>;
+  bateaux$!: Observable<Bateau[]>;
   searchTerm = '';
   selectedBoat: Bateau | null = null;
 
@@ -1034,7 +1078,7 @@ export class BateauxListComponent implements OnInit {
   }
 
   loadBateaux(): void {
-    this.bateaux = this.bateauService.getBateaux();
+    this.bateaux$ = this.bateauService.getBateaux();
   }
 
   selectBoat(bateau: Bateau): void {
@@ -1069,7 +1113,7 @@ export class BateauxListComponent implements OnInit {
 
     if (confirmed) {
       try {
-        this.alertService.loading();
+        this.alertService.loading(this.translate.instant('MESSAGES.DELETING'));
         await this.bateauService.deleteBateau(bateau.id!);
         
         if (this.isSelected(bateau)) {
@@ -1515,7 +1559,7 @@ export class BoatSelectionGuard implements CanActivate {
 
 ====================================
 FICHIER: ./src/app/marins/marin-form.component.ts
-Lignes:      125
+Lignes:      128
 ====================================
 
 import { Component, OnInit } from '@angular/core';
@@ -1524,6 +1568,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MarinService } from '../services/marin.service';
 import { AlertService } from '../services/alert.service';
 import { Marin } from '../models/marin.model';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   standalone: false,
@@ -1543,7 +1588,12 @@ export class MarinFormComponent implements OnInit {
     private marinService: MarinService,
     private alertService: AlertService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private translate: TranslateService
+  scrollToTop() {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   ) {}
 
   ngOnInit(): void {
@@ -1563,7 +1613,7 @@ export class MarinFormComponent implements OnInit {
       prenom: ['', [Validators.required, Validators.minLength(2)]],
       dateNaissance: ['', [Validators.required]],
       fonction: ['matelot', [Validators.required]],
-      part: [1, [Validators.required, Validators.min(0)]], // ✅ CHAMP AJOUTÉ
+      part: [1, [Validators.required, Validators.min(0)]],
       numeroPermis: ['', [Validators.required]],
       telephone: ['', [Validators.required, Validators.pattern(/^[0-9]{8,}$/)]],
       email: ['', [Validators.required, Validators.email]],
@@ -1598,13 +1648,13 @@ export class MarinFormComponent implements OnInit {
   async onSubmit(): Promise<void> {
     if (this.marinForm.valid) {
       this.loading = true;
-      this.alertService.loading('Enregistrement en cours...');
+      this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
       
       const formValue = this.marinForm.value;
       const marinData: Marin = {
         ...formValue,
         bateauId: this.bateauId,
-        part: +formValue.part, // ✅ Assurer que la part est un nombre
+        part: +formValue.part,
         dateNaissance: new Date(formValue.dateNaissance),
         dateEmbauche: new Date(formValue.dateEmbauche)
       };
@@ -1612,24 +1662,21 @@ export class MarinFormComponent implements OnInit {
       try {
         if (this.isEditMode && this.marinId) {
           await this.marinService.updateMarin(this.marinId, marinData);
-          this.alertService.close();
-          await this.alertService.success('Le marin a été modifié avec succès', 'Modification réussie!');
+          this.alertService.success(this.translate.instant('SAILORS.SUCCESS_UPDATE'));
         } else {
           await this.marinService.addMarin(marinData);
-          this.alertService.close();
-          await this.alertService.success('Le marin a été ajouté avec succès', 'Ajout réussi!');
+          this.alertService.success(this.translate.instant('SAILORS.SUCCESS_ADD'));
         }
         this.router.navigate(['/dashboard/bateaux', this.bateauId, 'marins']);
       } catch (error) {
         console.error('Erreur:', error);
-        this.alertService.close();
-        this.alertService.error('Une erreur est survenue lors de l\'enregistrement', 'Erreur!');
+        this.alertService.error();
       } finally {
         this.loading = false;
       }
     } else {
       this.markFormGroupTouched(this.marinForm);
-      this.alertService.warning('Veuillez remplir tous les champs requis', 'Formulaire incomplet');
+      this.alertService.warning(this.translate.instant('FORM.REQUIRED_FIELDS'));
     }
   }
 
@@ -1783,13 +1830,13 @@ export class MarinsModule { }
 
 ====================================
 FICHIER: ./src/app/mock-data/mock-data.component.ts
-Lignes:      151
+Lignes:      119
 ====================================
 
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { MockDataService } from '../services/mock-data.service';
 import Swal from 'sweetalert2';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-mock-data',
@@ -1797,74 +1844,50 @@ import Swal from 'sweetalert2';
   template: `
     <div class="mock-container">
       <div class="mock-card">
-        <h2>🎲 Générateur de Données Fictives</h2>
-        <p>Créez rapidement des données de test complètes</p>
+        <h2>{{ 'MOCK_DATA.TITLE' | translate }}</h2>
+        <p>{{ 'MOCK_DATA.SUBTITLE' | translate }}</p>
         
         <div class="data-list">
-          <div class="data-item">✓ 2 bateaux de pêche</div>
-          <div class="data-item">✓ 5 marins</div>
-          <div class="data-item">✓ 6 sorties en mer</div>
-          <div class="data-item">✓ 12 dépenses</div>
-          <div class="data-item">✓ 6 factures de vente</div>
-          <div class="data-item">✓ 5 avances</div>
+          <div class="data-item">{{ 'MOCK_DATA.ITEM_1' | translate }}</div>
+          <div class="data-item">{{ 'MOCK_DATA.ITEM_2' | translate }}</div>
+          <div class="data-item">{{ 'MOCK_DATA.ITEM_3' | translate }}</div>
+          <div class="data-item">{{ 'MOCK_DATA.ITEM_4' | translate }}</div>
         </div>
 
         <button 
           (click)="generate()" 
           [disabled]="generating"
           class="btn-generate">
-          <span *ngIf="!generating">Générer les données</span>
-          <span *ngIf="generating">Génération en cours...</span>
+          <span *ngIf="!generating">{{ 'MOCK_DATA.GENERATE_BUTTON' | translate }}</span>
+          <span *ngIf="generating">{{ 'MOCK_DATA.GENERATING_BUTTON' | translate }}</span>
         </button>
       </div>
     </div>
   `,
   styles: [`
     .mock-container {
-      min-height: 100vh;
+      min-height: 80vh;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 2rem;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
-    
     .mock-card {
       background: white;
       border-radius: 1rem;
       padding: 3rem;
       max-width: 500px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      text-align: center;
     }
-    
-    h2 {
-      margin: 0 0 1rem 0;
-      color: #1f2937;
-      font-size: 2rem;
-    }
-    
-    p {
-      color: #6b7280;
-      margin: 0 0 2rem 0;
-    }
-    
-    .data-list {
-      background: #f9fafb;
-      padding: 1.5rem;
-      border-radius: 0.5rem;
-      margin-bottom: 2rem;
-    }
-    
-    .data-item {
-      padding: 0.5rem 0;
-      color: #374151;
-      font-weight: 500;
-    }
-    
+    h2 { margin: 0 0 1rem 0; color: #1f2937; font-size: 2rem; }
+    p { color: #6b7280; margin: 0 0 2rem 0; }
+    .data-list { background: #f9fafb; padding: 1.5rem; border-radius: 0.5rem; margin-bottom: 2rem; text-align: left; }
+    .data-item { padding: 0.5rem 0; color: #374151; font-weight: 500; }
     .btn-generate {
       width: 100%;
       padding: 1rem;
-      background: #667eea;
+      background: #3b82f6;
       color: white;
       border: none;
       border-radius: 0.5rem;
@@ -1873,42 +1896,35 @@ import Swal from 'sweetalert2';
       cursor: pointer;
       transition: all 0.3s;
     }
-    
-    .btn-generate:hover:not(:disabled) {
-      background: #5568d3;
-      transform: translateY(-2px);
-      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-    }
-    
-    .btn-generate:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
+    .btn-generate:hover:not(:disabled) { background: #2563eb; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3); }
+    .btn-generate:disabled { opacity: 0.6; cursor: not-allowed; }
   `]
 })
 export class MockDataComponent {
   generating = false;
 
-  constructor(private mockService: MockDataService) {}
+  constructor(
+    private mockService: MockDataService,
+    private translate: TranslateService
+  ) {}
 
   async generate(): Promise<void> {
     const result = await Swal.fire({
-      title: 'Générer des données fictives ?',
-      text: 'Cela va créer environ 35 enregistrements de test',
+      title: this.translate.instant('MOCK_DATA.CONFIRM_TITLE'),
+      text: this.translate.instant('MOCK_DATA.CONFIRM_TEXT'),
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'Oui, générer',
-      cancelButtonText: 'Annuler',
-      confirmButtonColor: '#667eea'
+      confirmButtonText: this.translate.instant('MOCK_DATA.CONFIRM_BUTTON'),
+      cancelButtonText: this.translate.instant('MOCK_DATA.CANCEL_BUTTON'),
+      confirmButtonColor: '#3b82f6'
     });
 
     if (result.isConfirmed) {
       try {
         this.generating = true;
-
         Swal.fire({
-          title: 'Génération en cours...',
-          text: 'Veuillez patienter',
+          title: this.translate.instant('MOCK_DATA.LOADING_TITLE'),
+          text: this.translate.instant('MOCK_DATA.LOADING_TEXT'),
           allowOutsideClick: false,
           didOpen: () => Swal.showLoading()
         });
@@ -1918,17 +1934,16 @@ export class MockDataComponent {
         Swal.close();
 
         await Swal.fire({
-          title: 'Succès !',
-          text: 'Les données ont été générées avec succès',
+          title: this.translate.instant('MOCK_DATA.SUCCESS_TITLE'),
+          text: this.translate.instant('MOCK_DATA.SUCCESS_TEXT'),
           icon: 'success',
-          confirmButtonColor: '#667eea'
+          confirmButtonColor: '#10b981'
         });
-
       } catch (error) {
         console.error(error);
         Swal.fire({
-          title: 'Erreur',
-          text: 'Une erreur est survenue',
+          title: this.translate.instant('MOCK_DATA.ERROR_TITLE'),
+          text: (error as Error).message,
           icon: 'error'
         });
       } finally {
@@ -2429,7 +2444,7 @@ export class SalairesListComponent implements OnInit {
 
 ====================================
 FICHIER: ./src/app/services/alert.service.ts
-Lignes:       84
+Lignes:       82
 ====================================
 
 import { Injectable } from '@angular/core';
@@ -2453,11 +2468,9 @@ export class AlertService {
     });
   }
 
-  // ✅ CORRECTION: 'message' est maintenant optionnel
   async error(message?: string, title?: string): Promise<void> {
     await Swal.fire({
       title: title || this.translate.instant('MESSAGES.ERROR_TITLE'),
-      // Utilise un message générique si aucun n'est fourni
       text: message || this.translate.instant('MESSAGES.ERROR_GENERIC'),
       icon: 'error',
       confirmButtonColor: '#ef4444',
@@ -6073,7 +6086,7 @@ Lignes:      107
 
 ====================================
 FICHIER: ./src/app/bateaux/bateaux-list.component.html
-Lignes:      106
+Lignes:      104
 ====================================
 
 <div class="bateaux-container">
@@ -6083,11 +6096,10 @@ Lignes:      106
       <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
       </svg>
-      {{ 'BOATS.ADDBOAT' | translate }}
+      {{ 'BOATS.ADD_BOAT' | translate }}
     </button>
   </div>
 
-  <!-- Message d'instruction -->
   <div class="selection-info" *ngIf="!selectedBoat">
     <svg class="info-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -6095,7 +6107,6 @@ Lignes:      106
     <p>{{ 'BOATS.SELECT_INFO' | translate }}</p>
   </div>
 
-  <!-- Bateau sélectionné -->
   <div class="selected-boat-card" *ngIf="selectedBoat">
     <div class="selected-header">
       <svg class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -6130,7 +6141,7 @@ Lignes:      106
         <tr>
           <th>{{ 'BOATS.NAME' | translate }}</th>
           <th>{{ 'BOATS.REGISTRATION' | translate }}</th>
-          <th>{{ 'BOATS.ENGINETYPE' | translate }}</th>
+          <th>{{ 'BOATS.ENGINE_TYPE' | translate }}</th>
           <th>{{ 'BOATS.POWER' | translate }}</th>
           <th>{{ 'BOATS.LENGTH' | translate }}</th>
           <th>{{ 'BOATS.PORT' | translate }}</th>
@@ -6139,7 +6150,7 @@ Lignes:      106
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let bateau of bateaux | async" 
+        <tr *ngFor="let bateau of bateaux$ | async" 
             [class.selected-row]="isSelected(bateau)"
             (click)="selectBoat(bateau)">
           <td class="font-bold">
@@ -6469,9 +6480,10 @@ Lignes:      149
 
 ====================================
 FICHIER: ./src/app/marins/marin-form.component.html
-Lignes:      133
+Lignes:      134
 ====================================
 
+<button style="position:fixed;right:20px;bottom:20px;z-index:9999" (click)="scrollToTop()">Retour en haut</button>
 <div class="form-container">
   <div class="form-header">
     <h1 class="form-title">{{ (isEditMode ? 'SAILORS.EDIT_SAILOR' : 'SAILORS.ADD_SAILOR') | translate }}</h1>
@@ -6513,10 +6525,10 @@ Lignes:      133
       <div class="form-group">
         <label class="form-label">{{ 'SAILORS.FUNCTION' | translate }} *</label>
         <select formControlName="fonction" class="form-input">
-          <option value="capitaine">{{ 'SAILORS.CAPTAIN' | translate }}</option>
+          <option value="capitaine">{{ 'SAILORS.CAPITAINE' | translate }}</option>
           <option value="second">{{ 'SAILORS.SECOND' | translate }}</option>
-          <option value="mecanicien">{{ 'SAILORS.MECHANIC' | translate }}</option>
-          <option value="matelot">{{ 'SAILORS.SAILOR' | translate }}</option>
+          <option value="mecanicien">{{ 'SAILORS.MECANICIEN' | translate }}</option>
+          <option value="matelot">{{ 'SAILORS.MATELOT' | translate }}</option>
         </select>
       </div>
 
@@ -6546,7 +6558,7 @@ Lignes:      133
           type="tel" 
           formControlName="telephone" 
           class="form-input"
-          placeholder="Ex: 12345678"
+          [placeholder]="'SAILORS.PLACEHOLDER.PHONE' | translate"
           [class.error]="marinForm.get('telephone')?.invalid && marinForm.get('telephone')?.touched"
         />
         <span class="error-message" *ngIf="marinForm.get('telephone')?.hasError('pattern') && marinForm.get('telephone')?.touched">
@@ -13091,7 +13103,7 @@ body.rtl,
 
 ====================================
 FICHIER: ./src/assets/i18n/ar.json
-Lignes:      201
+Lignes:      281
 ====================================
 
 {
@@ -13147,6 +13159,7 @@ Lignes:      201
     "PORT": "ميناء الرسو",
     "STATUS": "الحالة",
     "ACTIVE": "نشط",
+    "MAINTENANCE": "صيانة",
     "INACTIVE": "غير نشط",
     "NO_BOAT_SELECTED": "لم يتم اختيار أي مركب",
     "NO_BOAT_SELECTED_DETAILS": "الرجاء اختيار مركب أولاً من صفحة 'المراكب'.",
@@ -13188,12 +13201,10 @@ Lignes:      201
     "SUCCESS_ADD": "تمت إضافة البحار بنجاح.",
     "SUCCESS_UPDATE": "تم تحديث البحار بنجاح.",
     "SUCCESS_DELETE": "تم حذف البحار بنجاح.",
-    "FUNCTION_TYPE": {
-      "CAPITAINE": "قبطان",
-      "SECOND": "مساعد قبطان",
-      "MECANICIEN": "ميكانيكي",
-      "MATELOT": "بحار"
-    },
+    "CAPITAINE": "قبطان",
+    "SECOND": "مساعد قبطان",
+    "MECANICIEN": "ميكانيكي",
+    "MATELOT": "بحار",
     "PLACEHOLDER": {
       "LASTNAME": "أدخل اللقب",
       "FIRSTNAME": "أدخل الاسم",
@@ -13201,13 +13212,60 @@ Lignes:      201
     }
   },
   "SORTIES": {
-    "TITLE": "الرحلات البحرية"
+    "TITLE": "الرحلات البحرية",
+    "ADD": "إضافة رحلة",
+    "EDIT": "تعديل الرحلة",
+    "DETAILSTITLE": "تفاصيل الرحلة",
+    "DESTINATION": "الوجهة",
+    "DATEDEPART": "تاريخ المغادرة",
+    "DATERETOUR": "تاريخ العودة",
+    "STATUT": "الحالة",
+    "STATUS": {
+      "EN-COURS": "جارية",
+      "TERMINEE": "منتهية",
+      "ANNULEE": "ملغاة"
+    },
+    "GENERALINFO": "معلومات عامة",
+    "OBSERVATIONS": "ملاحظات",
+    "MANAGE": "إدارة الرحلة",
+    "NOSORTIES": "لا توجد رحلات مسجلة لهذا المركب.",
+    "SELECTSORTIES": "تحديد الرحلات البحرية"
   },
   "EXPENSES": {
-    "TITLE": "المصاريف"
+    "TITLE": "المصاريف",
+    "ADD": "إضافة مصروف",
+    "EDIT": "تعديل المصروف",
+    "TYPE": "نوع المصروف",
+    "AMOUNT": "المبلغ",
+    "DATE": "التاريخ",
+    "DESCRIPTION": "الوصف",
+    "NOEXPENSE": "لا توجد مصاريف مسجلة لهذه الرحلة.",
+    "TYPES": {
+      "FUEL": "وقود",
+      "ICE": "ثلج",
+      "OIL_CHANGE": "تغيير زيت",
+      "CREW_CNSS": "الضمان الاجتماعي للطاقم",
+      "CREW_BONUS": "مكافأة الطاقم",
+      "FOOD": "طعام",
+      "VMS": "VMS",
+      "MISC": "متنوع"
+    },
+    "SUCCESS_ADD": "تمت إضافة المصروف بنجاح",
+    "SUCCESS_UPDATE": "تم تحديث المصروف بنجاح"
   },
   "POINTAGE": {
-    "TITLE": "تسجيل حضور الطاقم"
+    "TITLE": "تسجيل حضور الطاقم",
+    "CREW": "إدارة الحضور",
+    "PRESENT": "حاضر",
+    "ABSENT": "غائب",
+    "NOCREW": "لا يوجد بحارة معينون لهذا المركب.",
+    "OBSERVATIONS": "ملاحظات",
+    "ADDOBS": "إضافة ملاحظة...",
+    "TOTAL": "المجموع",
+    "SUCCESS_PRESENCE": "تم تسجيل الحضور",
+    "SUCCESS_ABSENCE": "تم تسجيل الغياب",
+    "SUCCESS_OBS": "تم تحديث الملاحظات",
+    "ERROR_ADD": "خطأ أثناء تسجيل الحضور"
   },
   "AVANCES": {
     "TITLE": "السلف على الراتب",
@@ -13229,13 +13287,44 @@ Lignes:      201
     "DELETE_CONFIRM_ITEM": "سلفة بقيمة {{amount}} دينار لـ {{name}}"
   },
   "SALAIRES": {
-    "TITLE": "حساب الرواتب"
+    "TITLE": "حساب الرواتب",
+    "CALCULER": "حساب الرواتب",
+    "REVENU_TOTAL": "الإيراد الكلي",
+    "TOTAL_DEPENSES": "مجموع المصاريف",
+    "BENEFICE_NET": "الربح الصافي",
+    "PART_PROPRIETAIRE": "حصة المالك (50%)",
+    "PART_EQUIPAGE": "حصة الطاقم (50%)",
+    "DEDUCTIONS": "الخصومات من حصة الطاقم",
+    "NUITS": "ليالي",
+    "MARINS": "بحارة",
+    "MONTANT_A_PARTAGER": "المبلغ الصافي للمشاركة",
+    "DETAILS_PAR_MARIN": "التفاصيل لكل بحار",
+    "SALAIRE_BASE": "الراتب الأساسي (حسب الحصة)",
+    "PRIME_NUITS": "علاوة الليالي",
+    "SALAIRE_NET": "الراتب الصافي",
+    "DEJA_PAYE": "مدفوع مسبقًا",
+    "RESTE_A_PAYER": "المتبقي للدفع",
+    "PAYER": "دفع",
+    "PAYE": "مدفوع",
+    "ERROR_NO_SORTIE": "الرجاء اختيار رحلة واحدة على الأقل",
+    "ERROR_NO_PARTS": "مجموع حصص البحارة هو 0. الرجاء تحديد الحصص في قسم 'البحارة' لكل مركب.",
+    "CALCUL_SUCCESS_TITLE": "اكتمل الحساب!",
+    "PAYMENT_SUCCESS": "تم تسجيل الدفعة!",
+    "PAYMENT_MODAL_TITLE": "دفعة لـ {{name}}",
+    "PAYMENT_MODAL_LABEL": "المبلغ للدفع (المتبقي: {{amount}} دينار)"
   },
   "VENTES": {
-    "TITLE": "المبيعات"
-  },
-  "FACTURES": {
-    "TITLE": "الفواتير"
+    "TITLE": "إدارة المبيعات",
+    "ADD_INVOICE": "فاتورة جديدة",
+    "ADD_INVOICE_FOR_TRIP": "إضافة فاتورة لهذه الرحلة",
+    "NO_INVOICES_FOR_TRIP": "لا توجد فواتير مسجلة لهذه الرحلة",
+    "TRIP_TOTAL": "مجموع مبيعات الرحلة",
+    "GENERAL_TOTAL": "المجموع العام للمبيعات",
+    "NO_TRIPS_AVAILABLE": "لا توجد رحلات بحرية متاحة لإضافة فاتورة.",
+    "SUCCESS_ADD": "تمت إضافة الفاتورة بنجاح!",
+    "SUCCESS_UPDATE": "تم تعديل الفاتورة بنجاح!",
+    "SUCCESS_DELETE": "تم حذف الفاتورة بنجاح.",
+    "DELETE_CONFIRM_ITEM": "الفاتورة رقم {{number}} ({{amount}} دينار)"
   },
   "FORM": {
     "ADD": "إضافة",
@@ -13251,6 +13340,9 @@ Lignes:      201
   "MESSAGES": {
     "LOADING": "جاري التحميل...",
     "SAVING": "جاري الحفظ...",
+    "UPDATING": "جاري التعديل...",
+    "DELETING": "جاري الحذف...",
+    "CALCULATING": "جاري الحساب...",
     "ADDING_SAILOR": "جاري إضافة البحار...",
     "SUCCESS": "تمت العملية بنجاح!",
     "ERROR_TITLE": "خطأ",
@@ -13260,7 +13352,7 @@ Lignes:      201
     "CONFIRMDELETEMESSAGE": "أنت على وشك حذف",
     "IRREVERSIBLE": "هذا الإجراء لا يمكن التراجع عنه.",
     "SAILOR_ADDED_SUCCESS": "تمت إضافة البحار {{name}} بنجاح."
-  },  },
+  },
   "LANGUAGE": {
     "AR": "العربية",
     "FR": "الفرنسية",
@@ -13298,7 +13390,7 @@ Lignes:      201
 
 ====================================
 FICHIER: ./src/assets/i18n/en.json
-Lignes:      201
+Lignes:      281
 ====================================
 
 {
@@ -13354,6 +13446,7 @@ Lignes:      201
     "PORT": "Home Port",
     "STATUS": "Status",
     "ACTIVE": "Active",
+    "MAINTENANCE": "Maintenance",
     "INACTIVE": "Inactive",
     "NO_BOAT_SELECTED": "No boat is selected",
     "NO_BOAT_SELECTED_DETAILS": "Please select a boat from the 'Boats' page first.",
@@ -13395,12 +13488,10 @@ Lignes:      201
     "SUCCESS_ADD": "Sailor added successfully.",
     "SUCCESS_UPDATE": "Sailor updated successfully.",
     "SUCCESS_DELETE": "Sailor deleted successfully.",
-    "FUNCTION_TYPE": {
-      "CAPITAINE": "Captain",
-      "SECOND": "Second-in-command",
-      "MECANICIEN": "Mechanic",
-      "MATELOT": "Sailor"
-    },
+    "CAPITAINE": "Captain",
+    "SECOND": "Second-in-command",
+    "MECANICIEN": "Mechanic",
+    "MATELOT": "Sailor",
     "PLACEHOLDER": {
       "LASTNAME": "Enter last name",
       "FIRSTNAME": "Enter first name",
@@ -13408,13 +13499,60 @@ Lignes:      201
     }
   },
   "SORTIES": {
-    "TITLE": "Sea Trips"
+    "TITLE": "Sea Trips",
+    "ADD": "Add Trip",
+    "EDIT": "Edit Trip",
+    "DETAILSTITLE": "Trip Details",
+    "DESTINATION": "Destination",
+    "DATEDEPART": "Departure Date",
+    "DATERETOUR": "Return Date",
+    "STATUT": "Status",
+    "STATUS": {
+      "EN-COURS": "Ongoing",
+      "TERMINEE": "Completed",
+      "ANNULEE": "Cancelled"
+    },
+    "GENERALINFO": "General Information",
+    "OBSERVATIONS": "Observations",
+    "MANAGE": "Manage Trip",
+    "NOSORTIES": "No trips recorded for this boat.",
+    "SELECTSORTIES": "Select Sea Trips"
   },
   "EXPENSES": {
-    "TITLE": "Expenses"
+    "TITLE": "Expenses",
+    "ADD": "Add Expense",
+    "EDIT": "Edit Expense",
+    "TYPE": "Expense Type",
+    "AMOUNT": "Amount",
+    "DATE": "Date",
+    "DESCRIPTION": "Description",
+    "NOEXPENSE": "No expenses recorded for this trip.",
+    "TYPES": {
+      "FUEL": "Fuel",
+      "ICE": "Ice",
+      "OIL_CHANGE": "Oil Change",
+      "CREW_CNSS": "Crew CNSS",
+      "CREW_BONUS": "Crew Bonus",
+      "FOOD": "Food",
+      "VMS": "VMS",
+      "MISC": "Miscellaneous"
+    },
+    "SUCCESS_ADD": "Expense added successfully",
+    "SUCCESS_UPDATE": "Expense updated successfully"
   },
   "POINTAGE": {
-    "TITLE": "Crew Attendance"
+    "TITLE": "Crew Attendance",
+    "CREW": "Manage Attendance",
+    "PRESENT": "Present",
+    "ABSENT": "Absent",
+    "NOCREW": "No sailors are assigned to this boat.",
+    "OBSERVATIONS": "Observations",
+    "ADDOBS": "Add an observation...",
+    "TOTAL": "Total",
+    "SUCCESS_PRESENCE": "Presence recorded",
+    "SUCCESS_ABSENCE": "Absence recorded",
+    "SUCCESS_OBS": "Observations updated",
+    "ERROR_ADD": "Error while saving attendance"
   },
   "AVANCES": {
     "TITLE": "Salary Advances",
@@ -13436,13 +13574,44 @@ Lignes:      201
     "DELETE_CONFIRM_ITEM": "the advance of {{amount}} TND for {{name}}"
   },
   "SALAIRES": {
-    "TITLE": "Salary Calculation"
+    "TITLE": "Salary Calculation",
+    "CALCULER": "Calculate Salaries",
+    "REVENU_TOTAL": "Total Revenue",
+    "TOTAL_DEPENSES": "Total Expenses",
+    "BENEFICE_NET": "Net Profit",
+    "PART_PROPRIETAIRE": "Owner's Share (50%)",
+    "PART_EQUIPAGE": "Crew's Share (50%)",
+    "DEDUCTIONS": "Deductions from crew share",
+    "NUITS": "Nights",
+    "MARINS": "Sailors",
+    "MONTANT_A_PARTAGER": "Net Amount to Share",
+    "DETAILS_PAR_MARIN": "Details per Sailor",
+    "SALAIRE_BASE": "Base Salary (from share)",
+    "PRIME_NUITS": "Night Bonus",
+    "SALAIRE_NET": "Net Salary",
+    "DEJA_PAYE": "Already Paid",
+    "RESTE_A_PAYER": "Remaining to be Paid",
+    "PAYER": "Pay",
+    "PAYE": "Paid",
+    "ERROR_NO_SORTIE": "Please select at least one trip",
+    "ERROR_NO_PARTS": "The sum of sailor shares is 0. Please define shares in the 'Sailors' section for each boat.",
+    "CALCUL_SUCCESS_TITLE": "Calculation complete!",
+    "PAYMENT_SUCCESS": "Payment recorded!",
+    "PAYMENT_MODAL_TITLE": "Payment for {{name}}",
+    "PAYMENT_MODAL_LABEL": "Amount to pay (Remaining: {{amount}} TND)"
   },
   "VENTES": {
-    "TITLE": "Sales"
-  },
-  "FACTURES": {
-    "TITLE": "Invoices"
+    "TITLE": "Sales Management",
+    "ADD_INVOICE": "New Invoice",
+    "ADD_INVOICE_FOR_TRIP": "Add an invoice for this trip",
+    "NO_INVOICES_FOR_TRIP": "No invoices recorded for this trip",
+    "TRIP_TOTAL": "Total sales for the trip",
+    "GENERAL_TOTAL": "Grand total of sales",
+    "NO_TRIPS_AVAILABLE": "No sea trips available to add an invoice.",
+    "SUCCESS_ADD": "Invoice added successfully!",
+    "SUCCESS_UPDATE": "Invoice updated successfully!",
+    "SUCCESS_DELETE": "Invoice deleted successfully.",
+    "DELETE_CONFIRM_ITEM": "invoice {{number}} ({{amount}} TND)"
   },
   "FORM": {
     "ADD": "Add",
@@ -13458,6 +13627,9 @@ Lignes:      201
   "MESSAGES": {
     "LOADING": "Loading...",
     "SAVING": "Saving...",
+    "UPDATING": "Updating...",
+    "DELETING": "Deleting...",
+    "CALCULATING": "Calculating...",
     "ADDING_SAILOR": "Adding sailor...",
     "SUCCESS": "Operation successful!",
     "ERROR_TITLE": "Error",
@@ -13467,7 +13639,7 @@ Lignes:      201
     "CONFIRMDELETEMESSAGE": "You are about to delete",
     "IRREVERSIBLE": "This action cannot be undone.",
     "SAILOR_ADDED_SUCCESS": "Sailor {{name}} has been added successfully."
-  },  },
+  },
   "LANGUAGE": {
     "AR": "Arabic",
     "FR": "French",
@@ -13505,7 +13677,7 @@ Lignes:      201
 
 ====================================
 FICHIER: ./src/assets/i18n/fr.json
-Lignes:      201
+Lignes:      281
 ====================================
 
 {
@@ -13561,6 +13733,7 @@ Lignes:      201
     "PORT": "Port d'attache",
     "STATUS": "Statut",
     "ACTIVE": "Actif",
+    "MAINTENANCE": "Maintenance",
     "INACTIVE": "Inactif",
     "NO_BOAT_SELECTED": "Aucun bateau n'est sélectionné",
     "NO_BOAT_SELECTED_DETAILS": "Veuillez d'abord sélectionner un bateau depuis la page 'Bateaux'.",
@@ -13602,12 +13775,10 @@ Lignes:      201
     "SUCCESS_ADD": "Marin ajouté avec succès.",
     "SUCCESS_UPDATE": "Marin mis à jour avec succès.",
     "SUCCESS_DELETE": "Marin supprimé avec succès.",
-    "FUNCTION_TYPE": {
-      "CAPITAINE": "Capitaine",
-      "SECOND": "Second",
-      "MECANICIEN": "Mécanicien",
-      "MATELOT": "Matelot"
-    },
+    "CAPITAINE": "Capitaine",
+    "SECOND": "Second",
+    "MECANICIEN": "Mécanicien",
+    "MATELOT": "Matelot",
     "PLACEHOLDER": {
       "LASTNAME": "Entrez le nom",
       "FIRSTNAME": "Entrez le prénom",
@@ -13615,13 +13786,60 @@ Lignes:      201
     }
   },
   "SORTIES": {
-    "TITLE": "Sorties en mer"
+    "TITLE": "Sorties en mer",
+    "ADD": "Ajouter une Sortie",
+    "EDIT": "Modifier la Sortie",
+    "DETAILSTITLE": "Détails de la Sortie",
+    "DESTINATION": "Destination",
+    "DATEDEPART": "Date de départ",
+    "DATERETOUR": "Date de retour",
+    "STATUT": "Statut",
+    "STATUS": {
+      "EN-COURS": "En cours",
+      "TERMINEE": "Terminée",
+      "ANNULEE": "Annulée"
+    },
+    "GENERALINFO": "Informations Générales",
+    "OBSERVATIONS": "Observations",
+    "MANAGE": "Gérer la sortie",
+    "NOSORTIES": "Aucune sortie enregistrée pour ce bateau.",
+    "SELECTSORTIES": "Sélectionner les sorties en mer"
   },
   "EXPENSES": {
-    "TITLE": "Dépenses"
+    "TITLE": "Dépenses",
+    "ADD": "Ajouter une Dépense",
+    "EDIT": "Modifier la Dépense",
+    "TYPE": "Type de dépense",
+    "AMOUNT": "Montant",
+    "DATE": "Date",
+    "DESCRIPTION": "Description",
+    "NOEXPENSE": "Aucune dépense enregistrée pour cette sortie.",
+    "TYPES": {
+      "FUEL": "Carburant",
+      "ICE": "Glace",
+      "OIL_CHANGE": "Vidange",
+      "CREW_CNSS": "CNSS Équipage",
+      "CREW_BONUS": "Prime Équipage",
+      "FOOD": "Alimentation",
+      "VMS": "VMS",
+      "MISC": "Divers"
+    },
+    "SUCCESS_ADD": "Dépense ajoutée avec succès",
+    "SUCCESS_UPDATE": "Dépense mise à jour avec succès"
   },
   "POINTAGE": {
-    "TITLE": "Pointage de l'Équipage"
+    "TITLE": "Pointage de l'Équipage",
+    "CREW": "Gérer le pointage",
+    "PRESENT": "Présent",
+    "ABSENT": "Absent",
+    "NOCREW": "Aucun marin n'est affecté à ce bateau.",
+    "OBSERVATIONS": "Observations",
+    "ADDOBS": "Ajouter une observation...",
+    "TOTAL": "Total",
+    "SUCCESS_PRESENCE": "Présence enregistrée",
+    "SUCCESS_ABSENCE": "Absence enregistrée",
+    "SUCCESS_OBS": "Observations mises à jour",
+    "ERROR_ADD": "Erreur lors de l'enregistrement du pointage"
   },
   "AVANCES": {
     "TITLE": "Avances sur Salaire",
@@ -13643,13 +13861,44 @@ Lignes:      201
     "DELETE_CONFIRM_ITEM": "l'avance de {{amount}} DT pour {{name}}"
   },
   "SALAIRES": {
-    "TITLE": "Calcul des Salaires"
+    "TITLE": "Calcul des Salaires",
+    "CALCULER": "Calculer les Salaires",
+    "REVENU_TOTAL": "Revenu Total",
+    "TOTAL_DEPENSES": "Total des Dépenses",
+    "BENEFICE_NET": "Bénéfice Net",
+    "PART_PROPRIETAIRE": "Part Propriétaire (50%)",
+    "PART_EQUIPAGE": "Part Équipage (50%)",
+    "DEDUCTIONS": "Déductions de la part équipage",
+    "NUITS": "Nuits",
+    "MARINS": "Marins",
+    "MONTANT_A_PARTAGER": "Montant Net à Partager",
+    "DETAILS_PAR_MARIN": "Détails par Marin",
+    "SALAIRE_BASE": "Salaire de Base (selon part)",
+    "PRIME_NUITS": "Prime de Nuits",
+    "SALAIRE_NET": "Salaire Net",
+    "DEJA_PAYE": "Déjà Payé",
+    "RESTE_A_PAYER": "Reste à Payer",
+    "PAYER": "Payer",
+    "PAYE": "Payé",
+    "ERROR_NO_SORTIE": "Veuillez sélectionner au moins une sortie",
+    "ERROR_NO_PARTS": "La somme des parts des marins est de 0. Veuillez définir les parts dans la section 'Marins' de chaque bateau.",
+    "CALCUL_SUCCESS_TITLE": "Calcul terminé !",
+    "PAYMENT_SUCCESS": "Paiement enregistré!",
+    "PAYMENT_MODAL_TITLE": "Paiement pour {{name}}",
+    "PAYMENT_MODAL_LABEL": "Montant à payer (Reste: {{amount}} DT)"
   },
   "VENTES": {
-    "TITLE": "Ventes"
-  },
-  "FACTURES": {
-    "TITLE": "Factures"
+    "TITLE": "Gestion des Ventes",
+    "ADD_INVOICE": "Nouvelle Facture",
+    "ADD_INVOICE_FOR_TRIP": "Ajouter une facture pour cette sortie",
+    "NO_INVOICES_FOR_TRIP": "Aucune facture enregistrée pour cette sortie",
+    "TRIP_TOTAL": "Total des ventes pour la sortie",
+    "GENERAL_TOTAL": "Total général des ventes",
+    "NO_TRIPS_AVAILABLE": "Aucune sortie en mer disponible pour ajouter une facture.",
+    "SUCCESS_ADD": "Facture ajoutée avec succès !",
+    "SUCCESS_UPDATE": "Facture modifiée avec succès !",
+    "SUCCESS_DELETE": "Facture supprimée avec succès.",
+    "DELETE_CONFIRM_ITEM": "la facture {{number}} ({{amount}} DT)"
   },
   "FORM": {
     "ADD": "Ajouter",
@@ -13665,6 +13914,9 @@ Lignes:      201
   "MESSAGES": {
     "LOADING": "Chargement...",
     "SAVING": "Enregistrement...",
+    "UPDATING": "Modification...",
+    "DELETING": "Suppression...",
+    "CALCULATING": "Calcul en cours...",
     "ADDING_SAILOR": "Ajout du marin...",
     "SUCCESS": "Opération réussie !",
     "ERROR_TITLE": "Erreur",
@@ -13674,7 +13926,7 @@ Lignes:      201
     "CONFIRMDELETEMESSAGE": "Vous êtes sur le point de supprimer",
     "IRREVERSIBLE": "Cette action est irréversible.",
     "SAILOR_ADDED_SUCCESS": "Le marin {{name}} a été ajouté avec succès."
-  },  },
+  },
   "LANGUAGE": {
     "AR": "Arabe",
     "FR": "Français",
@@ -13715,6 +13967,6 @@ Lignes:      201
   RÉSUMÉ
 ====================================
 Total fichiers: 121
-Total lignes: 12790
-Date: Sat Oct 18 16:48:32 CET 2025
+Total lignes: 12997
+Date: Sat Oct 18 17:16:37 CET 2025
 ====================================

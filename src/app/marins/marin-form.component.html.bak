@@ -1,11 +1,5 @@
 <div class="form-container">
   <div class="form-header">
-    <button class="btn-back" (click)="goBack()">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-      </svg>
-      {{ 'SAILORS.BACK' | translate }}
-    </button>
     <h1 class="form-title">{{ (isEditMode ? 'SAILORS.EDIT_SAILOR' : 'SAILORS.ADD_SAILOR') | translate }}</h1>
   </div>
 

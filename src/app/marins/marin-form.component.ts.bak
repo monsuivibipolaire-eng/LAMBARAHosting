@@ -121,12 +121,4 @@ export class MarinFormComponent implements OnInit {
   cancel(): void {
     this.router.navigate(['/dashboard/bateaux', this.bateauId, 'marins']);
   }
-
-  goBack(): void {
-    this.cancel();
-  }
-
-  scrollToTop() {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
 }
