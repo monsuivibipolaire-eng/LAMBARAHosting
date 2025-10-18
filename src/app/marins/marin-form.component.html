@@ -1,0 +1,122 @@
+<div class="form-container">
+  <div class="form-header">
+    <h1 class="form-title">{{ (isEditMode ? 'SAILORS.EDIT_SAILOR' : 'SAILORS.ADD_SAILOR') | translate }}</h1>
+  </div>
+
+  <form [formGroup]="marinForm" (ngSubmit)="onSubmit()" class="form">
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">{{ 'SAILORS.LAST_NAME' | translate }} *</label>
+        <input 
+          type="text" 
+          formControlName="nom" 
+          class="form-input"
+          [class.error]="marinForm.get('nom')?.invalid && marinForm.get('nom')?.touched"
+        />
+        <span class="error-message" *ngIf="marinForm.get('nom')?.hasError('required') && marinForm.get('nom')?.touched">
+          {{ 'FORM.REQUIRED' | translate }}
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ 'SAILORS.FIRST_NAME' | translate }} *</label>
+        <input 
+          type="text" 
+          formControlName="prenom" 
+          class="form-input"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ 'SAILORS.BIRTH_DATE' | translate }} *</label>
+        <input 
+          type="date" 
+          formControlName="dateNaissance" 
+          class="form-input"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ 'SAILORS.FUNCTION' | translate }} *</label>
+        <select formControlName="fonction" class="form-input">
+          <option value="capitaine">{{ 'SAILORS.CAPTAIN' | translate }}</option>
+          <option value="second">{{ 'SAILORS.SECOND' | translate }}</option>
+          <option value="mecanicien">{{ 'SAILORS.MECHANIC' | translate }}</option>
+          <option value="matelot">{{ 'SAILORS.SAILOR' | translate }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ 'SAILORS.LICENSE_NUMBER' | translate }} *</label>
+        <input 
+          type="text" 
+          formControlName="numeroPermis" 
+          class="form-input"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ 'SAILORS.PHONE' | translate }} *</label>
+        <input 
+          type="tel" 
+          formControlName="telephone" 
+          class="form-input"
+          placeholder="Ex: 12345678"
+          [class.error]="marinForm.get('telephone')?.invalid && marinForm.get('telephone')?.touched"
+        />
+        <span class="error-message" *ngIf="marinForm.get('telephone')?.hasError('pattern') && marinForm.get('telephone')?.touched">
+          {{ 'FORM.INVALID_PHONE' | translate }}
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ 'SAILORS.EMAIL' | translate }} *</label>
+        <input 
+          type="email" 
+          formControlName="email" 
+          class="form-input"
+          [class.error]="marinForm.get('email')?.invalid && marinForm.get('email')?.touched"
+        />
+        <span class="error-message" *ngIf="marinForm.get('email')?.hasError('email') && marinForm.get('email')?.touched">
+          {{ 'FORM.INVALID_EMAIL' | translate }}
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ 'SAILORS.HIRE_DATE' | translate }} *</label>
+        <input 
+          type="date" 
+          formControlName="dateEmbauche" 
+          class="form-input"
+        />
+      </div>
+
+      <div class="form-group full-width">
+        <label class="form-label">{{ 'SAILORS.ADDRESS' | translate }} *</label>
+        <input 
+          type="text" 
+          formControlName="adresse" 
+          class="form-input"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ 'BOATS.STATUS' | translate }} *</label>
+        <select formControlName="statut" class="form-input">
+          <option value="actif">{{ 'BOATS.ACTIVE' | translate }}</option>
+          <option value="conge">{{ 'SAILORS.ON_LEAVE' | translate }}</option>
+          <option value="inactif">{{ 'BOATS.INACTIVE' | translate }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" (click)="cancel()" class="btn btn-secondary" [disabled]="loading">
+        {{ 'FORM.CANCEL' | translate }}
+      </button>
+      <button type="submit" class="btn btn-primary" [disabled]="loading">
+        {{ loading ? ('MESSAGES.SAVING' | translate) : ((isEditMode ? 'FORM.EDIT' : 'FORM.ADD') | translate) }}
+      </button>
+    </div>
+  </form>
+</div>

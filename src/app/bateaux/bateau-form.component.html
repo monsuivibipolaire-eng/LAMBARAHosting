@@ -1,0 +1,107 @@
+<div class="form-container">
+  <div class="form-header">
+    <h1 class="form-title">{{ (isEditMode ? 'BOATS.EDIT_BOAT' : 'BOATS.ADD_BOAT') | translate }}</h1>
+  </div>
+
+  <form [formGroup]="bateauForm" (ngSubmit)="onSubmit()" class="form">
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">{{ 'BOATS.NAME' | translate }} *</label>
+        <input 
+          type="text" 
+          formControlName="nom" 
+          class="form-input"
+          [class.error]="bateauForm.get('nom')?.invalid && bateauForm.get('nom')?.touched"
+        />
+        <span class="error-message" *ngIf="bateauForm.get('nom')?.hasError('required') && bateauForm.get('nom')?.touched">
+          {{ 'FORM.REQUIRED' | translate }}
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ 'BOATS.REGISTRATION' | translate }} *</label>
+        <input 
+          type="text" 
+          formControlName="immatriculation" 
+          class="form-input"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ 'BOATS.ENGINE_TYPE' | translate }} *</label>
+        <input 
+          type="text" 
+          formControlName="typeMoteur" 
+          class="form-input"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ 'BOATS.POWER' | translate }} *</label>
+        <input 
+          type="number" 
+          formControlName="puissance" 
+          class="form-input"
+          min="1"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ 'BOATS.LENGTH' | translate }} *</label>
+        <input 
+          type="number" 
+          formControlName="longueur" 
+          class="form-input"
+          step="0.1"
+          min="1"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ 'BOATS.CAPACITY' | translate }} *</label>
+        <input 
+          type="number" 
+          formControlName="capaciteEquipage" 
+          class="form-input"
+          min="1"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ 'BOATS.CONSTRUCTION_DATE' | translate }} *</label>
+        <input 
+          type="date" 
+          formControlName="dateConstruction" 
+          class="form-input"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ 'BOATS.PORT' | translate }} *</label>
+        <input 
+          type="text" 
+          formControlName="portAttache" 
+          class="form-input"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ 'BOATS.STATUS' | translate }} *</label>
+        <select formControlName="statut" class="form-input">
+          <option value="actif">{{ 'BOATS.ACTIVE' | translate }}</option>
+          <option value="maintenance">{{ 'BOATS.MAINTENANCE' | translate }}</option>
+          <option value="inactif">{{ 'BOATS.INACTIVE' | translate }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" (click)="cancel()" class="btn btn-secondary" [disabled]="loading">
+        {{ 'FORM.CANCEL' | translate }}
+      </button>
+      <button type="submit" class="btn btn-primary" [disabled]="loading">
+        {{ loading ? ('MESSAGES.SAVING' | translate) : ((isEditMode ? 'FORM.EDIT' : 'FORM.ADD') | translate) }}
+      </button>
+    </div>
+  </form>
+</div>

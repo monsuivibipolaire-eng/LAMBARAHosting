@@ -1,12 +1,14 @@
 {
-  "name": "lambarahosting",
+  "name": "lambara",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "build:prod": "ng build --configuration production --optimization --build-optimizer",
+    "analyze": "ng build --configuration production --stats-json && webpack-bundle-analyzer dist/test/stats.json"
   },
   "prettier": {
     "printWidth": 100,
@@ -22,27 +24,39 @@
   },
   "private": true,
   "dependencies": {
+    "@angular/animations": "^20.3.4",
+    "@angular/cdk": "^20.2.8",
     "@angular/common": "^20.3.0",
     "@angular/compiler": "^20.3.0",
     "@angular/core": "^20.3.0",
-    "@angular/forms": "^20.3.0",
+    "@angular/fire": "^20.0.1",
+    "@angular/forms": "^20.3.4",
+    "@angular/material": "^20.2.8",
     "@angular/platform-browser": "^20.3.0",
     "@angular/router": "^20.3.0",
+    "@ngx-translate/core": "^17.0.0",
+    "@ngx-translate/http-loader": "^8.0.0",
+    "firebase": "^11.10.0",
     "rxjs": "~7.8.0",
+    "sweetalert2": "^11.26.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
   },
   "devDependencies": {
-    "@angular/build": "^20.3.5",
-    "@angular/cli": "^20.3.5",
+    "@angular/build": "^20.3.4",
+    "@angular/cli": "^20.3.4",
     "@angular/compiler-cli": "^20.3.0",
+    "@tailwindcss/postcss": "^4.1.14",
     "@types/jasmine": "~5.1.0",
+    "angular-cli-ghpages": "^2.0.3",
     "jasmine-core": "~5.9.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.14",
     "typescript": "~5.9.2"
   }
 }

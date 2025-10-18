@@ -1,1 +1,105 @@
 /* You can add global styles to this file, and also import other style files */
+
+@use "tailwindcss";
+
+/* ============================================
+   SUPPORT RTL (RIGHT-TO-LEFT) POUR L'ARABE
+   ============================================ */
+
+body.rtl {
+  direction: rtl;
+  text-align: right;
+}
+
+body.ltr {
+  direction: ltr;
+  text-align: left;
+}
+
+/* Ajustements pour les marges et padding en RTL */
+.rtl {
+  .sidebar {
+    right: 0;
+    left: auto;
+  }
+
+  .main-content {
+    margin-right: 260px;
+    margin-left: 0;
+  }
+
+  .topbar-right {
+    flex-direction: row-reverse;
+  }
+}
+
+/* RESPONSIVE UTILITIES */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Container responsive */
+.container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 0.5rem;
+  }
+}
+
+/* ===================================
+   RTL GLOBAL FIXES
+   =================================== */
+
+body.rtl {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+body.ltr {
+  direction: ltr !important;
+  text-align: left !important;
+}
+
+/* Fix overflow horizontal pour RTL */
+body.rtl * {
+  box-sizing: border-box;
+}
+
+/* Fix tables en RTL */
+body.rtl table {
+  text-align: right;
+}
+
+body.rtl table th,
+body.rtl table td {
+  text-align: right;
+}
+
+/* Fix formulaires RTL */
+body.rtl input,
+body.rtl textarea,
+body.rtl select {
+  text-align: right;
+}
+
+/* Import des styles pour boutons Retour */
+@import './styles/btn-back';

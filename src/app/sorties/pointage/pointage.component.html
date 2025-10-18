@@ -1,0 +1,121 @@
+<div class="pointage-container">
+  <div class="header">
+    <a [routerLink]="['/dashboard/sorties/details', sortieId]" class="btn-back">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+      </svg>
+      {{ 'SAILORS.BACK' | translate }}
+    </a>
+    
+    <div class="header-info">
+      <div class="title-row">
+        <h1 class="title">{{ 'POINTAGE.TITLE' | translate }}</h1>
+        <!-- ✅ BOUTON AJOUTER MARIN -->
+        <button *ngIf="!loading && sortie" class="btn-add-crew" (click)="addNewMarin()">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          {{ 'SAILORS.ADD_SAILOR' | translate }}
+        </button>
+      </div>
+      
+      <div *ngIf="sortie" class="sortie-info">
+        <span class="sortie-destination">{{ sortie.destination }}</span>
+        <span class="sortie-dates" *ngIf="sortie.dateDepart && sortie.dateRetour">
+          {{ sortie.dateDepart | date:'dd/MM/yyyy' }} - {{ sortie.dateRetour | date:'dd/MM/yyyy' }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Spinner de chargement -->
+  <div *ngIf="loading" class="loading-spinner">
+    <div class="spinner"></div>
+    <p>{{ 'MESSAGES.LOADING' | translate }}</p>
+  </div>
+
+  <!-- Message d'erreur -->
+  <div *ngIf="!loading && errorMessage" class="error-box">
+    <svg class="error-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <p>{{ errorMessage }}</p>
+  </div>
+
+  <!-- Message si aucun marin -->
+  <div *ngIf="!loading && !errorMessage && marins.length === 0" class="no-data">
+    <svg class="no-data-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+    </svg>
+    <p>{{ 'POINTAGE.NOCREW' | translate }}</p>
+    <button class="btn-add-empty" (click)="addNewMarin()">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Ajouter le premier marin
+    </button>
+  </div>
+
+  <!-- Tableau des marins -->
+  <div *ngIf="!loading && !errorMessage && marins.length > 0" class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>{{ 'SAILORS.LASTNAME' | translate }}</th>
+          <th>{{ 'SAILORS.FIRSTNAME' | translate }}</th>
+          <th>{{ 'SAILORS.FUNCTION' | translate }}</th>
+          <th class="text-center">{{ 'POINTAGE.PRESENT' | translate }}</th>
+          <th>{{ 'POINTAGE.OBSERVATIONS' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let marin of marins">
+          <td class="font-bold">{{ marin.nom }}</td>
+          <td>{{ marin.prenom }}</td>
+          <td>
+            <span class="fonction-badge" [ngClass]="'fonction-' + marin.fonction">
+              {{ 'SAILORS.' + marin.fonction.toUpperCase() | translate }}
+            </span>
+          </td>
+          <td class="text-center">
+            <label class="switch">
+              <input 
+                type="checkbox" 
+                [checked]="isPresent(marin.id!)"
+                (change)="togglePresence(marin.id!, $event)"
+              />
+              <span class="slider round"></span>
+            </label>
+          </td>
+          <td>
+            <input 
+              type="text" 
+              class="obs-input"
+              [value]="getObservations(marin.id!)"
+              (blur)="updateObservations(marin.id!, $any($event.target).value)"
+              placeholder="{{ 'POINTAGE.ADDOBS' | translate }}"
+            />
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Résumé statistiques -->
+  <div *ngIf="!loading && !errorMessage && marins.length > 0" class="summary">
+    <div class="summary-card">
+      <div class="summary-item">
+        <span class="summary-label">{{ 'POINTAGE.TOTAL' | translate }}</span>
+        <span class="summary-value">{{ marins.length }}</span>
+      </div>
+      <div class="summary-item present">
+        <span class="summary-label">{{ 'POINTAGE.PRESENT' | translate }}</span>
+        <span class="summary-value">{{ nombrePresents }}</span>
+      </div>
+      <div class="summary-item absent">
+        <span class="summary-label">{{ 'POINTAGE.ABSENT' | translate }}</span>
+        <span class="summary-value">{{ nombreAbsents }}</span>
+      </div>
+    </div>
+  </div>
+</div>
