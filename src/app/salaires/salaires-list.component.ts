@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import Swal from 'sweetalert2';
 import { take } from 'rxjs/operators';
 
@@ -16,8 +16,9 @@ import { AlertService } from '../services/alert.service';
 import { Sortie } from '../models/sortie.model';
 import { Marin } from '../models/marin.model';
 import { Bateau } from '../models/bateau.model';
+import { SalaireService } from '../services/salaire.service';
+import { CalculSalaire } from '../models/salaire.model';
 
-// ✅ MODIFIÉ: coefficient -> part
 interface SalaireDetail {
   marinId: string;
   marinNom: string;
@@ -38,22 +39,14 @@ interface SalaireDetail {
 })
 export class SalairesListComponent implements OnInit {
   selectedBoat: Bateau | null = null;
-  sorties: Sortie[] = [];
   marins: Marin[] = [];
   selectedSortiesIds: string[] = [];
   
-  // ✅ SUPPRIMÉ: La propriété 'coefficients' n'est plus nécessaire
-  
-  revenuTotal = 0;
-  totalDepenses = 0;
-  beneficeNet = 0;
-  partProprietaire = 0;
-  partEquipage = 0;
-  totalNuits = 0;
-  deductionNuits = 0;
-  montantAPartager = 0;
-  salairesDetails: SalaireDetail[] = [];
-  calculated = false;
+  activeTab: 'ouvertes' | 'historique' = 'ouvertes';
+  sortiesOuvertes: Sortie[] = [];
+  sortiesCalculees: Sortie[] = [];
+  historiqueCalculs: { [sortieId: string]: CalculSalaire[] } = {};
+
   loading = true;
 
   constructor(
@@ -63,8 +56,10 @@ export class SalairesListComponent implements OnInit {
     private avanceService: AvanceService,
     private paiementService: PaiementService,
     private factureService: FactureVenteService,
+    private salaireService: SalaireService,
     private selectedBoatService: SelectedBoatService,
-    private alertService: AlertService
+    private alertService: AlertService,
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
@@ -78,20 +73,31 @@ export class SalairesListComponent implements OnInit {
   }
 
   loadData(): void {
-    if (!this.selectedBoat?.id) {
-      return;
-    }
+    if (!this.selectedBoat?.id) return;
+    this.loading = true;
 
-    this.sortieService.getSortiesByBateau(this.selectedBoat.id).subscribe((sorties: Sortie[]) => {
-      this.sorties = sorties;
-    }, error => {
-      console.error('❌ Erreur lors du chargement des sorties:', error);
-    });
+    const boatId = this.selectedBoat.id;
 
-    this.marinService.getMarinsByBateau(this.selectedBoat.id).subscribe((marins: Marin[]) => {
-      this.marins = marins;
-      this.loading = false;
+    this.sortieService.getSortiesByBateau(boatId).subscribe((sorties: Sortie[]) => {
+      this.sortiesOuvertes = sorties.filter(s => s.statut === 'terminee' && !s.salaireCalcule);
+      
+      // ✅ CORRECTION: Gère correctement la conversion de Timestamp ou Date
+      this.sortiesCalculees = sorties.filter(s => s.salaireCalcule === true)
+        .sort((a, b) => {
+          const dateA = (a.dateRetour as any).toDate ? (a.dateRetour as any).toDate().getTime() : new Date(a.dateRetour).getTime();
+          const dateB = (b.dateRetour as any).toDate ? (b.dateRetour as any).toDate().getTime() : new Date(b.dateRetour).getTime();
+          return dateB - dateA;
+        });
+      
+      this.marinService.getMarinsByBateau(boatId).subscribe((marins: Marin[]) => {
+        this.marins = marins;
+        this.loading = false;
+      });
     });
+  }
+
+  selectTab(tabName: 'ouvertes' | 'historique'): void {
+    this.activeTab = tabName;
   }
 
   toggleSortie(sortieId: string): void {
@@ -107,133 +113,87 @@ export class SalairesListComponent implements OnInit {
     return this.selectedSortiesIds.includes(sortieId);
   }
 
-  // ✅ SUPPRIMÉ: La méthode configureCoefficients n'est plus nécessaire.
-
   async calculerSalaires(): Promise<void> {
     if (this.selectedSortiesIds.length === 0) {
-      this.alertService.error('Veuillez sélectionner au moins une sortie');
+      this.alertService.error(this.translate.instant('SALAIRES.ERROR_NO_SORTIE'));
       return;
     }
 
-    // ✅ MODIFIÉ: Vérification que les parts des marins sont définies
     const totalParts = this.marins.reduce((sum, marin) => sum + (marin.part || 0), 0);
     if (totalParts <= 0) {
-        this.alertService.error("La somme des parts des marins est de 0. Veuillez définir les parts dans la section 'Marins' de chaque bateau.");
+        this.alertService.error(this.translate.instant('SALAIRES.ERROR_NO_PARTS'));
         return;
     }
 
     try {
-      this.alertService.loading('Calcul en cours...');
+      this.alertService.loading(this.translate.instant('MESSAGES.CALCULATING'));
       
+      const allSorties = [...this.sortiesOuvertes, ...this.sortiesCalculees];
+      const selectedSorties = allSorties.filter(s => this.selectedSortiesIds.includes(s.id!));
+
       const facturesPromises = this.selectedSortiesIds.map(sortieId =>
         this.factureService.getFacturesBySortie(sortieId).pipe(take(1)).toPromise()
       );
       const allFactures = await Promise.all(facturesPromises);
-      this.revenuTotal = allFactures.flat().reduce((sum, f) => sum + (f?.montantTotal || 0), 0);
+      const revenuTotal = allFactures.flat().reduce((sum, f) => sum + (f?.montantTotal || 0), 0);
       
       const depensesPromises = this.selectedSortiesIds.map(sortieId =>
         this.depenseService.getDepensesBySortie(sortieId).pipe(take(1)).toPromise()
       );
       const allDepenses = await Promise.all(depensesPromises);
-      this.totalDepenses = allDepenses.flat().reduce((sum: number, d: any) => sum + (d?.montant || 0), 0);
+      const totalDepenses = allDepenses.flat().reduce((sum: number, d: any) => sum + (d?.montant || 0), 0);
       
-      this.beneficeNet = this.revenuTotal - this.totalDepenses;
-      this.partProprietaire = this.beneficeNet * 0.5;
-      this.partEquipage = this.beneficeNet * 0.5;
+      const beneficeNet = revenuTotal - totalDepenses;
+      const partProprietaire = beneficeNet * 0.5;
+      const partEquipage = beneficeNet * 0.5;
       
-      this.totalNuits = this.selectedSortiesIds.reduce((total, sortieId) => {
-        const sortie = this.sorties.find(s => s.id === sortieId);
-        return total + this.calculerNombreNuits(sortie!);
-      }, 0);
+      const totalNuits = selectedSorties.reduce((total, sortie) => total + this.calculerNombreNuits(sortie), 0);
       
-      this.deductionNuits = this.totalNuits * this.marins.length * 5;
-      this.montantAPartager = this.partEquipage - this.deductionNuits;
+      const deductionNuits = totalNuits * this.marins.length * 5;
+      const montantAPartager = partEquipage - deductionNuits;
 
-      this.salairesDetails = [];
       for (const marin of this.marins) {
-        // ✅ MODIFIÉ: Utilisation de marin.part
         const part = marin.part || 0;
-        const salaireBrut = totalParts > 0 ? (this.montantAPartager * part) / totalParts : 0;
-        const primeNuits = this.totalNuits * 5;
+        const salaireBrut = totalParts > 0 ? (montantAPartager * part) / totalParts : 0;
+        const primeNuits = totalNuits * 5;
 
         const avances = await this.avanceService.getAvancesByMarin(marin.id!).pipe(take(1)).toPromise();
         const totalAvances = avances?.reduce((sum, a) => sum + a.montant, 0) || 0;
 
         const paiements = await this.paiementService.getPaiementsByMarin(marin.id!).pipe(take(1)).toPromise();
         const totalPaiements = paiements?.reduce((sum, p) => sum + p.montant, 0) || 0;
-        
-        const resteAPayer = salaireBrut + primeNuits - totalAvances - totalPaiements;
-
-        this.salairesDetails.push({
-          marinId: marin.id!,
-          marinNom: `${marin.prenom} ${marin.nom}`,
-          part, // ✅ MODIFIÉ: coefficient -> part
-          salaireBrut,
-          primeNuits,
-          totalAvances,
-          totalPaiements,
-          resteAPayer
-        });
       }
 
-      this.calculated = true;
+      for (const sortieId of this.selectedSortiesIds) {
+        await this.sortieService.updateSortie(sortieId, { salaireCalcule: true });
+      }
+
       this.alertService.close();
+      this.selectedSortiesIds = [];
+      this.loadData(); 
+      this.activeTab = 'historique'; 
+
       await Swal.fire({
-        title: 'Calcul terminé !',
-        html: `...`, // Le HTML de SweetAlert reste le même
+        title: this.translate.instant('SALAIRES.CALCUL_SUCCESS_TITLE'),
         icon: 'success',
         confirmButtonColor: '#10b981'
       });
+
     } catch (error) {
       console.error('Erreur:', error);
       this.alertService.close();
-      this.alertService.error('Erreur lors du calcul');
+      this.alertService.error();
     }
   }
 
-  async enregistrerPaiement(detail: SalaireDetail): Promise<void> {
-    const { value: montant } = await Swal.fire({
-      title: `Paiement pour ${detail.marinNom}`,
-      input: 'number',
-      inputLabel: `Montant à payer (Reste: ${detail.resteAPayer.toFixed(2)} DT)`,
-      inputValue: detail.resteAPayer > 0 ? detail.resteAPayer : 0,
-      showCancelButton: true,
-      confirmButtonText: 'Enregistrer',
-      cancelButtonText: 'Annuler',
-      confirmButtonColor: '#10b981',
-      inputValidator: (value) => {
-        const amount = parseFloat(value);
-        if (!value || amount <= 0) return 'Veuillez entrer un montant valide';
-        if (amount > detail.resteAPayer) return 'Le montant ne peut pas dépasser le reste à payer';
-        return null;
-      }
-    });
-
-    if (montant) {
-      try {
-        this.alertService.loading('Enregistrement du paiement...');
-        await this.paiementService.addPaiement({
-          marinId: detail.marinId,
-          montant: parseFloat(montant),
-          datePaiement: new Date(),
-          sortiesIds: this.selectedSortiesIds
-        });
-        this.alertService.close();
-        this.alertService.success('Paiement enregistré!');
-        // Recalculer pour mettre à jour l'affichage
-        await this.calculerSalaires();
-      } catch (error) {
-        console.error('Erreur:', error);
-        this.alertService.close();
-        this.alertService.error('Erreur lors de l\'enregistrement');
-      }
-    }
+  async viewCalculDetails(sortie: Sortie): Promise<void> {
+    this.alertService.warning('Fonctionnalité à venir', 'Historique');
   }
 
   private calculerNombreNuits(sortie: Sortie): number {
     if (!sortie?.dateDepart || !sortie?.dateRetour) return 0;
-    const depart = sortie.dateDepart instanceof Date ? sortie.dateDepart : (sortie.dateDepart as any).toDate();
-    const retour = sortie.dateRetour instanceof Date ? sortie.dateRetour : (sortie.dateRetour as any).toDate();
+    const depart = (sortie.dateDepart as any).toDate ? (sortie.dateDepart as any).toDate() : new Date(sortie.dateDepart);
+    const retour = (sortie.dateRetour as any).toDate ? (sortie.dateRetour as any).toDate() : new Date(sortie.dateRetour);
     const diffTime = Math.abs(retour.getTime() - depart.getTime());
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }

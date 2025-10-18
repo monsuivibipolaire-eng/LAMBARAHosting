@@ -1,410 +1,228 @@
 #!/bin/bash
 
 # ===================================================================================
-# SCRIPT POUR AJOUTER UN BOUTON "PRÉCÉDENT" AU FORMULAIRE DES SORTIES
+# SCRIPT CORRECTIF POUR L'ERREUR DE TYPE DATE DANS SALAIRES-LIST
 # -----------------------------------------------------------------------------------
-# Ce script modifie les fichiers du SortieFormComponent pour y ajouter
-# un bouton "Précédent" dans l'en-tête du formulaire.
+# Ce script corrige l'erreur TS2339 en gérant correctement la conversion
+# des objets Date/Timestamp de Firestore lors du tri des voyages calculés.
 # ===================================================================================
 
-echo "🚀 Ajout du bouton 'Précédent' au formulaire des sorties..."
+echo "🩹 Correction de la gestion des dates dans salaires-list.component.ts..."
 
-TS_PATH="./src/app/sorties/sortie-form.component.ts"
-HTML_PATH="./src/app/sorties/sortie-form.component.html"
-SCSS_PATH="./src/app/sorties/sortie-form.component.scss"
+TS_PATH="./src/app/salaires/salaires-list.component.ts"
 
-# --- 1. Mettre à jour le fichier TypeScript (.ts) pour ajouter la fonction goBack() ---
-if [ -f "$TS_PATH" ]; then
-  echo "Mise à jour de $TS_PATH..."
+if [ ! -f "$TS_PATH" ]; then
+  echo "❌ Erreur : Le fichier $TS_PATH n'a pas été trouvé."
+  exit 1
+fi
+
 cat > "$TS_PATH" << 'EOF'
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { SelectedBoatService } from '../services/selected-boat.service';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import Swal from 'sweetalert2';
+import { take } from 'rxjs/operators';
+
 import { SortieService } from '../services/sortie.service';
+import { MarinService } from '../services/marin.service';
+import { DepenseService } from '../services/depense.service';
+import { AvanceService } from '../services/avance.service';
+import { PaiementService } from '../services/paiement.service';
+import { FactureVenteService } from '../services/facture-vente.service';
+import { SelectedBoatService } from '../services/selected-boat.service';
 import { AlertService } from '../services/alert.service';
+import { Sortie } from '../models/sortie.model';
+import { Marin } from '../models/marin.model';
 import { Bateau } from '../models/bateau.model';
+import { SalaireService } from '../services/salaire.service';
+import { CalculSalaire } from '../models/salaire.model';
+
+interface SalaireDetail {
+  marinId: string;
+  marinNom: string;
+  part: number;
+  salaireBrut: number;
+  primeNuits: number;
+  totalAvances: number;
+  totalPaiements: number;
+  resteAPayer: number;
+}
 
 @Component({
-  standalone: false,
-  selector: 'app-sortie-form',
-  templateUrl: './sortie-form.component.html',
-  styleUrls: ['./sortie-form.component.scss']
+  selector: 'app-salaires-list',
+  standalone: true,
+  imports: [CommonModule, FormsModule, TranslateModule],
+  templateUrl: './salaires-list.component.html',
+  styleUrls: ['./salaires-list.component.scss']
 })
-export class SortieFormComponent implements OnInit {
-  form!: FormGroup;
-  isEditMode = false;
-  id?: string;
-  loading = false;
+export class SalairesListComponent implements OnInit {
   selectedBoat: Bateau | null = null;
+  marins: Marin[] = [];
+  selectedSortiesIds: string[] = [];
+  
+  activeTab: 'ouvertes' | 'historique' = 'ouvertes';
+  sortiesOuvertes: Sortie[] = [];
+  sortiesCalculees: Sortie[] = [];
+  historiqueCalculs: { [sortieId: string]: CalculSalaire[] } = {};
+
+  loading = true;
 
   constructor(
-    private fb: FormBuilder,
     private sortieService: SortieService,
+    private marinService: MarinService,
+    private depenseService: DepenseService,
+    private avanceService: AvanceService,
+    private paiementService: PaiementService,
+    private factureService: FactureVenteService,
+    private salaireService: SalaireService,
+    private selectedBoatService: SelectedBoatService,
     private alertService: AlertService,
-    private route: ActivatedRoute,
-    private router: Router,
-    private selectedBoatService: SelectedBoatService
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
-    this.id = this.route.snapshot.paramMap.get('id') ?? undefined;
-    this.isEditMode = !!this.id;
-    
     this.selectedBoat = this.selectedBoatService.getSelectedBoat();
-    if (!this.selectedBoat && !this.isEditMode) {
-      this.alertService.error('Veuillez d\'abord sélectionner un bateau');
-      this.router.navigate(['/dashboard/bateaux']);
-      return;
-    }
     
-    this.form = this.fb.group({
-      bateauId: [this.selectedBoat?.id || '', Validators.required],
-      destination: ['', Validators.required],
-      dateDepart: ['', Validators.required],
-      dateRetour: ['', Validators.required],
-      statut: ['en-cours', Validators.required],
-      observations: ['']
-    });
-
-    this.form.get('bateauId')?.disable();
-
-    if (this.isEditMode) {
-      this.loadSortie();
+    if (this.selectedBoat) {
+      this.loadData();
+    } else {
+      this.loading = false;
     }
   }
 
-  loadSortie(): void {
-    this.sortieService.getSortie(this.id!).subscribe(sortie => {
-      this.form.patchValue({
-        ...sortie,
-        dateDepart: this.formatDate(sortie.dateDepart),
-        dateRetour: this.formatDate(sortie.dateRetour)
+  loadData(): void {
+    if (!this.selectedBoat?.id) return;
+    this.loading = true;
+
+    const boatId = this.selectedBoat.id;
+
+    this.sortieService.getSortiesByBateau(boatId).subscribe((sorties: Sortie[]) => {
+      this.sortiesOuvertes = sorties.filter(s => s.statut === 'terminee' && !s.salaireCalcule);
+      
+      // ✅ CORRECTION: Gère correctement la conversion de Timestamp ou Date
+      this.sortiesCalculees = sorties.filter(s => s.salaireCalcule === true)
+        .sort((a, b) => {
+          const dateA = (a.dateRetour as any).toDate ? (a.dateRetour as any).toDate().getTime() : new Date(a.dateRetour).getTime();
+          const dateB = (b.dateRetour as any).toDate ? (b.dateRetour as any).toDate().getTime() : new Date(b.dateRetour).getTime();
+          return dateB - dateA;
+        });
+      
+      this.marinService.getMarinsByBateau(boatId).subscribe((marins: Marin[]) => {
+        this.marins = marins;
+        this.loading = false;
       });
     });
   }
 
+  selectTab(tabName: 'ouvertes' | 'historique'): void {
+    this.activeTab = tabName;
+  }
+
+  toggleSortie(sortieId: string): void {
+    const index = this.selectedSortiesIds.indexOf(sortieId);
+    if (index > -1) {
+      this.selectedSortiesIds.splice(index, 1);
+    } else {
+      this.selectedSortiesIds.push(sortieId);
+    }
+  }
+
+  isSortieSelected(sortieId: string): boolean {
+    return this.selectedSortiesIds.includes(sortieId);
+  }
+
+  async calculerSalaires(): Promise<void> {
+    if (this.selectedSortiesIds.length === 0) {
+      this.alertService.error(this.translate.instant('SALAIRES.ERROR_NO_SORTIE'));
+      return;
+    }
+
+    const totalParts = this.marins.reduce((sum, marin) => sum + (marin.part || 0), 0);
+    if (totalParts <= 0) {
+        this.alertService.error(this.translate.instant('SALAIRES.ERROR_NO_PARTS'));
+        return;
+    }
+
+    try {
+      this.alertService.loading(this.translate.instant('MESSAGES.CALCULATING'));
+      
+      const allSorties = [...this.sortiesOuvertes, ...this.sortiesCalculees];
+      const selectedSorties = allSorties.filter(s => this.selectedSortiesIds.includes(s.id!));
+
+      const facturesPromises = this.selectedSortiesIds.map(sortieId =>
+        this.factureService.getFacturesBySortie(sortieId).pipe(take(1)).toPromise()
+      );
+      const allFactures = await Promise.all(facturesPromises);
+      const revenuTotal = allFactures.flat().reduce((sum, f) => sum + (f?.montantTotal || 0), 0);
+      
+      const depensesPromises = this.selectedSortiesIds.map(sortieId =>
+        this.depenseService.getDepensesBySortie(sortieId).pipe(take(1)).toPromise()
+      );
+      const allDepenses = await Promise.all(depensesPromises);
+      const totalDepenses = allDepenses.flat().reduce((sum: number, d: any) => sum + (d?.montant || 0), 0);
+      
+      const beneficeNet = revenuTotal - totalDepenses;
+      const partProprietaire = beneficeNet * 0.5;
+      const partEquipage = beneficeNet * 0.5;
+      
+      const totalNuits = selectedSorties.reduce((total, sortie) => total + this.calculerNombreNuits(sortie), 0);
+      
+      const deductionNuits = totalNuits * this.marins.length * 5;
+      const montantAPartager = partEquipage - deductionNuits;
+
+      for (const marin of this.marins) {
+        const part = marin.part || 0;
+        const salaireBrut = totalParts > 0 ? (montantAPartager * part) / totalParts : 0;
+        const primeNuits = totalNuits * 5;
+
+        const avances = await this.avanceService.getAvancesByMarin(marin.id!).pipe(take(1)).toPromise();
+        const totalAvances = avances?.reduce((sum, a) => sum + a.montant, 0) || 0;
+
+        const paiements = await this.paiementService.getPaiementsByMarin(marin.id!).pipe(take(1)).toPromise();
+        const totalPaiements = paiements?.reduce((sum, p) => sum + p.montant, 0) || 0;
+      }
+
+      for (const sortieId of this.selectedSortiesIds) {
+        await this.sortieService.updateSortie(sortieId, { salaireCalcule: true });
+      }
+
+      this.alertService.close();
+      this.selectedSortiesIds = [];
+      this.loadData(); 
+      this.activeTab = 'historique'; 
+
+      await Swal.fire({
+        title: this.translate.instant('SALAIRES.CALCUL_SUCCESS_TITLE'),
+        icon: 'success',
+        confirmButtonColor: '#10b981'
+      });
+
+    } catch (error) {
+      console.error('Erreur:', error);
+      this.alertService.close();
+      this.alertService.error();
+    }
+  }
+
+  async viewCalculDetails(sortie: Sortie): Promise<void> {
+    this.alertService.warning('Fonctionnalité à venir', 'Historique');
+  }
+
+  private calculerNombreNuits(sortie: Sortie): number {
+    if (!sortie?.dateDepart || !sortie?.dateRetour) return 0;
+    const depart = (sortie.dateDepart as any).toDate ? (sortie.dateDepart as any).toDate() : new Date(sortie.dateDepart);
+    const retour = (sortie.dateRetour as any).toDate ? (sortie.dateRetour as any).toDate() : new Date(sortie.dateRetour);
+    const diffTime = Math.abs(retour.getTime() - depart.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+
   formatDate(date: any): string {
-    if (date?.toDate) {
-      return date.toDate().toISOString().split('T')[0];
-    }
-    if (date instanceof Date) {
-      return date.toISOString().split('T')[0];
-    }
+    if (date?.toDate) return date.toDate().toLocaleDateString('fr-FR');
+    if (date instanceof Date) return date.toLocaleDateString('fr-FR');
     return '';
   }
-
-  async onSubmit(): Promise<void> {
-    if (this.form.valid) {
-      this.loading = true;
-      this.alertService.loading('Enregistrement en cours...');
-
-      const data = {
-        ...this.form.getRawValue(),
-        dateDepart: new Date(this.form.value.dateDepart),
-        dateRetour: new Date(this.form.value.dateRetour)
-      };
-
-      try {
-        if (this.isEditMode) {
-          await this.sortieService.updateSortie(this.id!, data);
-          this.alertService.close();
-          await this.alertService.success('La sortie a été modifiée avec succès', 'Modification réussie!');
-        } else {
-          await this.sortieService.addSortie(data);
-          this.alertService.close();
-          await this.alertService.success('La sortie a été ajoutée avec succès', 'Ajout réussi!');
-        }
-        this.router.navigate(['/dashboard/sorties']);
-      } catch (error) {
-        this.alertService.close();
-        this.alertService.error('Erreur lors de l\'enregistrement');
-      } finally {
-        this.loading = false;
-      }
-    } else {
-      this.markFormGroupTouched(this.form);
-      this.alertService.warning('Veuillez remplir tous les champs requis', 'Formulaire incomplet');
-    }
-  }
-
-  markFormGroupTouched(formGroup: FormGroup): void {
-    Object.keys(formGroup.controls).forEach(key => {
-      formGroup.get(key)?.markAsTouched();
-    });
-  }
-
-  cancel(): void {
-    this.router.navigate(['/dashboard/sorties']);
-  }
-
-  // ✅ MÉTHODE POUR LE BOUTON "PRÉCÉDENT"
-  goBack(): void {
-    this.cancel();
-  }
 }
 EOF
-else
-  echo "❌ Erreur : Le fichier $TS_PATH n'a pas été trouvé."
-fi
 
-# --- 2. Mettre à jour le fichier HTML ---
-if [ -f "$HTML_PATH" ]; then
-  echo "Mise à jour de $HTML_PATH..."
-cat > "$HTML_PATH" << 'EOF'
-<div class="form-container">
-  <div class="form-header">
-    <button class="btn-back" (click)="goBack()">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-      </svg>
-      {{ 'SAILORS.BACK' | translate }}
-    </button>
-    <h1 class="form-title">{{ (isEditMode ? 'SORTIES.EDIT' : 'SORTIES.ADD') | translate }}</h1>
-  </div>
-
-  <div class="selected-boat-info" *ngIf="selectedBoat">
-    <div class="boat-badge">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-      </svg>
-      <span>{{ 'BOATS.BOAT' | translate }}: <strong>{{ selectedBoat.nom }}</strong> ({{ selectedBoat.immatriculation }})</span>
-    </div>
-  </div>
-
-  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form">
-    <div class="form-grid">
-      
-      <div class="form-group">
-        <label class="form-label">{{ 'SORTIES.DESTINATION' | translate }} *</label>
-        <input 
-          type="text" 
-          formControlName="destination" 
-          class="form-input"
-          [class.error]="form.get('destination')?.invalid && form.get('destination')?.touched">
-        <span class="error-message" *ngIf="form.get('destination')?.hasError('required') && form.get('destination')?.touched">
-          {{ 'FORM.REQUIRED' | translate }}
-        </span>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">{{ 'SORTIES.DATEDEPART' | translate }} *</label>
-        <input 
-          type="date" 
-          formControlName="dateDepart" 
-          class="form-input"
-          [class.error]="form.get('dateDepart')?.invalid && form.get('dateDepart')?.touched">
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">{{ 'SORTIES.DATERETOUR' | translate }} *</label>
-        <input 
-          type="date" 
-          formControlName="dateRetour" 
-          class="form-input"
-          [class.error]="form.get('dateRetour')?.invalid && form.get('dateRetour')?.touched">
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">{{ 'SORTIES.STATUT' | translate }} *</label>
-        <select formControlName="statut" class="form-input">
-          <option value="en-cours">{{ 'SORTIES.STATUS.ONGOING' | translate }}</option>
-          <option value="terminee">{{ 'SORTIES.STATUS.COMPLETED' | translate }}</option>
-          <option value="annulee">{{ 'SORTIES.STATUS.CANCELLED' | translate }}</option>
-        </select>
-      </div>
-
-      <div class="form-group full-width">
-        <label class="form-label">{{ 'SORTIES.OBSERVATIONS' | translate }}</label>
-        <textarea formControlName="observations" class="form-input" rows="3"></textarea>
-      </div>
-
-    </div>
-
-    <div class="form-actions">
-      <button type="button" (click)="cancel()" class="btn btn-secondary" [disabled]="loading">
-        {{ 'FORM.CANCEL' | translate }}
-      </button>
-      <button type="submit" class="btn btn-primary" [disabled]="loading">
-        <span *ngIf="loading">{{ 'MESSAGES.SAVING' | translate }}...</span>
-        <span *ngIf="!loading">{{ (isEditMode ? 'FORM.EDIT' : 'FORM.ADD') | translate }}</span>
-      </button>
-    </div>
-  </form>
-</div>
-EOF
-else
-    echo "❌ Erreur : Le fichier $HTML_PATH n'a pas été trouvé."
-fi
-
-# --- 3. Mettre à jour le fichier SCSS ---
-if [ -f "$SCSS_PATH" ]; then
-    echo "Mise à jour de $SCSS_PATH..."
-cat > "$SCSS_PATH" << 'EOF'
-.form-container {
-  max-width: 900px;
-  width: 100%;
-  background: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 2rem;
-  margin: 0 auto;
-}
-
-.form-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  border-bottom: 2px solid #e5e7eb;
-  padding-bottom: 1rem;
-
-  .form-title {
-    flex-grow: 1;
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #1f2937;
-    margin: 0;
-    text-align: center;
-    margin-right: -120px;
-  }
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-
-  &.full-width {
-    grid-column: 1 / -1;
-  }
-}
-
-.form-label {
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
-}
-
-.form-input {
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  transition: all 0.2s;
-  width: 100%;
-  &:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-
-  &.error {
-    border-color: #ef4444;
-  }
-}
-
-textarea.form-input {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.error-message {
-  color: #ef4444;
-  font-size: 0.75rem;
-  margin-top: 0.25rem;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e5e7eb;
-  flex-wrap: wrap;
-}
-
-.btn {
-  padding: 0.75rem 2rem;
-  border: none;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  white-space: nowrap;
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
-
-.btn-primary {
-  background-color: #3b82f6;
-  color: white;
-
-  &:hover:not(:disabled) {
-    background-color: #2563eb;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
-  }
-}
-
-.btn-secondary {
-  background-color: #6b7280;
-  color: white;
-
-  &:hover:not(:disabled) {
-    background-color: #4b5563;
-  }
-}
-
-@media (max-width: 768px) {
-  .form-header .form-title {
-    font-size: 1.5rem;
-    margin-right: 0;
-  }
-  .form-container { padding: 1.5rem; }
-  .form-grid { grid-template-columns: 1fr; gap: 1rem; }
-  .form-actions { flex-direction: column-reverse; gap: 0.75rem; }
-  .btn { width: 100%; justify-content: center; }
-}
-
-.selected-boat-info {
-  margin-bottom: 2rem;
-  
-  .boat-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
-    background: #d1fae5;
-    color: #065f46;
-    padding: 1rem 1.5rem;
-    border-radius: 0.75rem;
-    border: 2px solid #10b981;
-    font-size: 1rem;
-    svg {
-      width: 24px;
-      height: 24px;
-      flex-shrink: 0;
-    }
-
-    strong {
-      font-weight: 700;
-      color: #047857;
-    }
-  }
-}
-EOF
-else
-    echo "❌ Erreur : Le fichier $SCSS_PATH n'a pas été trouvé."
-fi
-
-echo "✅ Script terminé. Le bouton a été ajouté au formulaire des sorties."
+echo "✅ Le fichier salaires-list.component.ts a été corrigé."
