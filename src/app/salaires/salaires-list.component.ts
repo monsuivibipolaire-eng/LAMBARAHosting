@@ -211,8 +211,43 @@ export class SalairesListComponent implements OnInit {
     Swal.fire({ title: t.title, html: html, width: '800px', showCloseButton: true, showConfirmButton: false });
   }
 
+  // ✅ FONCTION DE PAIEMENT RESTAURÉE
   async enregistrerPaiement(detail: DetailSalaireMarin): Promise<void> {
-    // ... (Cette fonction reste inchangée)
+    const { value: montant } = await Swal.fire({
+      title: this.translate.instant('SALAIRES.PAYMENT_MODAL_TITLE', { name: detail.marinNom }),
+      input: 'number',
+      inputLabel: this.translate.instant('SALAIRES.PAYMENT_MODAL_LABEL', { amount: detail.resteAPayer.toFixed(2) }),
+      inputValue: detail.resteAPayer > 0 ? detail.resteAPayer.toFixed(2) : 0,
+      showCancelButton: true,
+      confirmButtonText: this.translate.instant('FORM.SAVE'),
+      cancelButtonText: this.translate.instant('FORM.CANCEL'),
+      confirmButtonColor: '#10b981',
+      inputValidator: (value) => {
+        if (!value) { return this.translate.instant('FORM.REQUIRED'); }
+        const amount = parseFloat(value);
+        if (amount <= 0) { return this.translate.instant('SALAIRES.PAYMENT_MODAL.ERROR_POSITIVE'); }
+        if (amount > detail.resteAPayer) { return this.translate.instant('SALAIRES.PAYMENT_MODAL.ERROR_EXCEED'); }
+        return null;
+      }
+    });
+    if (montant) {
+      try {
+        this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
+        const montantPaye = parseFloat(montant);
+        await this.paiementService.addPaiement({
+          marinId: detail.marinId,
+          montant: montantPaye,
+          datePaiement: new Date(),
+          sortiesIds: this.dernierCalcul!.sortiesIds
+        });
+        detail.totalPaiements += montantPaye;
+        detail.resteAPayer -= montantPaye;
+        this.alertService.success(this.translate.instant('SALAIRES.PAYMENT_SUCCESS'));
+      } catch (error) {
+        console.error('Erreur:', error);
+        this.alertService.error();
+      }
+    }
   }
 
   private calculerNombreNuits(sortie: SortieDetails): number {
