@@ -40,7 +40,6 @@ export class SalairesListComponent implements OnInit {
 
   dernierCalcul: CalculSalaire | null = null;
   accordionState: { [key: string]: boolean } = { summary: true, sharing: true, details: true };
-
   loading = true;
 
   constructor(
@@ -58,14 +57,14 @@ export class SalairesListComponent implements OnInit {
 
   ngOnInit(): void {
     this.selectedBoat = this.selectedBoatService.getSelectedBoat();
-    if (this.selectedBoat) { this.loadData(); } else { this.loading = false; }
+    if (this.selectedBoat) { this.loadData(); } else { this.loading = false;
+    }
   }
 
   loadData(): void {
     if (!this.selectedBoat?.id) return;
     this.loading = true;
     const boatId = this.selectedBoat.id;
-
     this.sortieService.getSortiesByBateau(boatId).subscribe((sorties: Sortie[]) => {
       this.sortiesOuvertes = sorties.filter(s => s.statut === 'terminee' && !s.salaireCalcule);
       this.sortiesCalculees = sorties.filter(s => s.salaireCalcule === true)
@@ -73,7 +72,7 @@ export class SalairesListComponent implements OnInit {
           const dateA = (a.dateRetour as any).toDate ? (a.dateRetour as any).toDate().getTime() : new Date(a.dateRetour).getTime();
           const dateB = (b.dateRetour as any).toDate ? (b.dateRetour as any).toDate().getTime() : new Date(b.dateRetour).getTime();
           return dateB - dateA;
-        });
+         });
       
       this.marinService.getMarinsByBateau(boatId).subscribe((marins: Marin[]) => {
         this.marins = marins;
@@ -90,7 +89,8 @@ export class SalairesListComponent implements OnInit {
   toggleSortie(sortieId: string): void {
     this.dernierCalcul = null;
     const index = this.selectedSortiesIds.indexOf(sortieId);
-    if (index > -1) { this.selectedSortiesIds.splice(index, 1); } else { this.selectedSortiesIds.push(sortieId); }
+    if (index > -1) { this.selectedSortiesIds.splice(index, 1); } else { this.selectedSortiesIds.push(sortieId);
+    }
   }
 
   isSortieSelected(sortieId: string): boolean {
@@ -120,7 +120,6 @@ export class SalairesListComponent implements OnInit {
       const depensesPromises = this.selectedSortiesIds.map(id => this.depenseService.getDepensesBySortie(id).pipe(take(1)).toPromise());
       const allDepenses = await Promise.all(depensesPromises);
       const totalDepenses = allDepenses.flat().reduce((sum, d: any) => sum + (d?.montant || 0), 0);
-      
       const beneficeNet = revenuTotal - totalDepenses;
       const partProprietaire = beneficeNet * 0.5;
       const partEquipage = beneficeNet * 0.5;
@@ -190,7 +189,8 @@ export class SalairesListComponent implements OnInit {
                 if (res.isConfirmed) { await this.reopenSortieForRecalculation(sortie); }
             }
         },
-        error: (err) => { console.error(err); this.alertService.error(); }
+        error: (err) => { console.error(err); this.alertService.error();
+        }
     });
   }
   
@@ -201,7 +201,8 @@ export class SalairesListComponent implements OnInit {
         this.loadData();
         this.activeTab = 'ouvertes';
         this.alertService.success(this.translate.instant('SALAIRES.HISTORY.MOVED_FOR_RECALC'));
-    } catch (error) { console.error(error); this.alertService.error(); }
+    } catch (error) { console.error(error); this.alertService.error();
+    }
   }
 
   private displayCalculInView(calcul: CalculSalaire): void {
@@ -213,7 +214,7 @@ export class SalairesListComponent implements OnInit {
   }
 
   showRevenueDetails(): void {
-    if (!this.dernierCalcul || !this.dernierCalcul.factures) return;
+    if (!this.dernierCalcul) return;
 
     const t = {
       title: this.translate.instant('SALAIRES.DETAILS_MODAL.REVENUE_TITLE'),
@@ -223,7 +224,8 @@ export class SalairesListComponent implements OnInit {
       amount: this.translate.instant('COMMON.AMOUNT')
     };
 
-    const rows = this.dernierCalcul.factures.map(f =>
+    const factures = this.dernierCalcul.factures || [];
+    const rows = factures.map(f =>
       `<tr>
         <td>${f.numeroFacture}</td>
         <td>${f.client}</td>
@@ -253,7 +255,7 @@ export class SalairesListComponent implements OnInit {
   }
 
   showExpenseDetails(): void {
-    if (!this.dernierCalcul || !this.dernierCalcul.depenses) return;
+    if (!this.dernierCalcul) return;
 
     const t = {
       title: this.translate.instant('SALAIRES.DETAILS_MODAL.EXPENSE_TITLE'),
@@ -263,7 +265,8 @@ export class SalairesListComponent implements OnInit {
       amount: this.translate.instant('COMMON.AMOUNT')
     };
 
-    const rows = this.dernierCalcul.depenses.map(d =>
+    const depenses = this.dernierCalcul.depenses || [];
+    const rows = depenses.map(d =>
       `<tr>
         <td>${this.translate.instant('EXPENSES.TYPES.' + d.type.toUpperCase())}</td>
         <td>${this.formatDate(d.date)}</td>
@@ -292,7 +295,6 @@ export class SalairesListComponent implements OnInit {
     Swal.fire({ title: t.title, html: html, width: '800px', showCloseButton: true, showConfirmButton: false });
   }
 
-  // ✅ NOUVELLE MÉTHODE POUR ENREGISTRER UN PAIEMENT
   async enregistrerPaiement(detail: DetailSalaireMarin): Promise<void> {
     const { value: montant } = await Swal.fire({
       title: this.translate.instant('SALAIRES.PAYMENT_MODAL_TITLE', { name: detail.marinNom }),
@@ -303,15 +305,16 @@ export class SalairesListComponent implements OnInit {
       confirmButtonText: this.translate.instant('FORM.SAVE'),
       cancelButtonText: this.translate.instant('FORM.CANCEL'),
       confirmButtonColor: '#10b981',
+    
       inputValidator: (value) => {
         if (!value) { return this.translate.instant('FORM.REQUIRED'); }
         const amount = parseFloat(value);
         if (amount <= 0) { return this.translate.instant('SALAIRES.PAYMENT_MODAL.ERROR_POSITIVE'); }
-        if (amount > detail.resteAPayer) { return this.translate.instant('SALAIRES.PAYMENT_MODAL.ERROR_EXCEED'); }
+        if (amount > detail.resteAPayer) { return this.translate.instant('SALAIRES.PAYMENT_MODAL.ERROR_EXCEED');
+        }
         return null;
       }
     });
-
     if (montant) {
       try {
         this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
@@ -323,8 +326,6 @@ export class SalairesListComponent implements OnInit {
           datePaiement: new Date(),
           sortiesIds: this.dernierCalcul!.sortiesIds
         });
-
-        // Mettre à jour l'état local pour un rafraîchissement instantané
         detail.totalPaiements += montantPaye;
         detail.resteAPayer -= montantPaye;
 
@@ -339,7 +340,8 @@ export class SalairesListComponent implements OnInit {
   private calculerNombreNuits(sortie: Sortie): number {
     if (!sortie?.dateDepart || !sortie?.dateRetour) return 0;
     const depart = (sortie.dateDepart as any).toDate ? (sortie.dateDepart as any).toDate() : new Date(sortie.dateDepart);
-    const retour = (sortie.dateRetour as any).toDate ? (sortie.dateRetour as any).toDate() : new Date(sortie.dateRetour);
+    const retour = (sortie.dateRetour as any).toDate ?
+    (sortie.dateRetour as any).toDate() : new Date(sortie.dateRetour);
     const diffTime = Math.abs(retour.getTime() - depart.getTime());
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }
