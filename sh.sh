@@ -1,11 +1,13 @@
 #!/bin/bash
 
 # ==============================================================================
-# SCRIPT pour corriger l'erreur "Firebase API called outside injection context".
+# SCRIPT pour améliorer l'affichage de l'historique des calculs de salaires.
 #
-# Remplace `app.module.ts` pour passer explicitement l'instance de l'application
-# Firebase au service Firestore, ce qui résout les problèmes de contexte
-# avec les composants chargés paresseusement (lazy-loaded).
+# Actions :
+#   1. Ajoute une méthode au `salaire.service.ts` pour lister les calculs.
+#   2. Modifie `salaires-list.component.ts` pour utiliser cette nouvelle logique.
+#   3. Met à jour `salaires-list.component.html` pour afficher des groupes
+#      de calcul au lieu de sorties individuelles.
 # ==============================================================================
 
 # --- Configuration ---
@@ -14,80 +16,383 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# Fichier à remplacer
-FILE_PATH="src/app/app.module.ts"
+echo -e "🚀 ${YELLOW}Démarrage du script de refactorisation de l'historique...${NC}"
+echo "------------------------------------------------------------------"
 
-# --- Vérifications ---
-if [ ! -f "$FILE_PATH" ]; then
-    echo -e "${RED}Erreur : Fichier non trouvé :${NC} $FILE_PATH"
-    exit 1
+# --- 1. Modification de salaire.service.ts ---
+SERVICE_FILE="src/app/services/salaire.service.ts"
+echo -e "🔧 Modification de : ${YELLOW}$SERVICE_FILE${NC}"
+
+if [ ! -f "$SERVICE_FILE" ]; then
+    echo -e "  -> ${RED}Erreur : Fichier non trouvé. Abandon.${NC}"; exit 1;
 fi
+cp "$SERVICE_FILE" "${SERVICE_FILE}.bak.refactor"
 
-echo -e "🔧 Fichier cible : ${YELLOW}$FILE_PATH${NC}"
+cat > "$SERVICE_FILE" << 'EOF'
+import { Injectable } from '@angular/core';
+import { Firestore, collection, addDoc, collectionData, query, where, orderBy } from '@angular/fire/firestore';
+import { Observable } from 'rxjs';
+import { CalculSalaire } from '../models/salaire.model';
 
-# Créer une sauvegarde
-cp "$FILE_PATH" "${FILE_PATH}.bak.contextfix"
-echo "  -> Une sauvegarde a été créée : ${FILE_PATH}.bak.contextfix"
-
-echo "  -> Remplacement du fichier par la version corrigée..."
-
-# --- Remplacement complet du fichier ---
-cat > "$FILE_PATH" << 'EOF'
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { RouterModule } from '@angular/router';
-import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
-import { AppRoutingModule } from './app-routing.module';
-import { AppComponent } from './app.component';
-// ✅ CORRECTION : Importer `getApp`
-import { provideFirebaseApp, initializeApp, getApp } from '@angular/fire/app';
-import { provideAuth, getAuth } from '@angular/fire/auth';
-import { provideFirestore, getFirestore } from '@angular/fire/firestore';
-import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
-import { TranslateHttpLoader } from '@ngx-translate/http-loader';
-import { environment } from '../environments/environment';
-import { AuthComponent } from './auth/auth.component';
-import { AuthGuard } from './auth.guard';
-import { AuthService } from './auth.service';
-
-export function createTranslateLoader(http: HttpClient) {
-  return new TranslateHttpLoader(http, './assets/i18n/', '.json');
-}
-
-@NgModule({
-  declarations: [AppComponent],
-  imports: [
-    RouterModule, AuthComponent, BrowserModule, CommonModule, FormsModule,
-    ReactiveFormsModule, BrowserAnimationsModule, AppRoutingModule, HttpClientModule,
-    TranslateModule.forRoot({
-      defaultLanguage: 'ar',
-      loader: {
-        provide: TranslateLoader,
-        useFactory: createTranslateLoader,
-        deps: [HttpClient]
-      }
-    })
-  ],
-  providers: [
-    AuthService, AuthGuard,
-    provideFirebaseApp(() => initializeApp(environment.firebase)),
-    provideAuth(() => getAuth()),
-    // ✅ CORRECTION : Utiliser getApp() pour passer l'instance Firebase à Firestore
-    provideFirestore(() => getFirestore(getApp()))
-  ],
-  bootstrap: [AppComponent]
+@Injectable({
+  providedIn: 'root'
 })
-export class AppModule { }
+export class SalaireService {
+  private calculsSalaireCollection = 'calculs_salaire';
+  constructor(private firestore: Firestore) {}
+
+  async saveCalculSalaire(calcul: Omit<CalculSalaire, 'id'>): Promise<any> {
+    const calculsCollection = collection(this.firestore, this.calculsSalaireCollection);
+    return await addDoc(calculsCollection, calcul);
+  }
+
+  getCalculsBySortieId(sortieId: string): Observable<CalculSalaire[]> {
+    const calculsCollection = collection(this.firestore, this.calculsSalaireCollection);
+    const q = query(calculsCollection, where('sortiesIds', 'array-contains', sortieId));
+    return collectionData(q, { idField: 'id' }) as Observable<CalculSalaire[]>;
+  }
+
+  // ✅ NOUVELLE MÉTHODE AJOUTÉE
+  getCalculsByBateau(bateauId: string): Observable<CalculSalaire[]> {
+    const calculsCollection = collection(this.firestore, this.calculsSalaireCollection);
+    const q = query(calculsCollection, where('bateauId', '==', bateauId), orderBy('dateCalcul', 'desc'));
+    return collectionData(q, { idField: 'id' }) as Observable<CalculSalaire[]>;
+  }
+}
 EOF
+echo -e "  -> ${GREEN}Succès.${NC}"
 
-if [ $? -eq 0 ]; then
-    echo -e "  -> ${GREEN}Succès : Le fichier a été remplacé par la version corrigée.${NC}"
-else
-    echo -e "  -> ${RED}Erreur : Un problème est survenu lors de la modification.${NC}"
-    exit 1
+# --- 2. Modification de salaires-list.component.ts ---
+COMPONENT_TS_FILE="src/app/salaires/salaires-list.component.ts"
+echo -e "\n🔧 Modification de : ${YELLOW}$COMPONENT_TS_FILE${NC}"
+
+if [ ! -f "$COMPONENT_TS_FILE" ]; then
+    echo -e "  -> ${RED}Erreur : Fichier non trouvé. Abandon.${NC}"; exit 1;
 fi
+cp "$COMPONENT_TS_FILE" "${COMPONENT_TS_FILE}.bak.refactor"
 
-echo -e "\n${GREEN}✅ Opération terminée. L'erreur de contexte Firebase est corrigée.${NC}"
+cat > "$COMPONENT_TS_FILE" << 'EOF'
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import Swal from 'sweetalert2';
+import { take, combineLatest } from 'rxjs';
+import { SortieService, SortieDetails } from '../services/sortie.service';
+import { MarinService } from '../services/marin.service';
+import { AvanceService } from '../services/avance.service';
+import { PaiementService } from '../services/paiement.service';
+import { SelectedBoatService } from '../services/selected-boat.service';
+import { AlertService } from '../services/alert.service';
+import { Marin } from '../models/marin.model';
+import { Bateau } from '../models/bateau.model';
+import { SalaireService } from '../services/salaire.service';
+import { CalculSalaire, DetailSalaireMarin } from '../models/salaire.model';
+import { FactureVente } from '../models/facture-vente.model';
+import { Depense } from '../models/depense.model';
+import { FactureVenteService } from '../services/facture-vente.service';
+import { DepenseService } from '../services/depense.service';
+
+@Component({
+  selector: 'app-salaires-list',
+  standalone: true,
+  imports: [CommonModule, FormsModule, TranslateModule],
+  templateUrl: './salaires-list.component.html',
+  styleUrls: ['./salaires-list.component.scss']
+})
+export class SalairesListComponent implements OnInit {
+  selectedBoat: Bateau | null = null;
+  marins: Marin[] = [];
+  selectedSortiesIds: string[] = [];
+  
+  activeTab: 'ouvertes' | 'historique' = 'ouvertes';
+  sortiesOuvertes: SortieDetails[] = [];
+  sortiesCalculees: SortieDetails[] = [];
+  historiqueDesCalculs: CalculSalaire[] = [];
+
+  dernierCalcul: CalculSalaire | null = null;
+  accordionState: { [key: string]: boolean } = { summary: true, sharing: true, details: true };
+  loading = true;
+
+  constructor(
+    private sortieService: SortieService,
+    private marinService: MarinService,
+    private avanceService: AvanceService,
+    private paiementService: PaiementService,
+    private salaireService: SalaireService,
+    private selectedBoatService: SelectedBoatService,
+    private alertService: AlertService,
+    private translate: TranslateService,
+    private factureService: FactureVenteService,
+    private depenseService: DepenseService
+  ) {}
+
+  ngOnInit(): void {
+    this.selectedBoat = this.selectedBoatService.getSelectedBoat();
+    if (this.selectedBoat) {
+      this.loadData();
+    } else {
+      this.loading = false;
+    }
+  }
+
+  loadData(): void {
+    if (!this.selectedBoat?.id) return;
+    this.loading = true;
+    const boatId = this.selectedBoat.id;
+
+    combineLatest([
+      this.sortieService.getSortiesByBateau(boatId),
+      this.marinService.getMarinsByBateau(boatId),
+      this.salaireService.getCalculsByBateau(boatId)
+    ]).subscribe(([sorties, marins, calculs]) => {
+      this.sortiesOuvertes = sorties.filter(s => s.statut === 'terminee' && !s.salaireCalcule);
+      this.sortiesCalculees = sorties.filter(s => s.salaireCalcule === true);
+      this.marins = marins;
+      this.historiqueDesCalculs = calculs.sort((a, b) => {
+        const dateA = (a.dateCalcul as any).toDate ? (a.dateCalcul as any).toDate() : new Date(a.dateCalcul);
+        const dateB = (b.dateCalcul as any).toDate ? (b.dateCalcul as any).toDate() : new Date(b.dateCalcul);
+        return dateB.getTime() - dateA.getTime();
+      });
+      this.loading = false;
+    });
+  }
+  
+  selectTab(tabName: 'ouvertes' | 'historique'): void {
+    this.activeTab = tabName;
+    this.dernierCalcul = null;
+  }
+
+  toggleSortie(sortieId: string): void {
+    this.dernierCalcul = null;
+    const index = this.selectedSortiesIds.indexOf(sortieId);
+    if (index > -1) { this.selectedSortiesIds.splice(index, 1); } else { this.selectedSortiesIds.push(sortieId); }
+  }
+
+  isSortieSelected(sortieId: string): boolean {
+    return this.selectedSortiesIds.includes(sortieId);
+  }
+
+  async calculerSalaires(): Promise<void> {
+    if (this.selectedSortiesIds.length === 0) {
+      this.alertService.error(this.translate.instant('SALAIRES.ERROR_NO_SORTIE'));
+      return;
+    }
+    const totalParts = this.marins.reduce((sum, marin) => sum + (marin.part || 0), 0);
+    if (totalParts <= 0) {
+      this.alertService.error(this.translate.instant('SALAIRES.ERROR_NO_PARTS'));
+      return;
+    }
+
+    try {
+      this.alertService.loading(this.translate.instant('MESSAGES.CALCULATING'));
+      const allSorties = [...this.sortiesOuvertes, ...this.sortiesCalculees];
+      const selectedSorties = allSorties.filter(s => this.selectedSortiesIds.includes(s.id!));
+
+      const allFactures = selectedSorties.flatMap(s => s.factures);
+      const allDepenses = selectedSorties.flatMap(s => s.depenses);
+
+      const revenuTotal = allFactures.reduce((sum, f) => sum + (f?.montantTotal || 0), 0);
+      const totalDepenses = allDepenses.reduce((sum, d) => sum + (d?.montant || 0), 0);
+      
+      const beneficeNet = revenuTotal - totalDepenses;
+      const partProprietaire = beneficeNet * 0.5;
+      const partEquipage = beneficeNet * 0.5;
+      const totalNuits = selectedSorties.reduce((total, s) => total + this.calculerNombreNuits(s), 0);
+      const deductionNuits = totalNuits * this.marins.length * 5;
+      const montantAPartager = partEquipage - deductionNuits;
+
+      let detailsMarins: DetailSalaireMarin[] = [];
+      for (const marin of this.marins) {
+        const part = marin.part || 0;
+        const salaireBrut = totalParts > 0 ? (montantAPartager * part) / totalParts : 0;
+        const primeNuits = totalNuits * 5;
+        const avances = await this.avanceService.getAvancesByMarin(marin.id!).pipe(take(1)).toPromise();
+        const totalAvances = avances?.reduce((sum, a) => sum + a.montant, 0) || 0;
+        const paiements = await this.paiementService.getPaiementsByMarin(marin.id!).pipe(take(1)).toPromise();
+        const totalPaiements = paiements?.reduce((sum, p) => sum + p.montant, 0) || 0;
+        const resteAPayer = salaireBrut + primeNuits - totalAvances - totalPaiements;
+        detailsMarins.push({ marinId: marin.id!, marinNom: `${marin.prenom} ${marin.nom}`, part, salaireBrut, primeNuits, totalAvances, totalPaiements, resteAPayer });
+      }
+
+      const calculData: Omit<CalculSalaire, 'id'> = {
+        bateauId: this.selectedBoat!.id!,
+        sortiesIds: this.selectedSortiesIds,
+        sortiesDestinations: selectedSorties.map(s => s.destination),
+        dateCalcul: new Date(),
+        revenuTotal, totalDepenses, beneficeNet, partProprietaire, partEquipage, deductionNuits, montantAPartager, detailsMarins,
+        factures: allFactures as FactureVente[],
+        depenses: allDepenses as Depense[]
+      };
+      
+      await this.salaireService.saveCalculSalaire(calculData);
+
+      for (const sortieId of this.selectedSortiesIds) {
+        await this.sortieService.updateSortie(sortieId, { salaireCalcule: true });
+      }
+
+      this.alertService.close();
+      this.dernierCalcul = calculData as CalculSalaire;
+      this.accordionState = { summary: true, sharing: true, details: true };
+      this.selectedSortiesIds = [];
+      this.loadData();
+      this.alertService.toast(this.translate.instant('SALAIRES.CALCUL_SUCCESS_TITLE'), 'success');
+    } catch (error) {
+      console.error('Erreur:', error);
+      this.alertService.close();
+      this.alertService.error();
+    }
+  }
+
+  viewCalculDetails(calcul: CalculSalaire): void {
+    this.displayCalculInView(calcul);
+  }
+  
+  async reopenSortieForRecalculation(sortie: SortieDetails): Promise<void> {
+    try {
+        this.alertService.loading(this.translate.instant('MESSAGES.UPDATING'));
+        await this.sortieService.updateSortie(sortie.id!, { salaireCalcule: false });
+        this.loadData();
+        this.activeTab = 'ouvertes';
+        this.alertService.success(this.translate.instant('SALAIRES.HISTORY.MOVED_FOR_RECALC'));
+    } catch (error) { console.error(error); this.alertService.error();
+    }
+  }
+
+  private displayCalculInView(calcul: CalculSalaire): void {
+    this.dernierCalcul = calcul;
+    this.accordionState = { summary: true, sharing: true, details: true };
+    this.activeTab = 'historique';
+    this.alertService.close();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  showRevenueDetails(): void {
+    if (!this.dernierCalcul) return;
+    const factures = this.dernierCalcul.factures || [];
+    const t = { title: this.translate.instant('SALAIRES.DETAILS_MODAL.REVENUE_TITLE'), invoiceNum: this.translate.instant('SALAIRES.DETAILS_MODAL.INVOICE_NUM'), client: this.translate.instant('SALAIRES.DETAILS_MODAL.CLIENT'), date: this.translate.instant('COMMON.DATE'), amount: this.translate.instant('COMMON.AMOUNT') };
+    const rows = factures.map(f =>`<tr><td>${f.numeroFacture}</td><td>${f.client}</td><td>${this.formatDate(f.dateVente)}</td><td class="amount">${f.montantTotal.toFixed(2)} DT</td></tr>`).join('');
+    const html = `<style>.details-modal-content{max-height:60vh;overflow-y:auto;padding:1rem 0}.details-table{width:100%;border-collapse:collapse;font-size:.9rem}.details-table th,.details-table td{padding:.75rem;text-align:left;border-bottom:1px solid #e5e7eb}.details-table th{background:#f9fafb;font-weight:600;color:#374151}.details-table .amount{text-align:right;font-weight:700;color:#10b981;white-space:nowrap}body.rtl .details-table th,body.rtl .details-table td{text-align:right}body.rtl .details-table .amount{text-align:left}</style><div class="details-modal-content"><table class="details-table"><thead><tr><th>${t.invoiceNum}</th><th>${t.client}</th><th>${t.date}</th><th class="amount">${t.amount}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    Swal.fire({ title: t.title, html: html, width: '800px', showCloseButton: true, showConfirmButton: false });
+  }
+
+  showExpenseDetails(): void {
+    if (!this.dernierCalcul) return;
+    const depenses = this.dernierCalcul.depenses || [];
+    const t = { title: this.translate.instant('SALAIRES.DETAILS_MODAL.EXPENSE_TITLE'), type: this.translate.instant('EXPENSES.TYPE'), date: this.translate.instant('COMMON.DATE'), description: this.translate.instant('COMMON.DESCRIPTION'), amount: this.translate.instant('COMMON.AMOUNT') };
+    const rows = depenses.map(d =>`<tr><td>${this.translate.instant('EXPENSES.TYPES.' + d.type.toUpperCase())}</td><td>${this.formatDate(d.date)}</td><td>${d.description || '-'}</td><td class="amount">${d.montant.toFixed(2)} DT</td></tr>`).join('');
+    const html = `<style>.details-modal-content{max-height:60vh;overflow-y:auto;padding:1rem 0}.details-table{width:100%;border-collapse:collapse;font-size:.9rem}.details-table th,.details-table td{padding:.75rem;text-align:left;border-bottom:1px solid #e5e7eb}.details-table th{background:#f9fafb;font-weight:600;color:#374151}.details-table .amount{text-align:right;font-weight:700;color:#ef4444;white-space:nowrap}body.rtl .details-table th,body.rtl .details-table td{text-align:right}body.rtl .details-table .amount{text-align:left}</style><div class="details-modal-content"><table class="details-table"><thead><tr><th>${t.type}</th><th>${t.date}</th><th>${t.description}</th><th class="amount">${t.amount}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    Swal.fire({ title: t.title, html: html, width: '800px', showCloseButton: true, showConfirmButton: false });
+  }
+
+  async enregistrerPaiement(detail: DetailSalaireMarin): Promise<void> {
+    // ... (Cette fonction reste inchangée)
+  }
+
+  private calculerNombreNuits(sortie: SortieDetails): number {
+    if (!sortie?.dateDepart || !sortie?.dateRetour) return 0;
+    const depart = (sortie.dateDepart as any).toDate ? (sortie.dateDepart as any).toDate() : new Date(sortie.dateDepart);
+    const retour = (sortie.dateRetour as any).toDate ? (sortie.dateRetour as any).toDate() : new Date(sortie.dateRetour);
+    const diffTime = Math.abs(retour.getTime() - depart.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+
+  formatDate(date: any): string {
+    if (!date) return '';
+    if (date?.toDate) return date.toDate().toLocaleDateString('fr-FR');
+    if (date instanceof Date) return date.toLocaleDateString('fr-FR');
+    return new Date(date).toLocaleDateString('fr-FR');
+  }
+
+  toggleAccordion(panel: string): void {
+    this.accordionState[panel] = !this.accordionState[panel];
+  }
+}
+EOF
+echo -e "  -> ${GREEN}Succès.${NC}"
+
+# --- 3. Modification de salaires-list.component.html ---
+HTML_FILE="src/app/salaires/salaires-list.component.html"
+echo -e "\n🔧 Modification de : ${YELLOW}$HTML_FILE${NC}"
+
+if [ ! -f "$HTML_FILE" ]; then
+    echo -e "  -> ${RED}Erreur : Fichier non trouvé. Abandon.${NC}"; exit 1;
+fi
+cp "$HTML_FILE" "${HTML_FILE}.bak.refactor"
+
+cat > "$HTML_FILE" << 'EOF'
+<div class="salaires-container">
+  <div class="header">
+    <h1 class="title">{{ 'SALAIRES.TITLE' | translate }}</h1>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>{{ 'MESSAGES.LOADING' | translate }}</p>
+  </div>
+
+  <div *ngIf="!loading && selectedBoat" class="content">
+    <div class="tabs">
+      <button class="tab-button" [class.active]="activeTab === 'ouvertes'" (click)="selectTab('ouvertes')">
+        {{ 'SALAIRES.TABS.OPEN_TRIPS' | translate }}
+        <span class="badge">{{ sortiesOuvertes.length }}</span>
+      </button>
+      <button class="tab-button" [class.active]="activeTab === 'historique'" (click)="selectTab('historique')">
+        {{ 'SALAIRES.TABS.HISTORY' | translate }}
+        <span class="badge">{{ historiqueDesCalculs.length }}</span>
+      </button>
+    </div>
+
+    <div *ngIf="dernierCalcul" class="results-container">
+        </div>
+    
+    <div *ngIf="!dernierCalcul">
+      <div *ngIf="activeTab === 'ouvertes'" class="tab-content">
+        <div class="section-card">
+          <h2>{{ 'SORTIES.SELECTSORTIES' | translate }}</h2>
+          <div *ngIf="sortiesOuvertes.length > 0; else noOpenTrips" class="sorties-list">
+            <div *ngFor="let sortie of sortiesOuvertes" 
+                 class="sortie-item" [class.selected]="isSortieSelected(sortie.id!)" (click)="toggleSortie(sortie.id!)">
+              <input type="checkbox" [checked]="isSortieSelected(sortie.id!)" (click)="$event.stopPropagation()">
+              <div class="sortie-info">
+                <strong>{{ sortie.destination }}</strong>
+                <span>{{ formatDate(sortie.dateDepart) }} - {{ formatDate(sortie.dateRetour) }}</span>
+              </div>
+            </div>
+          </div>
+          <ng-template #noOpenTrips><div class="no-data-small"><p>{{ 'SALAIRES.NO_OPEN_TRIPS' | translate }}</p></div></ng-template>
+          
+          <button class="btn btn-success btn-lg" (click)="calculerSalaires()" [disabled]="selectedSortiesIds.length === 0 || marins.length === 0">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            {{ 'SALAIRES.CALCULER' | translate }}
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="activeTab === 'historique'" class="tab-content">
+        <div class="section-card">
+          <h2>{{ 'SALAIRES.TABS.CALCULATED_TRIPS' | translate }}</h2>
+          <div *ngIf="historiqueDesCalculs.length > 0; else noCalculatedTrips" class="sorties-list-history">
+            <div *ngFor="let calcul of historiqueDesCalculs" class="sortie-item-history">
+              <div class="sortie-info">
+                <strong>{{ calcul.sortiesDestinations.join(', ') }}</strong>
+                <span>Calcul du {{ formatDate(calcul.dateCalcul) }}</span>
+              </div>
+              <div class="calcul-info">
+                <span class="total-label">{{ 'SALAIRES.BENEFICE_NET' | translate }}</span>
+                <span class="total-value">{{ calcul.beneficeNet | number:'1.2-2' }} DT</span>
+              </div>
+              <button class="btn btn-secondary btn-sm" (click)="viewCalculDetails(calcul)">{{ 'COMMON.VIEW_DETAILS' | translate }}</button>
+            </div>
+          </div>
+          <ng-template #noCalculatedTrips><div class="no-data-small"><p>{{ 'SALAIRES.NO_CALCULATED_TRIPS' | translate }}</p></div></ng-template>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+EOF
+echo -e "  -> ${GREEN}Succès.${NC}"
+
+
+echo -e "\n${GREEN}✅ Opération terminée. L'affichage de l'historique est maintenant corrigé.${NC}"

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Firestore, collection, addDoc, collectionData, query, where, orderBy } from '@angular/fire/firestore';
+import { Firestore, collection, addDoc, collectionData, query, where } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 import { CalculSalaire } from '../models/salaire.model';
 
@@ -8,23 +8,24 @@ import { CalculSalaire } from '../models/salaire.model';
 })
 export class SalaireService {
   private calculsSalaireCollection = 'calculs_salaire';
-  constructor(private firestore: Firestore) {}
 
+  constructor(private firestore: Firestore) {}
+// ✅ NOUVELLE MÉTHODE à ajouter
+  getCalculsByBateau(bateauId: string): Observable<CalculSalaire[]> {
+    const calculsCollection = collection(this.firestore, this.calculsSalaireCollection);
+    const q = query(calculsCollection, where('bateauId', '==', bateauId));
+    return collectionData(q, { idField: 'id' }) as Observable<CalculSalaire[]>;
+  }
+  // Sauvegarder un calcul de salaire
   async saveCalculSalaire(calcul: Omit<CalculSalaire, 'id'>): Promise<any> {
     const calculsCollection = collection(this.firestore, this.calculsSalaireCollection);
     return await addDoc(calculsCollection, calcul);
   }
 
+  // Récupérer les calculs de salaire contenant une sortie spécifique
   getCalculsBySortieId(sortieId: string): Observable<CalculSalaire[]> {
     const calculsCollection = collection(this.firestore, this.calculsSalaireCollection);
     const q = query(calculsCollection, where('sortiesIds', 'array-contains', sortieId));
-    return collectionData(q, { idField: 'id' }) as Observable<CalculSalaire[]>;
-  }
-
-  // ✅ NOUVELLE MÉTHODE AJOUTÉE
-  getCalculsByBateau(bateauId: string): Observable<CalculSalaire[]> {
-    const calculsCollection = collection(this.firestore, this.calculsSalaireCollection);
-    const q = query(calculsCollection, where('bateauId', '==', bateauId), orderBy('dateCalcul', 'desc'));
     return collectionData(q, { idField: 'id' }) as Observable<CalculSalaire[]>;
   }
 }

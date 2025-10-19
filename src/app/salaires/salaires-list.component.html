@@ -16,102 +16,127 @@
       </button>
       <button class="tab-button" [class.active]="activeTab === 'historique'" (click)="selectTab('historique')">
         {{ 'SALAIRES.TABS.HISTORY' | translate }}
-        <span class="badge">{{ sortiesCalculees.length }}</span>
+        <span class="badge">{{ historiqueDesCalculs.length }}</span>
       </button>
     </div>
 
     <div *ngIf="dernierCalcul" class="results-container">
-      <div class="results-header">
-        <h2>{{ 'SALAIRES.RESULTS.TITLE' | translate }} : {{ dernierCalcul.sortiesDestinations.join(', ') }}</h2>
-        <button class="btn-close-results" (click)="dernierCalcul = null" [title]="'SALAIRES.RESULTS.CLOSE' | translate">
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-      </div>
+  <div class="results-header">
+    <h2>{{ 'SALAIRES.RESULTS.TITLE' | translate }}</h2>
+    <button class="btn-close-results" (click)="dernierCalcul = null" [title]="'SALAIRES.RESULTS.CLOSE' | translate">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
 
-      <div class="accordion">
-        <div class="accordion-item">
-          <button class="accordion-header" (click)="toggleAccordion('summary')">
-            <span>{{ 'SALAIRES.RESULTS.FINANCIAL_SUMMARY' | translate }}</span>
-            <svg class="chevron" [class.rotate]="accordionState['summary']" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-          </button>
-          <div class="accordion-content" [class.open]="accordionState['summary']">
-            <div class="summary-grid">
-              <div class="summary-item">
-                <span>{{ 'SALAIRES.REVENU_TOTAL' | translate }}</span>
-                <strong class="revenue">
-                  {{ dernierCalcul.revenuTotal | number:'1.2-2' }} DT
-                  <button (click)="showRevenueDetails()" class="details-link">({{ 'COMMON.VIEW_DETAILS' | translate }})</button>
-                </strong>
-              </div>
-              <div class="summary-item">
-                <span>{{ 'SALAIRES.TOTAL_DEPENSES' | translate }}</span>
-                <strong class="expenses">
-                  {{ dernierCalcul.totalDepenses | number:'1.2-2' }} DT
-                  <button (click)="showExpenseDetails()" class="details-link">({{ 'COMMON.VIEW_DETAILS' | translate }})</button>
-                </strong>
-              </div>
-              <div class="summary-item"><span>{{ 'SALAIRES.BENEFICE_NET' | translate }}</span><strong class="benefit">{{ dernierCalcul.beneficeNet | number:'1.2-2' }} DT</strong></div>
-            </div>
+  <div class="accordion">
+    <div class="accordion-item">
+      <button class="accordion-header" (click)="toggleAccordion('summary')">
+        <span>{{ 'SALAIRES.RESULTS.FINANCIAL_SUMMARY' | translate }}</span>
+        <svg class="chevron" [class.rotate]="accordionState['summary']" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div class="accordion-content" [class.open]="accordionState['summary']">
+        <div class="summary-grid">
+          <div class="summary-item">
+            <span>{{ 'SALAIRES.REVENU_TOTAL' | translate }}</span>
+            <strong class="revenue">
+              {{ dernierCalcul.revenuTotal | number:'1.2-2' }} DT
+              <button (click)="showRevenueDetails()" class="details-link">({{ 'COMMON.VIEW_DETAILS' | translate }})</button>
+            </strong>
           </div>
-        </div>
-
-        <div class="accordion-item">
-          <button class="accordion-header" (click)="toggleAccordion('sharing')">
-            <span>{{ 'SALAIRES.RESULTS.PROFIT_SHARING' | translate }}</span>
-            <svg class="chevron" [class.rotate]="accordionState['sharing']" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-          </button>
-          <div class="accordion-content" [class.open]="accordionState['sharing']">
-             <div class="summary-grid">
-              <div class="summary-item"><span>{{ 'SALAIRES.PART_PROPRIETAIRE' | translate }}</span><strong>{{ dernierCalcul.partProprietaire | number:'1.2-2' }} DT</strong></div>
-              <div class="summary-item"><span>{{ 'SALAIRES.PART_EQUIPAGE' | translate }}</span><strong>{{ dernierCalcul.partEquipage | number:'1.2-2' }} DT</strong></div>
-              <div class="summary-item"><span>- Déductions</span><strong class="expenses">{{ dernierCalcul.deductionNuits | number:'1.2-2' }} DT</strong></div>
-              <div class="summary-item net-share"><span>{{ 'SALAIRES.MONTANT_A_PARTAGER' | translate }}</span><strong>{{ dernierCalcul.montantAPartager | number:'1.2-2' }} DT</strong></div>
-            </div>
+          <div class="summary-item">
+            <span>{{ 'SALAIRES.TOTAL_DEPENSES' | translate }}</span>
+            <strong class="expenses">
+              {{ dernierCalcul.totalDepenses | number:'1.2-2' }} DT
+              <button (click)="showExpenseDetails()" class="details-link">({{ 'COMMON.VIEW_DETAILS' | translate }})</button>
+            </strong>
           </div>
-        </div>
-
-        <div class="accordion-item">
-          <button class="accordion-header" (click)="toggleAccordion('details')">
-            <span>{{ 'SALAIRES.DETAILS_PAR_MARIN' | translate }}</span>
-            <svg class="chevron" [class.rotate]="accordionState['details']" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-          </button>
-          <div class="accordion-content" [class.open]="accordionState['details']">
-            <div class="table-container">
-              <table class="salaires-table">
-                <thead>
-                  <tr>
-                    <th>{{ 'SAILORS.TITLE' | translate }}</th>
-                    <th>{{ 'SAILORS.PART' | translate }}</th>
-                    <th>{{ 'SALAIRES.SALAIRE_BASE' | translate }}</th>
-                    <th>{{ 'SALAIRES.PRIME_NUITS' | translate }}</th>
-                    <th>{{ 'AVANCES.TITLE' | translate }}</th>
-                    <th>{{ 'SALAIRES.DEJA_PAYE' | translate }}</th>
-                    <th class="reste">{{ 'SALAIRES.RESTE_A_PAYER' | translate }}</th>
-                    <th>{{ 'BOATS.ACTIONS' | translate }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let detail of dernierCalcul.detailsMarins">
-                    <td class="marin-name">{{ detail.marinNom }}</td>
-                    <td>{{ detail.part }}</td>
-                    <td>{{ detail.salaireBrut | number:'1.2-2' }} DT</td>
-                    <td>{{ detail.primeNuits | number:'1.2-2' }} DT</td>
-                    <td class="avances">{{ detail.totalAvances | number:'1.2-2' }} DT</td>
-                    <td class="paiements">{{ detail.totalPaiements | number:'1.2-2' }} DT</td>
-                    <td class="reste"><strong>{{ detail.resteAPayer | number:'1.2-2' }} DT</strong></td>
-                    <td>
-                      <button class="btn btn-sm btn-pay" (click)="enregistrerPaiement(detail)" [disabled]="detail.resteAPayer <= 0.01">
-                        {{ detail.resteAPayer > 0.01 ? ('SALAIRES.PAYER' | translate) : ('SALAIRES.PAYE' | translate) }}
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+          <div class="summary-item">
+            <span>{{ 'SALAIRES.BENEFICE_NET' | translate }}</span>
+            <strong class="benefit">{{ dernierCalcul.beneficeNet | number:'1.2-2' }} DT</strong>
           </div>
         </div>
       </div>
     </div>
+
+    <div class="accordion-item">
+      <button class="accordion-header" (click)="toggleAccordion('sharing')">
+        <span>{{ 'SALAIRES.RESULTS.PROFIT_SHARING' | translate }}</span>
+        <svg class="chevron" [class.rotate]="accordionState['sharing']" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div class="accordion-content" [class.open]="accordionState['sharing']">
+        <div class="summary-grid">
+          <div class="summary-item">
+            <span>{{ 'SALAIRES.PART_PROPRIETAIRE' | translate }}</span>
+            <strong>{{ dernierCalcul.partProprietaire | number:'1.2-2' }} DT</strong>
+          </div>
+          <div class="summary-item">
+            <span>{{ 'SALAIRES.PART_EQUIPAGE' | translate }}</span>
+            <strong>{{ dernierCalcul.partEquipage | number:'1.2-2' }} DT</strong>
+          </div>
+          <div class="summary-item">
+            <span>- {{ 'SALAIRES.DEDUCTIONS' | translate }} ({{ 'SALAIRES.NUITS' | translate }})</span>
+            <strong class="expenses">{{ dernierCalcul.deductionNuits | number:'1.2-2' }} DT</strong>
+          </div>
+          <div class="summary-item net-share">
+            <span>{{ 'SALAIRES.MONTANT_A_PARTAGER' | translate }}</span>
+            <strong>{{ dernierCalcul.montantAPartager | number:'1.2-2' }} DT</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <button class="accordion-header" (click)="toggleAccordion('details')">
+        <span>{{ 'SALAIRES.DETAILS_PAR_MARIN' | translate }}</span>
+        <svg class="chevron" [class.rotate]="accordionState['details']" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div class="accordion-content open" [class.open]="accordionState['details']">
+        <div class="table-container">
+          <table class="salaires-table">
+            <thead>
+              <tr>
+                <th>{{ 'SAILORS.TITLE' | translate }}</th>
+                <th>{{ 'SAILORS.PART' | translate }}</th>
+                <th>{{ 'SALAIRES.SALAIRE_BASE' | translate }}</th>
+                <th>{{ 'SALAIRES.PRIME_NUITS' | translate }}</th>
+                <th>{{ 'AVANCES.TITLE' | translate }}</th>
+                <th>{{ 'SALAIRES.DEJA_PAYE' | translate }}</th>
+                <th class="reste">{{ 'SALAIRES.RESTE_A_PAYER' | translate }}</th>
+                <th>{{ 'BOATS.ACTIONS' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let detail of dernierCalcul.detailsMarins">
+                <td class="marin-name">{{ detail.marinNom }}</td>
+                <td>{{ detail.part }}</td>
+                <td>{{ detail.salaireBrut | number:'1.2-2' }}</td>
+                <td>{{ detail.primeNuits | number:'1.2-2' }}</td>
+                <td class="avances">-{{ detail.totalAvances | number:'1.2-2' }}</td>
+                <td class="paiements">-{{ detail.totalPaiements | number:'1.2-2' }}</td>
+                <td class="reste" [class.paid]="detail.resteAPayer <= 0">
+                  <strong>{{ detail.resteAPayer | number:'1.2-2' }} DT</strong>
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-pay" (click)="enregistrerPaiement(detail)" [disabled]="detail.resteAPayer <= 0">
+                    {{ detail.resteAPayer <= 0 ? ('SALAIRES.PAYE' | translate) : ('SALAIRES.PAYER' | translate) }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
     
     <div *ngIf="!dernierCalcul">
       <div *ngIf="activeTab === 'ouvertes'" class="tab-content">
@@ -139,13 +164,17 @@
       <div *ngIf="activeTab === 'historique'" class="tab-content">
         <div class="section-card">
           <h2>{{ 'SALAIRES.TABS.CALCULATED_TRIPS' | translate }}</h2>
-          <div *ngIf="sortiesCalculees.length > 0; else noCalculatedTrips" class="sorties-list-history">
-            <div *ngFor="let sortie of sortiesCalculees" class="sortie-item-history">
+          <div *ngIf="historiqueDesCalculs.length > 0; else noCalculatedTrips" class="sorties-list-history">
+            <div *ngFor="let calcul of historiqueDesCalculs" class="sortie-item-history">
               <div class="sortie-info">
-                <strong>{{ sortie.destination }}</strong>
-                <span>{{ formatDate(sortie.dateDepart) }} - {{ formatDate(sortie.dateRetour) }}</span>
+                <strong>{{ calcul.sortiesDestinations.join(', ') }}</strong>
+                <span>Calcul du {{ formatDate(calcul.dateCalcul) }}</span>
               </div>
-              <button class="btn btn-secondary btn-sm" (click)="viewCalculDetails(sortie)">{{ 'COMMON.VIEW_DETAILS' | translate }}</button>
+              <div class="calcul-info">
+                <span class="total-label">{{ 'SALAIRES.BENEFICE_NET' | translate }}</span>
+                <span class="total-value">{{ calcul.beneficeNet | number:'1.2-2' }} DT</span>
+              </div>
+              <button class="btn btn-secondary btn-sm" (click)="viewCalculDetails(calcul)">{{ 'COMMON.VIEW_DETAILS' | translate }}</button>
             </div>
           </div>
           <ng-template #noCalculatedTrips><div class="no-data-small"><p>{{ 'SALAIRES.NO_CALCULATED_TRIPS' | translate }}</p></div></ng-template>
