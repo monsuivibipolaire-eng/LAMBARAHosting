@@ -1,6 +1,6 @@
 ====================================
   Projet Angular - Code Source
-  Date: Sun Oct 19 08:52:44 CET 2025
+  Date: Sun Oct 19 10:21:55 CET 2025
 ====================================
 
 Arborescence du projet:
@@ -67,6 +67,7 @@ Arborescence du projet:
 │   ├── models
 │   │   ├── avance.model.ts
 │   │   ├── bateau.model.ts
+│   │   ├── calcul-salaire.model.ts
 │   │   ├── depense.model.ts
 │   │   ├── facture-vente.model.ts
 │   │   ├── facture.model.ts
@@ -75,9 +76,11 @@ Arborescence du projet:
 │   │   ├── partage.model.ts
 │   │   ├── pointage.model.ts
 │   │   ├── salaire.model.ts
+│   │   ├── sortie-mer.model.ts
 │   │   └── sortie.model.ts
 │   ├── salaires
 │   │   ├── salaires-list.component.html
+│   │   ├── salaires-list.component.html.bak
 │   │   ├── salaires-list.component.scss
 │   │   └── salaires-list.component.ts
 │   ├── services
@@ -87,6 +90,7 @@ Arborescence du projet:
 │   │   ├── depense.service.ts
 │   │   ├── facture-vente.service.ts
 │   │   ├── facture.service.ts
+│   │   ├── financial-events.service.ts
 │   │   ├── language.service.ts
 │   │   ├── marin.service.ts
 │   │   ├── mock-data.service.ts
@@ -95,6 +99,7 @@ Arborescence du projet:
 │   │   ├── pointage.service.ts
 │   │   ├── salaire.service.ts
 │   │   ├── selected-boat.service.ts
+│   │   ├── sortie-mer.service.ts
 │   │   └── sortie.service.ts
 │   ├── sorties
 │   │   ├── depense-form
@@ -152,7 +157,7 @@ Arborescence du projet:
 │   └── _btn-back.scss
 └── styles.scss
 
-28 directories, 118 files
+28 directories, 123 files
 
 ====================================
   FICHIERS SOURCE
@@ -1535,10 +1540,10 @@ export class MarinFormComponent implements OnInit {
   loadMarin(): void {
     if (this.marinId) {
       this.marinService.getMarin(this.marinId).subscribe(marin => {
-        this.marinForm.patchValue({
+        if (!marin) return;        this.marinForm.patchValue({
           ...marin,
-          dateNaissance: this.formatDate(marin.dateNaissance),
-          dateEmbauche: this.formatDate(marin.dateEmbauche)
+          dateNaissance: this.formatDate(marin.dateNaissance!),
+          dateEmbauche: this.formatDate(marin.dateEmbauche!)
         });
       });
     }
@@ -1872,10 +1877,13 @@ export class MockDataComponent {
 
 ====================================
 FICHIER: ./src/app/models/avance.model.ts
-Lignes:        9
+Lignes:       12
 ====================================
 
 export interface Avance {
+  sortieId?: string;
+
+
   id?: string;
   marinId: string;
   bateauId: string;
@@ -1906,6 +1914,23 @@ export interface Bateau {
 }
 
 ====================================
+FICHIER: ./src/app/models/calcul-salaire.model.ts
+Lignes:       11
+====================================
+
+export interface CalculSalaire {
+  nombreSorties?: number;  id?: string;
+  bateauId: string;
+  dateCalcul: Date;
+  marins: any[];
+  totalRevenu: number;
+  totalDepenses: number;
+  salaires: any[];
+  createdAt?: Date;
+  // Autres propriétés
+}
+
+====================================
 FICHIER: ./src/app/models/depense.model.ts
 Lignes:       10
 ====================================
@@ -1923,16 +1948,17 @@ export interface Depense {
 
 ====================================
 FICHIER: ./src/app/models/facture-vente.model.ts
-Lignes:       10
+Lignes:       11
 ====================================
 
 export interface FactureVente {
   id?: string;
-  sortieId: string;
+  sortieId?: string;
+  montant: number;
+  
   numeroFacture: string;
   client: string;
   dateVente: Date;
-  montantTotal: number;
   details?: string; // Description des poissons vendus
   createdAt?: Date;
 }
@@ -1948,7 +1974,7 @@ export interface Facture {
   numeroFacture: string;
   dateFacture: Date;
   client: string;
-  montantTotal: number;
+  montant: number;
   detailsPoissons: DetailPoisson[];
   paye: boolean;
   createdAt?: Date;
@@ -1959,16 +1985,17 @@ export interface DetailPoisson {
   typePoisson: string;
   quantite: number;
   prixUnitaire: number;
-  montantTotal: number;
+  montant: number;
 }
 
 ====================================
 FICHIER: ./src/app/models/marin.model.ts
-Lignes:       17
+Lignes:       18
 ====================================
 
 export interface Marin {
   id?: string;
+  coefficientSalaire: number;
   bateauId: string;
   nom: string;
   prenom: string;
@@ -2053,7 +2080,7 @@ import { FactureVente } from './facture-vente.model';
 import { Depense } from './depense.model';
 
 export interface CalculSalaire {
-  id?: string;
+  nombreSorties?: number;  id?: string;
   bateauId: string;
   sortiesIds: string[];
   sortiesDestinations: string[];
@@ -2085,6 +2112,24 @@ export interface DetailSalaireMarin {
 }
 
 ====================================
+FICHIER: ./src/app/models/sortie-mer.model.ts
+Lignes:       12
+====================================
+
+export interface SortieMer {
+  totalVentes?: number;  // montant total des ventes pour affichage
+  id?: string;
+  bateauId: string;
+  dateDebut: Date;
+  dateFin: Date;
+  statut: string;
+  salaireCalcule?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+  // Autres propriétés selon vos besoins
+}
+
+====================================
 FICHIER: ./src/app/models/sortie.model.ts
 Lignes:       12
 ====================================
@@ -2104,7 +2149,7 @@ export interface Sortie {
 
 ====================================
 FICHIER: ./src/app/salaires/salaires-list.component.ts
-Lignes:      266
+Lignes:      292
 ====================================
 
 import { Component, OnInit } from '@angular/core';
@@ -2112,13 +2157,17 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import Swal from 'sweetalert2';
-import { take, combineLatest } from 'rxjs';
-import { SortieService, SortieDetails } from '../services/sortie.service';
+import { take } from 'rxjs/operators';
+
+import { SortieService } from '../services/sortie.service';
 import { MarinService } from '../services/marin.service';
+import { DepenseService } from '../services/depense.service';
 import { AvanceService } from '../services/avance.service';
 import { PaiementService } from '../services/paiement.service';
+import { FactureVenteService } from '../services/facture-vente.service';
 import { SelectedBoatService } from '../services/selected-boat.service';
 import { AlertService } from '../services/alert.service';
+import { Sortie } from '../models/sortie.model';
 import { Marin } from '../models/marin.model';
 import { Bateau } from '../models/bateau.model';
 import { SalaireService } from '../services/salaire.service';
@@ -2139,19 +2188,22 @@ export class SalairesListComponent implements OnInit {
   selectedSortiesIds: string[] = [];
   
   activeTab: 'ouvertes' | 'historique' = 'ouvertes';
-  sortiesOuvertes: SortieDetails[] = [];
-  sortiesCalculees: SortieDetails[] = [];
-  historiqueDesCalculs: CalculSalaire[] = [];
+  sortiesOuvertes: Sortie[] = [];
+  sortiesCalculees: Sortie[] = [];
+  historiqueCalculs: { [sortieId: string]: CalculSalaire[] } = {};
 
   dernierCalcul: CalculSalaire | null = null;
   accordionState: { [key: string]: boolean } = { summary: true, sharing: true, details: true };
+
   loading = true;
 
   constructor(
     private sortieService: SortieService,
     private marinService: MarinService,
+    private depenseService: DepenseService,
     private avanceService: AvanceService,
     private paiementService: PaiementService,
+    private factureService: FactureVenteService,
     private salaireService: SalaireService,
     private selectedBoatService: SelectedBoatService,
     private alertService: AlertService,
@@ -2160,11 +2212,7 @@ export class SalairesListComponent implements OnInit {
 
   ngOnInit(): void {
     this.selectedBoat = this.selectedBoatService.getSelectedBoat();
-    if (this.selectedBoat) {
-      this.loadData();
-    } else {
-      this.loading = false;
-    }
+    if (this.selectedBoat) { this.loadData(); } else { this.loading = false; }
   }
 
   loadData(): void {
@@ -2172,23 +2220,22 @@ export class SalairesListComponent implements OnInit {
     this.loading = true;
     const boatId = this.selectedBoat.id;
 
-    combineLatest([
-      this.sortieService.getSortiesByBateau(boatId),
-      this.marinService.getMarinsByBateau(boatId),
-      this.salaireService.getCalculsByBateau(boatId)
-    ]).subscribe(([sorties, marins, calculs]) => {
+    this.sortieService.getSortiesByBateau(boatId).subscribe((sorties: Sortie[]) => {
       this.sortiesOuvertes = sorties.filter(s => s.statut === 'terminee' && !s.salaireCalcule);
-      this.sortiesCalculees = sorties.filter(s => s.salaireCalcule === true);
-      this.marins = marins;
-      this.historiqueDesCalculs = calculs.sort((a, b) => {
-        const dateA = (a.dateCalcul as any).toDate ? (a.dateCalcul as any).toDate() : new Date(a.dateCalcul);
-        const dateB = (b.dateCalcul as any).toDate ? (b.dateCalcul as any).toDate() : new Date(b.dateCalcul);
-        return dateB.getTime() - dateA.getTime();
+      this.sortiesCalculees = sorties.filter(s => s.salaireCalcule === true)
+        .sort((a, b) => {
+          const dateA = (a.dateRetour as any).toDate ? (a.dateRetour as any).toDate().getTime() : new Date(a.dateRetour).getTime();
+          const dateB = (b.dateRetour as any).toDate ? (b.dateRetour as any).toDate().getTime() : new Date(b.dateRetour).getTime();
+          return dateB - dateA;
+        });
+      
+      this.marinService.getMarinsByBateau(boatId).subscribe((marins: Marin[]) => {
+        this.marins = marins;
+        this.loading = false;
       });
-      this.loading = false;
     });
   }
-  
+
   selectTab(tabName: 'ouvertes' | 'historique'): void {
     this.activeTab = tabName;
     this.dernierCalcul = null;
@@ -2220,11 +2267,13 @@ export class SalairesListComponent implements OnInit {
       const allSorties = [...this.sortiesOuvertes, ...this.sortiesCalculees];
       const selectedSorties = allSorties.filter(s => this.selectedSortiesIds.includes(s.id!));
 
-      const allFactures = selectedSorties.flatMap(s => s.factures);
-      const allDepenses = selectedSorties.flatMap(s => s.depenses);
-
-      const revenuTotal = allFactures.reduce((sum, f) => sum + (f?.montantTotal || 0), 0);
-      const totalDepenses = allDepenses.reduce((sum, d) => sum + (d?.montant || 0), 0);
+      const facturesPromises = this.selectedSortiesIds.map(id => this.factureService.getFacturesBySortie(id).pipe(take(1)).toPromise());
+      const allFactures = await Promise.all(facturesPromises);
+      const revenuTotal = allFactures.flat().reduce((sum, f) => sum + (f?.montantTotal || 0), 0);
+      
+      const depensesPromises = this.selectedSortiesIds.map(id => this.depenseService.getDepensesBySortie(id).pipe(take(1)).toPromise());
+      const allDepenses = await Promise.all(depensesPromises);
+      const totalDepenses = allDepenses.flat().reduce((sum, d: any) => sum + (d?.montant || 0), 0);
       
       const beneficeNet = revenuTotal - totalDepenses;
       const partProprietaire = beneficeNet * 0.5;
@@ -2252,10 +2301,9 @@ export class SalairesListComponent implements OnInit {
         sortiesDestinations: selectedSorties.map(s => s.destination),
         dateCalcul: new Date(),
         revenuTotal, totalDepenses, beneficeNet, partProprietaire, partEquipage, deductionNuits, montantAPartager, detailsMarins,
-        factures: allFactures as FactureVente[],
-        depenses: allDepenses as Depense[]
+        factures: allFactures.flat() as FactureVente[],
+        depenses: allDepenses.flat() as Depense[]
       };
-      
       await this.salaireService.saveCalculSalaire(calculData);
 
       for (const sortieId of this.selectedSortiesIds) {
@@ -2275,19 +2323,39 @@ export class SalairesListComponent implements OnInit {
     }
   }
 
-  viewCalculDetails(calcul: CalculSalaire): void {
-    this.displayCalculInView(calcul);
+  async viewCalculDetails(sortie: Sortie): Promise<void> {
+    this.alertService.loading(this.translate.instant('MESSAGES.LOADING_DETAILS'));
+    if (this.historiqueCalculs[sortie.id!]) {
+      this.displayCalculInView(this.historiqueCalculs[sortie.id!][0]);
+      return;
+    }
+    this.salaireService.getCalculsBySortieId(sortie.id!).pipe(take(1)).subscribe({
+        next: async (calculs) => {
+            if (calculs && calculs.length > 0) {
+                this.historiqueCalculs[sortie.id!] = calculs;
+                this.displayCalculInView(calculs[0]);
+            } else {
+                this.alertService.close();
+                const res = await Swal.fire({
+                    title: this.translate.instant('SALAIRES.HISTORY.NO_DATA_FOUND_TITLE'), text: this.translate.instant('SALAIRES.HISTORY.NO_DATA_FOUND_TEXT'),
+                    icon: 'info', showCancelButton: true, confirmButtonText: this.translate.instant('SALAIRES.HISTORY.RECALCULATE_BTN'),
+                    cancelButtonText: this.translate.instant('FORM.CANCEL'), confirmButtonColor: '#10b981'
+                });
+                if (res.isConfirmed) { await this.reopenSortieForRecalculation(sortie); }
+            }
+        },
+        error: (err) => { console.error(err); this.alertService.error(); }
+    });
   }
   
-  async reopenSortieForRecalculation(sortie: SortieDetails): Promise<void> {
+  async reopenSortieForRecalculation(sortie: Sortie): Promise<void> {
     try {
         this.alertService.loading(this.translate.instant('MESSAGES.UPDATING'));
         await this.sortieService.updateSortie(sortie.id!, { salaireCalcule: false });
         this.loadData();
         this.activeTab = 'ouvertes';
         this.alertService.success(this.translate.instant('SALAIRES.HISTORY.MOVED_FOR_RECALC'));
-    } catch (error) { console.error(error); this.alertService.error();
-    }
+    } catch (error) { console.error(error); this.alertService.error(); }
   }
 
   private displayCalculInView(calcul: CalculSalaire): void {
@@ -2299,23 +2367,22 @@ export class SalairesListComponent implements OnInit {
   }
 
   showRevenueDetails(): void {
-    if (!this.dernierCalcul) return;
-    const factures = this.dernierCalcul.factures || [];
-    const t = { title: this.translate.instant('SALAIRES.DETAILS_MODAL.REVENUE_TITLE'), invoiceNum: this.translate.instant('SALAIRES.DETAILS_MODAL.INVOICE_NUM'), client: this.translate.instant('SALAIRES.DETAILS_MODAL.CLIENT'), date: this.translate.instant('COMMON.DATE'), amount: this.translate.instant('COMMON.AMOUNT') };
-    const rows = factures.map(f =>`<tr><td>${f.numeroFacture}</td><td>${f.client}</td><td>${this.formatDate(f.dateVente)}</td><td class="amount">${f.montantTotal.toFixed(2)} DT</td></tr>`).join('');
-    const html = `<style>.details-modal-content{max-height:60vh;overflow-y:auto;padding:1rem 0}.details-table{width:100%;border-collapse:collapse;font-size:.9rem}.details-table th,.details-table td{padding:.75rem;text-align:left;border-bottom:1px solid #e5e7eb}.details-table th{background:#f9fafb;font-weight:600;color:#374151}.details-table .amount{text-align:right;font-weight:700;color:#10b981;white-space:nowrap}body.rtl .details-table th,body.rtl .details-table td{text-align:right}body.rtl .details-table .amount{text-align:left}</style><div class="details-modal-content"><table class="details-table"><thead><tr><th>${t.invoiceNum}</th><th>${t.client}</th><th>${t.date}</th><th class="amount">${t.amount}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-    Swal.fire({ title: t.title, html: html, width: '800px', showCloseButton: true, showConfirmButton: false });
+      if (!this.dernierCalcul || !this.dernierCalcul.factures) return;
+      const t = { title: this.translate.instant('SALAIRES.DETAILS_MODAL.REVENUE_TITLE'), invoiceNum: this.translate.instant('SALAIRES.DETAILS_MODAL.INVOICE_NUM'), client: this.translate.instant('SALAIRES.DETAILS_MODAL.CLIENT'), date: this.translate.instant('COMMON.DATE'), amount: this.translate.instant('COMMON.AMOUNT') };
+      const rows = this.dernierCalcul.factures.map(f => `<tr><td>${f.numeroFacture}</td><td>${f.client}</td><td>${this.formatDate(f.dateVente)}</td><td class="amount">${f.montantTotal.toFixed(2)} DT</td></tr>`).join('');
+      const html = `<div class="details-modal-content"><table class="details-table"><thead><tr><th>${t.invoiceNum}</th><th>${t.client}</th><th>${t.date}</th><th class="amount">${t.amount}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      Swal.fire({ title: t.title, html: html, width: '800px', showCloseButton: true, showConfirmButton: false });
   }
 
   showExpenseDetails(): void {
-    if (!this.dernierCalcul) return;
-    const depenses = this.dernierCalcul.depenses || [];
-    const t = { title: this.translate.instant('SALAIRES.DETAILS_MODAL.EXPENSE_TITLE'), type: this.translate.instant('EXPENSES.TYPE'), date: this.translate.instant('COMMON.DATE'), description: this.translate.instant('COMMON.DESCRIPTION'), amount: this.translate.instant('COMMON.AMOUNT') };
-    const rows = depenses.map(d =>`<tr><td>${this.translate.instant('EXPENSES.TYPES.' + d.type.toUpperCase())}</td><td>${this.formatDate(d.date)}</td><td>${d.description || '-'}</td><td class="amount">${d.montant.toFixed(2)} DT</td></tr>`).join('');
-    const html = `<style>.details-modal-content{max-height:60vh;overflow-y:auto;padding:1rem 0}.details-table{width:100%;border-collapse:collapse;font-size:.9rem}.details-table th,.details-table td{padding:.75rem;text-align:left;border-bottom:1px solid #e5e7eb}.details-table th{background:#f9fafb;font-weight:600;color:#374151}.details-table .amount{text-align:right;font-weight:700;color:#ef4444;white-space:nowrap}body.rtl .details-table th,body.rtl .details-table td{text-align:right}body.rtl .details-table .amount{text-align:left}</style><div class="details-modal-content"><table class="details-table"><thead><tr><th>${t.type}</th><th>${t.date}</th><th>${t.description}</th><th class="amount">${t.amount}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-    Swal.fire({ title: t.title, html: html, width: '800px', showCloseButton: true, showConfirmButton: false });
+      if (!this.dernierCalcul || !this.dernierCalcul.depenses) return;
+      const t = { title: this.translate.instant('SALAIRES.DETAILS_MODAL.EXPENSE_TITLE'), type: this.translate.instant('EXPENSES.TYPE'), date: this.translate.instant('COMMON.DATE'), description: this.translate.instant('COMMON.DESCRIPTION'), amount: this.translate.instant('COMMON.AMOUNT') };
+      const rows = this.dernierCalcul.depenses.map(d => `<tr><td>${this.translate.instant('EXPENSES.TYPES.' + d.type.toUpperCase())}</td><td>${this.formatDate(d.date)}</td><td>${d.description || '-'}</td><td class="amount">${d.montant.toFixed(2)} DT</td></tr>`).join('');
+      const html = `<div class="details-modal-content"><table class="details-table"><thead><tr><th>${t.type}</th><th>${t.date}</th><th>${t.description}</th><th class="amount">${t.amount}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      Swal.fire({ title: t.title, html: html, width: '800px', showCloseButton: true, showConfirmButton: false });
   }
 
+  // ✅ NOUVELLE MÉTHODE POUR ENREGISTRER UN PAIEMENT
   async enregistrerPaiement(detail: DetailSalaireMarin): Promise<void> {
     const { value: montant } = await Swal.fire({
       title: this.translate.instant('SALAIRES.PAYMENT_MODAL_TITLE', { name: detail.marinNom }),
@@ -2334,18 +2401,23 @@ export class SalairesListComponent implements OnInit {
         return null;
       }
     });
+
     if (montant) {
       try {
         this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
         const montantPaye = parseFloat(montant);
+
         await this.paiementService.addPaiement({
           marinId: detail.marinId,
           montant: montantPaye,
           datePaiement: new Date(),
           sortiesIds: this.dernierCalcul!.sortiesIds
         });
+
+        // Mettre à jour l'état local pour un rafraîchissement instantané
         detail.totalPaiements += montantPaye;
         detail.resteAPayer -= montantPaye;
+
         this.alertService.success(this.translate.instant('SALAIRES.PAYMENT_SUCCESS'));
       } catch (error) {
         console.error('Erreur:', error);
@@ -2354,7 +2426,7 @@ export class SalairesListComponent implements OnInit {
     }
   }
 
-  private calculerNombreNuits(sortie: SortieDetails): number {
+  private calculerNombreNuits(sortie: Sortie): number {
     if (!sortie?.dateDepart || !sortie?.dateRetour) return 0;
     const depart = (sortie.dateDepart as any).toDate ? (sortie.dateDepart as any).toDate() : new Date(sortie.dateDepart);
     const retour = (sortie.dateRetour as any).toDate ? (sortie.dateRetour as any).toDate() : new Date(sortie.dateRetour);
@@ -2363,10 +2435,9 @@ export class SalairesListComponent implements OnInit {
   }
 
   formatDate(date: any): string {
-    if (!date) return '';
     if (date?.toDate) return date.toDate().toLocaleDateString('fr-FR');
     if (date instanceof Date) return date.toLocaleDateString('fr-FR');
-    return new Date(date).toLocaleDateString('fr-FR');
+    return '';
   }
 
   toggleAccordion(panel: string): void {
@@ -2440,83 +2511,56 @@ export class AlertService {
 
 ====================================
 FICHIER: ./src/app/services/avance.service.ts
-Lignes:       76
+Lignes:       49
 ====================================
 
 import { Injectable } from '@angular/core';
-import { Firestore, collection, addDoc, updateDoc, deleteDoc, doc, collectionData, query, where } from '@angular/fire/firestore';
+import { Firestore, collection, addDoc, updateDoc, deleteDoc, doc, query, where, collectionData, docData } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 import { Avance } from '../models/avance.model';
+import { FinancialEventsService } from './financial-events.service';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class AvanceService {
   private collectionName = 'avances';
 
-  constructor(private firestore: Firestore) {}
+  constructor(
+    private firestore: Firestore,
+    private finEvents: FinancialEventsService
+  ) {}
 
   getAvancesByMarin(marinId: string): Observable<Avance[]> {
-    const avancesCollection = collection(this.firestore, this.collectionName);
-    const q = query(avancesCollection, where('marinId', '==', marinId));
+    const col = collection(this.firestore, this.collectionName);
+    const q = query(col, where('marinId','==', marinId));
     return collectionData(q, { idField: 'id' }) as Observable<Avance[]>;
   }
 
-  getAvancesByBateau(bateauId: string): Observable<Avance[]> {
-    const avancesCollection = collection(this.firestore, this.collectionName);
-    const q = query(avancesCollection, where('bateauId', '==', bateauId));
-    return collectionData(q, { idField: 'id' }) as Observable<Avance[]>;
+  getAvancesByBateau(bateauId: string) {
+    return this.getAvancesByMarin(bateauId as any);
   }
 
-  async addAvance(avance: Omit<Avance, 'id'>): Promise<any> {
-    const avancesCollection = collection(this.firestore, this.collectionName);
-    
-    // ✅ FILTRER LES VALEURS UNDEFINED
-    const dataToSave: any = {
-      marinId: avance.marinId,
-      bateauId: avance.bateauId,
-      montant: avance.montant,
-      dateAvance: avance.dateAvance,
-      createdAt: new Date()
-    };
+  getAvance(id: string): Observable<Avance | undefined> {
+    const d = doc(this.firestore, this.collectionName, id);
+    return docData(d, { idField: 'id' }) as Observable<Avance | undefined>;
+  }
 
-    // Ajouter description seulement si elle existe
-    if (avance.description && avance.description.trim() !== '') {
-      dataToSave.description = avance.description;
-    }
-
-    return await addDoc(avancesCollection, dataToSave);
+  async addAvance(avance: Omit<Avance,'id'>): Promise<string> {
+    const col = collection(this.firestore, this.collectionName);
+    const ref = await addDoc(col, avance);
+    this.finEvents.notifyFinancialChange();
+    return ref.id;
   }
 
   async updateAvance(id: string, avance: Partial<Avance>): Promise<void> {
-    const avanceDoc = doc(this.firestore, `${this.collectionName}/${id}`);
-    
-    // ✅ FILTRER LES VALEURS UNDEFINED
-    const dataToUpdate: any = {};
-    
-    if (avance.montant !== undefined) {
-      dataToUpdate.montant = avance.montant;
-    }
-    
-    if (avance.dateAvance !== undefined) {
-      dataToUpdate.dateAvance = avance.dateAvance;
-    }
-    
-    if (avance.description !== undefined) {
-      if (avance.description && avance.description.trim() !== '') {
-        dataToUpdate.description = avance.description;
-      } else {
-        // Si description est vide, la supprimer du document
-        dataToUpdate.description = '';
-      }
-    }
-
-    return await updateDoc(avanceDoc, dataToUpdate);
+    const d = doc(this.firestore, this.collectionName, id);
+    await updateDoc(d, avance);
+    this.finEvents.notifyFinancialChange();
   }
 
   async deleteAvance(id: string): Promise<void> {
-    const avanceDoc = doc(this.firestore, `${this.collectionName}/${id}`);
-    return await deleteDoc(avanceDoc);
+    const d = doc(this.firestore, this.collectionName, id);
+    await deleteDoc(d);
+    this.finEvents.notifyFinancialChange();
   }
 }
 
@@ -2590,117 +2634,103 @@ export class BateauService {
 
 ====================================
 FICHIER: ./src/app/services/depense.service.ts
-Lignes:       58
+Lignes:       45
 ====================================
 
 import { Injectable } from '@angular/core';
-import {
-  Firestore,
-  collection,
-  collectionData,
-  doc,
-  docData,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  where,
-  orderBy,
-  CollectionReference,
-} from '@angular/fire/firestore';
+import { Firestore, collection, addDoc, updateDoc, deleteDoc, doc, query, where, collectionData, docData } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 import { Depense } from '../models/depense.model';
+import { FinancialEventsService } from './financial-events.service';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class DepenseService {
-  private depensesCollection: CollectionReference;
+  private collectionName = 'depenses';
 
-  constructor(private firestore: Firestore) {
-    this.depensesCollection = collection(this.firestore, 'depenses');
-  }
+  constructor(
+    private firestore: Firestore,
+    private finEvents: FinancialEventsService
+  ) {}
 
   getDepensesBySortie(sortieId: string): Observable<Depense[]> {
-    const q = query(
-      this.depensesCollection,
-      where('sortieId', '==', sortieId),
-      orderBy('date', 'desc')
-    );
+    const col = collection(this.firestore, this.collectionName);
+    const q = query(col, where('sortieId','==', sortieId));
     return collectionData(q, { idField: 'id' }) as Observable<Depense[]>;
   }
 
   getDepense(id: string): Observable<Depense | undefined> {
-    const depenseDoc = doc(this.firestore, `depenses/${id}`);
-    return docData(depenseDoc, { idField: 'id' }) as Observable<Depense | undefined>;
+    const d = doc(this.firestore, this.collectionName, id);
+    return docData(d, { idField: 'id' }) as Observable<Depense | undefined>;
   }
 
-  async addDepense(depense: Depense): Promise<any> {
-    const newDepense = { ...depense, createdAt: new Date(), updatedAt: new Date() };
-    return await addDoc(this.depensesCollection, newDepense);
+  async addDepense(depense: Omit<Depense,'id'>): Promise<string> {
+    const col = collection(this.firestore, this.collectionName);
+    const ref = await addDoc(col, depense);
+    this.finEvents.notifyFinancialChange();
+    return ref.id;
   }
 
   async updateDepense(id: string, depense: Partial<Depense>): Promise<void> {
-    const depenseDoc = doc(this.firestore, `depenses/${id}`);
-    const updateData = { ...depense, updatedAt: new Date() };
-    return await updateDoc(depenseDoc, updateData);
+    const d = doc(this.firestore, this.collectionName, id);
+    await updateDoc(d, depense);
+    this.finEvents.notifyFinancialChange();
   }
 
   async deleteDepense(id: string): Promise<void> {
-    const depenseDoc = doc(this.firestore, `depenses/${id}`);
-    return await deleteDoc(depenseDoc);
+    const d = doc(this.firestore, this.collectionName, id);
+    await deleteDoc(d);
+    this.finEvents.notifyFinancialChange();
   }
 }
 
 ====================================
 FICHIER: ./src/app/services/facture-vente.service.ts
-Lignes:       46
+Lignes:       45
 ====================================
 
-import { Injectable, inject } from '@angular/core';
-import { 
-  Firestore, 
-  collection, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  collectionData, 
-  query, 
-  where 
-} from '@angular/fire/firestore';
+import { Injectable } from '@angular/core';
+import { Firestore, collection, addDoc, updateDoc, deleteDoc, doc, query, where, collectionData, docData } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 import { FactureVente } from '../models/facture-vente.model';
+import { FinancialEventsService } from './financial-events.service';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class FactureVenteService {
   private collectionName = 'factures-vente';
-  private firestore = inject(Firestore);
+
+  constructor(
+    private firestore: Firestore,
+    private finEvents: FinancialEventsService
+  ) {}
 
   getFacturesBySortie(sortieId: string): Observable<FactureVente[]> {
-    const facturesCollection = collection(this.firestore, this.collectionName);
-    const q = query(facturesCollection, where('sortieId', '==', sortieId));
+    const col = collection(this.firestore, this.collectionName);
+    const q = query(col, where('sortieId','==', sortieId));
     return collectionData(q, { idField: 'id' }) as Observable<FactureVente[]>;
   }
 
-  async addFacture(facture: Omit<FactureVente, 'id'>): Promise<any> {
-    const facturesCollection = collection(this.firestore, this.collectionName);
-    return await addDoc(facturesCollection, {
-      ...facture,
-      createdAt: new Date()
-    });
+  getFacture(id: string): Observable<FactureVente | undefined> {
+    const d = doc(this.firestore, this.collectionName, id);
+    return docData(d, { idField: 'id' }) as Observable<FactureVente | undefined>;
+  }
+
+  async addFacture(facture: Omit<FactureVente,'id'>): Promise<string> {
+    const col = collection(this.firestore, this.collectionName);
+    const ref = await addDoc(col, facture);
+    this.finEvents.notifyFinancialChange();
+    return ref.id;
   }
 
   async updateFacture(id: string, facture: Partial<FactureVente>): Promise<void> {
-    const factureDoc = doc(this.firestore, this.collectionName, id);
-    return await updateDoc(factureDoc, facture);
+    const d = doc(this.firestore, this.collectionName, id);
+    await updateDoc(d, facture);
+    this.finEvents.notifyFinancialChange();
   }
 
   async deleteFacture(id: string): Promise<void> {
-    const factureDoc = doc(this.firestore, this.collectionName, id);
-    return await deleteDoc(factureDoc);
+    const d = doc(this.firestore, this.collectionName, id);
+    await deleteDoc(d);
+    this.finEvents.notifyFinancialChange();
   }
 }
 
@@ -2745,6 +2775,24 @@ export class FactureService {
   async deleteFacture(id: string): Promise<void> {
     const factureDoc = doc(this.firestore, `${this.collectionName}/${id}`);
     await deleteDoc(factureDoc);
+  }
+}
+
+====================================
+FICHIER: ./src/app/services/financial-events.service.ts
+Lignes:       12
+====================================
+
+import { Injectable } from '@angular/core';
+import { Subject } from 'rxjs';
+
+@Injectable({ providedIn: 'root' })
+export class FinancialEventsService {
+  private changeSubject = new Subject<void>();
+  change$ = this.changeSubject.asObservable();
+
+  notifyFinancialChange(): void {
+    this.changeSubject.next();
   }
 }
 
@@ -2796,70 +2844,77 @@ export class LanguageService {
 
 ====================================
 FICHIER: ./src/app/services/marin.service.ts
-Lignes:       57
+Lignes:       64
 ====================================
 
 import { Injectable } from '@angular/core';
-import { Firestore, collection, collectionData, doc, docData, addDoc, updateDoc, deleteDoc, query, where, orderBy, CollectionReference } from '@angular/fire/firestore';
+import { Firestore, collection, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, collectionData, docData } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 import { Marin } from '../models/marin.model';
+import { FinancialEventsService } from './financial-events.service';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class MarinService {
-  private marinsCollection: CollectionReference;
+  private collectionName = 'marins';
 
-  constructor(private firestore: Firestore) {
-    this.marinsCollection = collection(this.firestore, 'marins');
-  }
+  constructor(
+    private firestore: Firestore,
+    private finEvents: FinancialEventsService
+  ) {}
 
   getMarinsByBateau(bateauId: string): Observable<Marin[]> {
-    const marinsQuery = query(
-      this.marinsCollection,
-      where('bateauId', '==', bateauId),
-      orderBy('nom', 'asc')
-    );
-    return collectionData(marinsQuery, { idField: 'id' }) as Observable<Marin[]>;
+    const col = collection(this.firestore, this.collectionName);
+    const q = query(col, where('bateauId','==', bateauId), orderBy('nom'));
+    return collectionData(q, { idField: 'id' }) as Observable<Marin[]>;
   }
 
   getAllMarins(): Observable<Marin[]> {
-    const marinsQuery = query(this.marinsCollection, orderBy('nom', 'asc'));
-    return collectionData(marinsQuery, { idField: 'id' }) as Observable<Marin[]>;
+    const col = collection(this.firestore, this.collectionName);
+    const q = query(col, orderBy('nom', 'asc'));
+    return collectionData(q, { idField: 'id' }) as Observable<Marin[]>;
   }
 
-  getMarin(id: string): Observable<Marin> {
-    const marinDoc = doc(this.firestore, `marins/${id}`);
-    return docData(marinDoc, { idField: 'id' }) as Observable<Marin>;
+  getMarins(): Observable<Marin[]> {
+    return this.getAllMarins();
   }
 
-  async addMarin(marin: Marin): Promise<any> {
+  getMarin(id: string): Observable<Marin | undefined> {
+    const d = doc(this.firestore, this.collectionName, id);
+    return docData(d, { idField: 'id' }) as Observable<Marin | undefined>;
+  }
+
+  async addMarin(marin: Omit<Marin, 'id'>): Promise<string> {
     const newMarin = {
       ...marin,
       createdAt: new Date(),
       updatedAt: new Date()
     };
-    return await addDoc(this.marinsCollection, newMarin);
+    const col = collection(this.firestore, this.collectionName);
+    const ref = await addDoc(col, newMarin);
+    this.finEvents.notifyFinancialChange();
+    return ref.id;
   }
 
   async updateMarin(id: string, marin: Partial<Marin>): Promise<void> {
-    const marinDoc = doc(this.firestore, `marins/${id}`);
     const updateData = {
       ...marin,
       updatedAt: new Date()
     };
-    return await updateDoc(marinDoc, updateData);
+    const d = doc(this.firestore, this.collectionName, id);
+    await updateDoc(d, updateData);
+    this.finEvents.notifyFinancialChange();
   }
 
   async deleteMarin(id: string): Promise<void> {
-    const marinDoc = doc(this.firestore, `marins/${id}`);
-    return await deleteDoc(marinDoc);
+    const d = doc(this.firestore, this.collectionName, id);
+    await deleteDoc(d);
+    this.finEvents.notifyFinancialChange();
   }
 }
 
 ====================================
 FICHIER: ./src/app/services/mock-data.service.ts
-Lignes:      313
+Lignes:      314
 ====================================
 
 import { Injectable } from '@angular/core';
@@ -3030,6 +3085,7 @@ export class MockDataService {
     const ids: string[] = [];
     for (let i = 0; i < 6; i++) {
       const marin: Omit<Marin, 'id'> = {
+    coefficientSalaire: 1.0,
         bateauId,
         nom: noms[i],
         prenom: prenoms[i],
@@ -3093,7 +3149,7 @@ export class MockDataService {
       const poissonsSelectionnes = this.shuffleArray([...this.typesPoissons])
         .slice(0, nombreTypesPoissons);
       
-      let montantTotalFacture = 0;
+      let montantFacture = 0;
       let detailsTexte = '';
       
       for (const poisson of poissonsSelectionnes) {
@@ -3101,30 +3157,30 @@ export class MockDataService {
         const prixUnitaire = Math.floor(
           (Math.random() * (poisson.prixMax - poisson.prixMin) + poisson.prixMin) * 100
         ) / 100;
-        const montantTotal = Math.round(quantite * prixUnitaire * 100) / 100;
+        const montant = Math.round(quantite * prixUnitaire * 100) / 100;
         
-        detailsTexte += `${poisson.nom}: ${quantite} kg × ${prixUnitaire} DT = ${montantTotal} DT\n`;
-        montantTotalFacture += montantTotal;
+        detailsTexte += `${poisson.nom}: ${quantite} kg × ${prixUnitaire} DT = ${montant} DT\n`;
+        montantFacture += montant;
       }
 
-      montantTotalFacture = Math.round(montantTotalFacture * 100) / 100;
+      montantFacture = Math.round(montantFacture * 100) / 100;
 
       const numeroFacture = `FA-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000).padStart(4, '0')}`;
       const client = this.nomsClients[Math.floor(Math.random() * this.nomsClients.length)];
       
       const facture: Omit<FactureVente, 'id'> = {
+      montant: montantFacture,
         sortieId,
         numeroFacture,
         client,
         dateVente: new Date(),
-        montantTotal: montantTotalFacture,
         details: detailsTexte.trim(),
         createdAt: new Date()
       };
       
       try {
         await addDoc(collection(this.firestore, 'factures-vente'), facture);
-        console.log(`    ✓ ${numeroFacture} - ${client} - ${montantTotalFacture} DT`);
+        console.log(`    ✓ ${numeroFacture} - ${client} - ${montantFacture} DT`);
       } catch (error) {
         console.error(`    ✗ Erreur facture ${i + 1}:`, error);
       }
@@ -3376,6 +3432,29 @@ export class SelectedBoatService {
 }
 
 ====================================
+FICHIER: ./src/app/services/sortie-mer.service.ts
+Lignes:       17
+====================================
+
+import { Injectable } from '@angular/core';
+import { Firestore, collection, query, where, orderBy, collectionData } from '@angular/fire/firestore';
+import { Observable } from 'rxjs';
+import { SortieMer } from '../models/sortie-mer.model';
+
+@Injectable({ providedIn: 'root' })
+export class SortieMerService {
+  private collectionName = 'sorties-mer';
+
+  constructor(private firestore: Firestore) {}
+
+  getSortiesByBateau(bateauId: string): Observable<SortieMer[]> {
+    const col = collection(this.firestore, this.collectionName);
+    const q = query(col, where('bateauId', '==', bateauId), orderBy('dateFin', 'desc'));
+    return collectionData(q, { idField: 'id' }) as Observable<SortieMer[]>;
+  }
+}
+
+====================================
 FICHIER: ./src/app/services/sortie.service.ts
 Lignes:       87
 ====================================
@@ -3435,7 +3514,7 @@ export class SortieService {
           return combineLatest([depenses$, factures$]).pipe(
             map(([depenses, factures]) => {
               const totalDepenses = depenses.reduce((sum, item) => sum + item.montant, 0);
-              const totalFactures = factures.reduce((sum, item) => sum + item.montantTotal, 0);
+              const totalFactures = factures.reduce((sum, item) => sum + item.montant, 0);
               return {
                 ...sortie,
                 depenses,
@@ -3644,7 +3723,7 @@ export class FacturesComponent implements OnInit {
   }
 
   getTotalVentes(): number {
-    return this.factures.reduce((sum, f) => sum + f.montantTotal, 0);
+    return this.factures.reduce((sum, f) => sum + f.montant, 0);
   }
 
   async ajouterFacture(): Promise<void> {
@@ -3714,7 +3793,7 @@ export class FacturesComponent implements OnInit {
           numeroFacture: formValues.numero,
           client: formValues.client,
           dateVente: new Date(formValues.date),
-          montantTotal: formValues.montant,
+          montant: formValues.montant,
           details: formValues.details || undefined
         };
 
@@ -3752,7 +3831,7 @@ export class FacturesComponent implements OnInit {
           
           <div style="margin-bottom: 1rem;">
             <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Montant total (DT) *</label>
-            <input id="swal-montant" type="number" class="swal2-input" value="${facture.montantTotal}" step="0.01" min="0" style="width: 90%;">
+            <input id="swal-montant" type="number" class="swal2-input" value="${facture.montant}" step="0.01" min="0" style="width: 90%;">
           </div>
           
           <div style="margin-bottom: 1rem;">
@@ -3786,7 +3865,7 @@ export class FacturesComponent implements OnInit {
           numeroFacture: formValues.numero,
           client: formValues.client,
           dateVente: new Date(formValues.date),
-          montantTotal: formValues.montant,
+          montant: formValues.montant,
           details: formValues.details || undefined
         });
         
@@ -3802,7 +3881,7 @@ export class FacturesComponent implements OnInit {
 
   async supprimerFacture(facture: FactureVente): Promise<void> {
     const confirmed = await this.alertService.confirmDelete(
-      `la facture ${facture.numeroFacture} (${facture.montantTotal} DT)`
+      `la facture ${facture.numeroFacture} (${facture.montant} DT)`
     );
 
     if (confirmed) {
@@ -3860,7 +3939,7 @@ Lignes:        1
 
 ====================================
 FICHIER: ./src/app/sorties/pointage/pointage.component.ts
-Lignes:      277
+Lignes:      278
 ====================================
 
 import { Component, OnInit } from '@angular/core';
@@ -4053,6 +4132,7 @@ export class PointageComponent implements OnInit {
           bateauId: this.sortie!.bateauId,
           email: `${formValues.prenom}.${formValues.nom}@email.com`.toLowerCase(),
           numeroPermis: 'N/A',
+    coefficientSalaire: 1.0,
           dateEmbauche: new Date(),
           adresse: 'N/A',
           statut: 'actif'
@@ -4315,7 +4395,7 @@ export class SortieDetailsComponent implements OnInit {
           numeroFacture: formValues.numero,
           client: formValues.client,
           dateVente: new Date(formValues.date),
-          montantTotal: formValues.montant,
+          montant: formValues.montant,
           details: formValues.details || undefined
         };
         await this.factureVenteService.addFacture(newFacture);
@@ -4666,7 +4746,7 @@ export class VentesListComponent implements OnInit {
       combineLatest(facturesObservables).subscribe((allFactures: FactureVente[][]) => {
         this.sortiesWithFactures = sorties.map((sortie, index) => {
           const factures = allFactures[index];
-          const totalVentes = factures.reduce((sum, f) => sum + f.montantTotal, 0);
+          const totalVentes = factures.reduce((sum, f) => sum + f.montant, 0);
           
           return {
             sortie,
@@ -4873,7 +4953,7 @@ export class VentesListComponent implements OnInit {
           numeroFacture: formValues.numero,
           client: formValues.client,
           dateVente: new Date(formValues.date),
-          montantTotal: formValues.montant,
+          montant: formValues.montant,
           details: formValues.details || undefined
         };
 
@@ -5045,7 +5125,7 @@ export class VentesListComponent implements OnInit {
           numeroFacture: formValues.numero,
           client: formValues.client,
           dateVente: new Date(formValues.date),
-          montantTotal: formValues.montant,
+          montant: formValues.montant,
           details: formValues.details || undefined
         };
 
@@ -5088,7 +5168,7 @@ export class VentesListComponent implements OnInit {
           </div>
           <div class="form-group">
             <label class="form-label">Montant total (DT)</label>
-            <input id="swal-montant" type="number" class="custom-input" value="${facture.montantTotal}" step="0.01" min="0">
+            <input id="swal-montant" type="number" class="custom-input" value="${facture.montant}" step="0.01" min="0">
           </div>
           <div class="form-group">
             <label class="form-label">Détails</label>
@@ -5121,7 +5201,7 @@ export class VentesListComponent implements OnInit {
           numeroFacture: formValues.numero,
           client: formValues.client,
           dateVente: new Date(formValues.date),
-          montantTotal: formValues.montant,
+          montant: formValues.montant,
           details: formValues.details || undefined
         });
         
@@ -5137,7 +5217,7 @@ export class VentesListComponent implements OnInit {
 
   async supprimerFacture(facture: FactureVente): Promise<void> {
     const confirmed = await this.alertService.confirmDelete(
-      `la facture ${facture.numeroFacture} (${facture.montantTotal} DT)`
+      `la facture ${facture.numeroFacture} (${facture.montant} DT)`
     );
 
     if (confirmed) {
@@ -6446,7 +6526,7 @@ Lignes:       67
 
 ====================================
 FICHIER: ./src/app/salaires/salaires-list.component.html
-Lignes:      185
+Lignes:      156
 ====================================
 
 <div class="salaires-container">
@@ -6467,127 +6547,102 @@ Lignes:      185
       </button>
       <button class="tab-button" [class.active]="activeTab === 'historique'" (click)="selectTab('historique')">
         {{ 'SALAIRES.TABS.HISTORY' | translate }}
-        <span class="badge">{{ historiqueDesCalculs.length }}</span>
+        <span class="badge">{{ sortiesCalculees.length }}</span>
       </button>
     </div>
 
     <div *ngIf="dernierCalcul" class="results-container">
-  <div class="results-header">
-    <h2>{{ 'SALAIRES.RESULTS.TITLE' | translate }}</h2>
-    <button class="btn-close-results" (click)="dernierCalcul = null" [title]="'SALAIRES.RESULTS.CLOSE' | translate">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    </button>
-  </div>
+      <div class="results-header">
+        <h2>{{ 'SALAIRES.RESULTS.TITLE' | translate }} : {{ dernierCalcul.sortiesDestinations.join(', ') }}</h2>
+        <button class="btn-close-results" (click)="dernierCalcul = null" [title]="'SALAIRES.RESULTS.CLOSE' | translate">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
 
-  <div class="accordion">
-    <div class="accordion-item">
-      <button class="accordion-header" (click)="toggleAccordion('summary')">
-        <span>{{ 'SALAIRES.RESULTS.FINANCIAL_SUMMARY' | translate }}</span>
-        <svg class="chevron" [class.rotate]="accordionState['summary']" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      <div class="accordion-content" [class.open]="accordionState['summary']">
-        <div class="summary-grid">
-          <div class="summary-item">
-            <span>{{ 'SALAIRES.REVENU_TOTAL' | translate }}</span>
-            <strong class="revenue">
-              {{ dernierCalcul.revenuTotal | number:'1.2-2' }} DT
-              <button (click)="showRevenueDetails()" class="details-link">({{ 'COMMON.VIEW_DETAILS' | translate }})</button>
-            </strong>
+      <div class="accordion">
+        <div class="accordion-item">
+          <button class="accordion-header" (click)="toggleAccordion('summary')">
+            <span>{{ 'SALAIRES.RESULTS.FINANCIAL_SUMMARY' | translate }}</span>
+            <svg class="chevron" [class.rotate]="accordionState['summary']" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+          </button>
+          <div class="accordion-content" [class.open]="accordionState['summary']">
+            <div class="summary-grid">
+              <div class="summary-item">
+                <span>{{ 'SALAIRES.REVENU_TOTAL' | translate }}</span>
+                <strong class="revenue">
+                  {{ dernierCalcul.revenuTotal | number:'1.2-2' }} DT
+                  <button (click)="showRevenueDetails()" class="details-link">({{ 'COMMON.VIEW_DETAILS' | translate }})</button>
+                </strong>
+              </div>
+              <div class="summary-item">
+                <span>{{ 'SALAIRES.TOTAL_DEPENSES' | translate }}</span>
+                <strong class="expenses">
+                  {{ dernierCalcul.totalDepenses | number:'1.2-2' }} DT
+                  <button (click)="showExpenseDetails()" class="details-link">({{ 'COMMON.VIEW_DETAILS' | translate }})</button>
+                </strong>
+              </div>
+              <div class="summary-item"><span>{{ 'SALAIRES.BENEFICE_NET' | translate }}</span><strong class="benefit">{{ dernierCalcul.beneficeNet | number:'1.2-2' }} DT</strong></div>
+            </div>
           </div>
-          <div class="summary-item">
-            <span>{{ 'SALAIRES.TOTAL_DEPENSES' | translate }}</span>
-            <strong class="expenses">
-              {{ dernierCalcul.totalDepenses | number:'1.2-2' }} DT
-              <button (click)="showExpenseDetails()" class="details-link">({{ 'COMMON.VIEW_DETAILS' | translate }})</button>
-            </strong>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-header" (click)="toggleAccordion('sharing')">
+            <span>{{ 'SALAIRES.RESULTS.PROFIT_SHARING' | translate }}</span>
+            <svg class="chevron" [class.rotate]="accordionState['sharing']" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+          </button>
+          <div class="accordion-content" [class.open]="accordionState['sharing']">
+             <div class="summary-grid">
+              <div class="summary-item"><span>{{ 'SALAIRES.PART_PROPRIETAIRE' | translate }}</span><strong>{{ dernierCalcul.partProprietaire | number:'1.2-2' }} DT</strong></div>
+              <div class="summary-item"><span>{{ 'SALAIRES.PART_EQUIPAGE' | translate }}</span><strong>{{ dernierCalcul.partEquipage | number:'1.2-2' }} DT</strong></div>
+              <div class="summary-item"><span>- Déductions</span><strong class="expenses">{{ dernierCalcul.deductionNuits | number:'1.2-2' }} DT</strong></div>
+              <div class="summary-item net-share"><span>{{ 'SALAIRES.MONTANT_A_PARTAGER' | translate }}</span><strong>{{ dernierCalcul.montantAPartager | number:'1.2-2' }} DT</strong></div>
+            </div>
           </div>
-          <div class="summary-item">
-            <span>{{ 'SALAIRES.BENEFICE_NET' | translate }}</span>
-            <strong class="benefit">{{ dernierCalcul.beneficeNet | number:'1.2-2' }} DT</strong>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-header" (click)="toggleAccordion('details')">
+            <span>{{ 'SALAIRES.DETAILS_PAR_MARIN' | translate }}</span>
+            <svg class="chevron" [class.rotate]="accordionState['details']" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+          </button>
+          <div class="accordion-content" [class.open]="accordionState['details']">
+            <div class="table-container">
+              <table class="salaires-table">
+                <thead>
+                  <tr>
+                    <th>{{ 'SAILORS.TITLE' | translate }}</th>
+                    <th>{{ 'SAILORS.PART' | translate }}</th>
+                    <th>{{ 'SALAIRES.SALAIRE_BASE' | translate }}</th>
+                    <th>{{ 'SALAIRES.PRIME_NUITS' | translate }}</th>
+                    <th>{{ 'AVANCES.TITLE' | translate }}</th>
+                    <th>{{ 'SALAIRES.DEJA_PAYE' | translate }}</th>
+                    <th class="reste">{{ 'SALAIRES.RESTE_A_PAYER' | translate }}</th>
+                    <th>{{ 'BOATS.ACTIONS' | translate }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let detail of dernierCalcul.detailsMarins">
+                    <td class="marin-name">{{ detail.marinNom }}</td>
+                    <td>{{ detail.part }}</td>
+                    <td>{{ detail.salaireBrut | number:'1.2-2' }} DT</td>
+                    <td>{{ detail.primeNuits | number:'1.2-2' }} DT</td>
+                    <td class="avances">{{ detail.totalAvances | number:'1.2-2' }} DT</td>
+                    <td class="paiements">{{ detail.totalPaiements | number:'1.2-2' }} DT</td>
+                    <td class="reste"><strong>{{ detail.resteAPayer | number:'1.2-2' }} DT</strong></td>
+                    <td>
+                      <button class="btn btn-sm btn-pay" (click)="enregistrerPaiement(detail)" [disabled]="detail.resteAPayer <= 0.01">
+                        {{ detail.resteAPayer > 0.01 ? ('SALAIRES.PAYER' | translate) : ('SALAIRES.PAYE' | translate) }}
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
     </div>
-
-    <div class="accordion-item">
-      <button class="accordion-header" (click)="toggleAccordion('sharing')">
-        <span>{{ 'SALAIRES.RESULTS.PROFIT_SHARING' | translate }}</span>
-        <svg class="chevron" [class.rotate]="accordionState['sharing']" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      <div class="accordion-content" [class.open]="accordionState['sharing']">
-        <div class="summary-grid">
-          <div class="summary-item">
-            <span>{{ 'SALAIRES.PART_PROPRIETAIRE' | translate }}</span>
-            <strong>{{ dernierCalcul.partProprietaire | number:'1.2-2' }} DT</strong>
-          </div>
-          <div class="summary-item">
-            <span>{{ 'SALAIRES.PART_EQUIPAGE' | translate }}</span>
-            <strong>{{ dernierCalcul.partEquipage | number:'1.2-2' }} DT</strong>
-          </div>
-          <div class="summary-item">
-            <span>- {{ 'SALAIRES.DEDUCTIONS' | translate }} ({{ 'SALAIRES.NUITS' | translate }})</span>
-            <strong class="expenses">{{ dernierCalcul.deductionNuits | number:'1.2-2' }} DT</strong>
-          </div>
-          <div class="summary-item net-share">
-            <span>{{ 'SALAIRES.MONTANT_A_PARTAGER' | translate }}</span>
-            <strong>{{ dernierCalcul.montantAPartager | number:'1.2-2' }} DT</strong>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="accordion-item">
-      <button class="accordion-header" (click)="toggleAccordion('details')">
-        <span>{{ 'SALAIRES.DETAILS_PAR_MARIN' | translate }}</span>
-        <svg class="chevron" [class.rotate]="accordionState['details']" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      <div class="accordion-content open" [class.open]="accordionState['details']">
-        <div class="table-container">
-          <table class="salaires-table">
-            <thead>
-              <tr>
-                <th>{{ 'SAILORS.TITLE' | translate }}</th>
-                <th>{{ 'SAILORS.PART' | translate }}</th>
-                <th>{{ 'SALAIRES.SALAIRE_BASE' | translate }}</th>
-                <th>{{ 'SALAIRES.PRIME_NUITS' | translate }}</th>
-                <th>{{ 'AVANCES.TITLE' | translate }}</th>
-                <th>{{ 'SALAIRES.DEJA_PAYE' | translate }}</th>
-                <th class="reste">{{ 'SALAIRES.RESTE_A_PAYER' | translate }}</th>
-                <th>{{ 'BOATS.ACTIONS' | translate }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let detail of dernierCalcul.detailsMarins">
-                <td class="marin-name">{{ detail.marinNom }}</td>
-                <td>{{ detail.part }}</td>
-                <td>{{ detail.salaireBrut | number:'1.2-2' }}</td>
-                <td>{{ detail.primeNuits | number:'1.2-2' }}</td>
-                <td class="avances">-{{ detail.totalAvances | number:'1.2-2' }}</td>
-                <td class="paiements">-{{ detail.totalPaiements | number:'1.2-2' }}</td>
-                <td class="reste" [class.paid]="detail.resteAPayer <= 0">
-                  <strong>{{ detail.resteAPayer | number:'1.2-2' }} DT</strong>
-                </td>
-                <td>
-                  <button class="btn btn-sm btn-pay" (click)="enregistrerPaiement(detail)" [disabled]="detail.resteAPayer <= 0">
-                    {{ detail.resteAPayer <= 0 ? ('SALAIRES.PAYE' | translate) : ('SALAIRES.PAYER' | translate) }}
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
     
     <div *ngIf="!dernierCalcul">
       <div *ngIf="activeTab === 'ouvertes'" class="tab-content">
@@ -6615,17 +6670,13 @@ Lignes:      185
       <div *ngIf="activeTab === 'historique'" class="tab-content">
         <div class="section-card">
           <h2>{{ 'SALAIRES.TABS.CALCULATED_TRIPS' | translate }}</h2>
-          <div *ngIf="historiqueDesCalculs.length > 0; else noCalculatedTrips" class="sorties-list-history">
-            <div *ngFor="let calcul of historiqueDesCalculs" class="sortie-item-history">
+          <div *ngIf="sortiesCalculees.length > 0; else noCalculatedTrips" class="sorties-list-history">
+            <div *ngFor="let sortie of sortiesCalculees" class="sortie-item-history">
               <div class="sortie-info">
-                <strong>{{ calcul.sortiesDestinations.join(', ') }}</strong>
-                <span>Calcul du {{ formatDate(calcul.dateCalcul) }}</span>
+                <strong>{{ sortie.destination }}</strong>
+                <span>{{ formatDate(sortie.dateDepart) }} - {{ formatDate(sortie.dateRetour) }}</span>
               </div>
-              <div class="calcul-info">
-                <span class="total-label">{{ 'SALAIRES.BENEFICE_NET' | translate }}</span>
-                <span class="total-value">{{ calcul.beneficeNet | number:'1.2-2' }} DT</span>
-              </div>
-              <button class="btn btn-secondary btn-sm" (click)="viewCalculDetails(calcul)">{{ 'COMMON.VIEW_DETAILS' | translate }}</button>
+              <button class="btn btn-secondary btn-sm" (click)="viewCalculDetails(sortie)">{{ 'COMMON.VIEW_DETAILS' | translate }}</button>
             </div>
           </div>
           <ng-template #noCalculatedTrips><div class="no-data-small"><p>{{ 'SALAIRES.NO_CALCULATED_TRIPS' | translate }}</p></div></ng-template>
@@ -6739,7 +6790,7 @@ Lignes:       66
       <div *ngFor="let facture of factures" class="facture-card">
         <div class="facture-header">
           <h3>{{ facture.numeroFacture }}</h3>
-          <span class="facture-amount">{{ facture.montantTotal | number:'1.2-2' }} DT</span>
+          <span class="facture-amount">{{ facture.montant | number:'1.2-2' }} DT</span>
         </div>
         <div class="facture-body">
           <p><strong>Client:</strong> {{ facture.client }}</p>
@@ -7095,7 +7146,7 @@ Lignes:      113
           </div>
         </div>
         <div class="item-actions">
-          <span class="item-amount">{{ facture.montantTotal | number:'1.2-2' }} DT</span>
+          <span class="item-amount">{{ facture.montant | number:'1.2-2' }} DT</span>
         </div>
       </div>
     </div>
@@ -7309,7 +7360,7 @@ Lignes:       82
           <div *ngFor="let facture of item.factures" class="facture-card">
             <div class="facture-header-card">
               <span class="facture-numero">{{ facture.numeroFacture }}</span>
-              <span class="facture-montant">{{ facture.montantTotal | number:'1.2-2' }} DT</span>
+              <span class="facture-montant">{{ facture.montant | number:'1.2-2' }} DT</span>
             </div>
             <div class="facture-body">
               <p><strong>{{ 'VENTES.DETAILS_MODAL.CLIENT' | translate }}:</strong> {{ facture.client }}</p>
@@ -12602,7 +12653,7 @@ body.rtl,
 
 ====================================
 FICHIER: ./src/assets/i18n/ar.json
-Lignes:       23
+Lignes:       24
 ====================================
 
 {
@@ -12620,7 +12671,8 @@ Lignes:       23
   "EXPENSES": { "TITLE": "المصاريف", "ADD": "إضافة مصروف", "EDIT": "تعديل المصروف", "TYPE": "نوع المصروف", "AMOUNT": "المبلغ", "DATE": "التاريخ", "DESCRIPTION": "الوصف", "NOEXPENSE": "لا توجد مصاريف مسجلة لهذه الرحلة.", "TYPES": { "FUEL": "وقود", "ICE": "ثلج", "OIL_CHANGE": "تغيير زيت", "CREW_CNSS": "الضمان الاجتماعي", "CREW_BONUS": "مكافأة الطاقم", "FOOD": "طعام", "VMS": "VMS", "MISC": "متنوع" }, "SUCCESS_ADD": "تمت إضافة المصروف بنجاح", "SUCCESS_UPDATE": "تم تحديث المصروف بنجاح" },
   "POINTAGE": { "TITLE": "تسجيل حضور الطاقم", "CREW": "إدارة الحضور", "PRESENT": "حاضر", "ABSENT": "غائب", "NOCREW": "لا يوجد بحارة معينون لهذا المركب.", "OBSERVATIONS": "ملاحظات", "ADDOBS": "إضافة ملاحظة...", "TOTAL": "المجموع", "SUCCESS_PRESENCE": "تم تسجيل الحضور", "SUCCESS_ABSENCE": "تم تسجيل الغياب", "SUCCESS_OBS": "تم تحديث الملاحظات", "ERROR_ADD": "خطأ أثناء تسجيل الحضور" },
   "AVANCES": { "TITLE": "السلف على الراتب", "ADD": "إضافة سلفة", "EDIT": "تعديل السلفة", "TOTAL": "مجموع السلف", "TOTAL_GENERAL": "المجموع الكلي للسلف", "NO_AVANCES": "لا توجد سلف لهذا البحار.", "SUCCESS_ADD": "تمت إضافة السلفة بنجاح.", "SUCCESS_UPDATE": "تم تحديث السلفة بنجاح.", "SUCCESS_DELETE": "تم حذف السلفة بنجاح.", "AMOUNT_POSITIVE": "يجب أن يكون المبلغ رقمًا موجبًا.", "ADD_MODAL": { "TITLE": "إضافة سلفة جديدة" }, "EDIT_MODAL": { "TITLE": "تعديل السلفة" }, "DELETE_CONFIRM_ITEM": "سلفة بقيمة {{amount}} دينار لـ {{name}}" },
-  "SALAIRES": { "TITLE": "حساب الرواتب", "CALCULER": "حساب الرواتب", "REVENU_TOTAL": "الإيراد الكلي", "TOTAL_DEPENSES": "مجموع المصاريف", "BENEFICE_NET": "الربح الصافي", "PART_PROPRIETAIRE": "حصة المالك (50%)", "PART_EQUIPAGE": "حصة الطاقم (50%)", "DEDUCTIONS": "الخصومات", "NUITS": "ليالي", "MARINS": "بحارة", "MONTANT_A_PARTAGER": "المبلغ الصافي للمشاركة", "DETAILS_PAR_MARIN": "التفاصيل لكل بحار", "SALAIRE_BASE": "الراتب الأساسي", "PRIME_NUITS": "علاوة الليالي", "SALAIRE_NET": "الراتب الصافي", "DEJA_PAYE": "مدفوع مسبقًا", "RESTE_A_PAYER": "المتبقي للدفع", "PAYER": "دفع", "PAYE": "مدفوع", "ERROR_NO_SORTIE": "الرجاء اختيار رحلة واحدة على الأقل", "ERROR_NO_PARTS": "مجموع حصص البحارة هو 0. الرجاء تحديد الحصص في قسم 'البحارة'.", "CALCUL_SUCCESS_TITLE": "اكتمل الحساب!", "PAYMENT_SUCCESS": "تم تسجيل الدفعة!", "PAYMENT_MODAL_TITLE": "دفعة لـ {{name}}", "PAYMENT_MODAL_LABEL": "المبلغ للدفع (المتبقي: {{amount}} دينار)", "PAYMENT_MODAL": { "ERROR_POSITIVE": "يجب أن يكون المبلغ موجباً.", "ERROR_EXCEED": "لا يمكن أن يتجاوز المبلغ الرصيد المتبقي." }, "TABS": { "OPEN_TRIPS": "الرحلات المفتوحة", "HISTORY": "السجل", "CALCULATED_TRIPS": "الرحلات المحسوبة" }, "NO_OPEN_TRIPS": "لا توجد رحلات منتهية بانتظار الحساب.", "NO_CALCULATED_TRIPS": "لم يتم إجراء أي حسابات رواتب بعد.", "HISTORY": { "MODAL_TITLE": "تفاصيل الحساب لـ : {{destinations}}", "NO_DATA_FOUND_TITLE": "التفاصيل غير موجودة", "NO_DATA_FOUND_TEXT": "لم يتم العثور على تفاصيل هذا الحساب. قد يكون حسابًا قديمًا. هل تريد وضع علامة 'مفتوح' على هذه الرحلة لإعادة حسابها؟", "RECALCULATE_BTN": "إعادة الحساب", "MOVED_FOR_RECALC": "تم نقل الرحلة إلى 'الرحلات المفتوحة' لإعادة حسابها." }, "RESULTS": { "TITLE": "نتائج الحساب", "CLOSE": "إغلاق", "FINANCIAL_SUMMARY": "ملخص مالي", "PROFIT_SHARING": "تقاسم الأرباح" }, "DETAILS_MODAL": { "REVENUE_TITLE": "تفاصيل الإيرادات", "EXPENSE_TITLE": "تفاصيل المصاريف", "INVOICE_NUM": "رقم الفاتورة", "CLIENT": "العميل" } },
+  "SALAIRES": {
+    "AUTOCALCMESSAGE": "يتم حساب الرواتب تلقائياً عند كل تحديث للبيانات المالية", "TITLE": "حساب الرواتب", "CALCULER": "حساب الرواتب", "REVENU_TOTAL": "الإيراد الكلي", "TOTAL_DEPENSES": "مجموع المصاريف", "BENEFICE_NET": "الربح الصافي", "PART_PROPRIETAIRE": "حصة المالك (50%)", "PART_EQUIPAGE": "حصة الطاقم (50%)", "DEDUCTIONS": "الخصومات", "NUITS": "ليالي", "MARINS": "بحارة", "MONTANT_A_PARTAGER": "المبلغ الصافي للمشاركة", "DETAILS_PAR_MARIN": "التفاصيل لكل بحار", "SALAIRE_BASE": "الراتب الأساسي", "PRIME_NUITS": "علاوة الليالي", "SALAIRE_NET": "الراتب الصافي", "DEJA_PAYE": "مدفوع مسبقًا", "RESTE_A_PAYER": "المتبقي للدفع", "PAYER": "دفع", "PAYE": "مدفوع", "ERROR_NO_SORTIE": "الرجاء اختيار رحلة واحدة على الأقل", "ERROR_NO_PARTS": "مجموع حصص البحارة هو 0. الرجاء تحديد الحصص في قسم 'البحارة'.", "CALCUL_SUCCESS_TITLE": "اكتمل الحساب!", "PAYMENT_SUCCESS": "تم تسجيل الدفعة!", "PAYMENT_MODAL_TITLE": "دفعة لـ {{name}}", "PAYMENT_MODAL_LABEL": "المبلغ للدفع (المتبقي: {{amount}} دينار)", "PAYMENT_MODAL": { "ERROR_POSITIVE": "يجب أن يكون المبلغ موجباً.", "ERROR_EXCEED": "لا يمكن أن يتجاوز المبلغ الرصيد المتبقي." }, "TABS": { "OPEN_TRIPS": "الرحلات المفتوحة", "HISTORY": "السجل", "CALCULATED_TRIPS": "الرحلات المحسوبة" }, "NO_OPEN_TRIPS": "لا توجد رحلات منتهية بانتظار الحساب.", "NO_CALCULATED_TRIPS": "لم يتم إجراء أي حسابات رواتب بعد.", "HISTORY": { "MODAL_TITLE": "تفاصيل الحساب لـ : {{destinations}}", "NO_DATA_FOUND_TITLE": "التفاصيل غير موجودة", "NO_DATA_FOUND_TEXT": "لم يتم العثور على تفاصيل هذا الحساب. قد يكون حسابًا قديمًا. هل تريد وضع علامة 'مفتوح' على هذه الرحلة لإعادة حسابها؟", "RECALCULATE_BTN": "إعادة الحساب", "MOVED_FOR_RECALC": "تم نقل الرحلة إلى 'الرحلات المفتوحة' لإعادة حسابها." }, "RESULTS": { "TITLE": "نتائج الحساب", "CLOSE": "إغلاق", "FINANCIAL_SUMMARY": "ملخص مالي", "PROFIT_SHARING": "تقاسم الأرباح" }, "DETAILS_MODAL": { "REVENUE_TITLE": "تفاصيل الإيرادات", "EXPENSE_TITLE": "تفاصيل المصاريف", "INVOICE_NUM": "رقم الفاتورة", "CLIENT": "العميل" } },
   "VENTES": { "TITLE": "إدارة المبيعات", "ADD_INVOICE": "فاتورة جديدة", "ADD_INVOICE_FOR_TRIP": "إضافة فاتورة لهذه الرحلة", "NO_INVOICES_FOR_TRIP": "لا توجد فواتير مسجلة لهذه الرحلة", "TRIP_TOTAL": "مجموع مبيعات الرحلة", "GENERAL_TOTAL": "المجموع العام للمبيعات", "NO_TRIPS_AVAILABLE": "لا توجد رحلات بحرية متاحة.", "SUCCESS_ADD": "تمت إضافة الفاتورة بنجاح!", "SUCCESS_UPDATE": "تم تعديل الفاتورة بنجاح!", "SUCCESS_DELETE": "تم حذف الفاتورة بنجاح.", "DELETE_CONFIRM_ITEM": "الفاتورة رقم {{number}} ({{amount}} دينار)", "ADD_MODAL": { "TITLE": "فاتورة مبيعات جديدة", "SELECT_TRIP": "اختر رحلة" }, "EDIT_MODAL": { "TITLE": "تعديل الفاتورة" }, "DETAILS_MODAL": { "INVOICE_NUM": "رقم الفاتورة", "CLIENT": "العميل" } },
   "FORM": { "ADD": "إضافة", "EDIT": "تعديل", "DELETE": "حذف", "CANCEL": "إلغاء", "SAVE": "حفظ", "REQUIRED": "هذا الحقل مطلوب.", "REQUIRED_FIELDS": "الرجاء ملء جميع الحقول المطلوبة.", "INVALID_PHONE": "رقم هاتف غير صالح.", "INVALID_EMAIL": "بريد إلكتروني غير صالح." },
   "MESSAGES": { "LOADING": "جاري التحميل...", "SAVING": "جاري الحفظ...", "UPDATING": "جاري التعديل...", "DELETING": "جاري الحذف...", "CALCULATING": "جاري الحساب...", "LOADING_DETAILS": "جاري تحميل التفاصيل...", "ADDING_SAILOR": "جاري إضافة البحار...", "SUCCESS": "تمت العملية بنجاح!", "ERROR_TITLE": "خطأ", "WARNING_TITLE": "تنبيه", "ERROR_GENERIC": "حدث خطأ غير متوقع. الرجاء المحاولة مرة أخرى.", "AREYOUSURE": "هل أنت متأكد؟", "CONFIRMDELETEMESSAGE": "أنت على وشك حذف", "IRREVERSIBLE": "هذا الإجراء لا يمكن التراجع عنه.", "SAILOR_ADDED_SUCCESS": "تمت إضافة البحار {{name}} بنجاح." },
@@ -12631,7 +12683,7 @@ Lignes:       23
 
 ====================================
 FICHIER: ./src/assets/i18n/en.json
-Lignes:       23
+Lignes:       24
 ====================================
 
 {
@@ -12649,7 +12701,8 @@ Lignes:       23
   "EXPENSES": { "TITLE": "Expenses", "ADD": "Add Expense", "EDIT": "Edit Expense", "TYPE": "Expense Type", "AMOUNT": "Amount", "DATE": "Date", "DESCRIPTION": "Description", "NOEXPENSE": "No expenses recorded for this trip.", "TYPES": { "FUEL": "Fuel", "ICE": "Ice", "OIL_CHANGE": "Oil Change", "CREW_CNSS": "Crew CNSS", "CREW_BONUS": "Crew Bonus", "FOOD": "Food", "VMS": "VMS", "MISC": "Miscellaneous" }, "SUCCESS_ADD": "Expense added successfully", "SUCCESS_UPDATE": "Expense updated successfully" },
   "POINTAGE": { "TITLE": "Crew Attendance", "CREW": "Manage Attendance", "PRESENT": "Present", "ABSENT": "Absent", "NOCREW": "No sailors are assigned to this boat.", "OBSERVATIONS": "Observations", "ADDOBS": "Add an observation...", "TOTAL": "Total", "SUCCESS_PRESENCE": "Presence recorded", "SUCCESS_ABSENCE": "Absence recorded", "SUCCESS_OBS": "Observations updated", "ERROR_ADD": "Error while saving attendance" },
   "AVANCES": { "TITLE": "Salary Advances", "ADD": "Add Advance", "EDIT": "Edit Advance", "TOTAL": "Total Advances", "TOTAL_GENERAL": "Grand Total of Advances", "NO_AVANCES": "No advances for this sailor.", "SUCCESS_ADD": "Advance added successfully.", "SUCCESS_UPDATE": "Advance updated successfully.", "SUCCESS_DELETE": "Advance deleted successfully.", "AMOUNT_POSITIVE": "Amount must be a positive number.", "ADD_MODAL": { "TITLE": "Add a new advance" }, "EDIT_MODAL": { "TITLE": "Edit advance" }, "DELETE_CONFIRM_ITEM": "the advance of {{amount}} TND for {{name}}" },
-  "SALAIRES": { "TITLE": "Salary Calculation", "CALCULER": "Calculate Salaries", "REVENU_TOTAL": "Total Revenue", "TOTAL_DEPENSES": "Total Expenses", "BENEFICE_NET": "Net Profit", "PART_PROPRIETAIRE": "Owner's Share (50%)", "PART_EQUIPAGE": "Crew's Share (50%)", "DEDUCTIONS": "Deductions", "NUITS": "Nights", "MARINS": "Sailors", "MONTANT_A_PARTAGER": "Net Amount to Share", "DETAILS_PAR_MARIN": "Details per Sailor", "SALAIRE_BASE": "Base Salary", "PRIME_NUITS": "Night Bonus", "SALAIRE_NET": "Net Salary", "DEJA_PAYE": "Already Paid", "RESTE_A_PAYER": "Remaining to be Paid", "PAYER": "Pay", "PAYE": "Paid", "ERROR_NO_SORTIE": "Please select at least one trip", "ERROR_NO_PARTS": "The sum of sailor shares is 0. Please define shares in the 'Sailors' section.", "CALCUL_SUCCESS_TITLE": "Calculation complete!", "PAYMENT_SUCCESS": "Payment recorded!", "PAYMENT_MODAL_TITLE": "Payment for {{name}}", "PAYMENT_MODAL_LABEL": "Amount to pay (Remaining: {{amount}} TND)", "PAYMENT_MODAL": { "ERROR_POSITIVE": "Amount must be positive.", "ERROR_EXCEED": "Amount cannot exceed the remaining balance." }, "TABS": { "OPEN_TRIPS": "Open Trips", "HISTORY": "History", "CALCULATED_TRIPS": "Calculated Trips" }, "NO_OPEN_TRIPS": "No completed trips are pending calculation.", "NO_CALCULATED_TRIPS": "No salary calculations have been performed yet.", "HISTORY": { "MODAL_TITLE": "Calculation Details for: {{destinations}}", "NO_DATA_FOUND_TITLE": "Details Not Found", "NO_DATA_FOUND_TEXT": "Details for this calculation were not found. This might be an old calculation. Do you want to mark this trip as 'open' to recalculate it?", "RECALCULATE_BTN": "Recalculate", "MOVED_FOR_RECALC": "The trip has been moved to the 'Open Trips' tab for recalculation." }, "RESULTS": { "TITLE": "Calculation Results", "CLOSE": "Close", "FINANCIAL_SUMMARY": "Financial Summary", "PROFIT_SHARING": "Profit Sharing" }, "DETAILS_MODAL": { "REVENUE_TITLE": "Revenue Details", "EXPENSE_TITLE": "Expense Details", "INVOICE_NUM": "Invoice No.", "CLIENT": "Client" } },
+  "SALAIRES": {
+    "AUTOCALCMESSAGE": "Salary calculation is performed automatically with each financial data update", "TITLE": "Salary Calculation", "CALCULER": "Calculate Salaries", "REVENU_TOTAL": "Total Revenue", "TOTAL_DEPENSES": "Total Expenses", "BENEFICE_NET": "Net Profit", "PART_PROPRIETAIRE": "Owner's Share (50%)", "PART_EQUIPAGE": "Crew's Share (50%)", "DEDUCTIONS": "Deductions", "NUITS": "Nights", "MARINS": "Sailors", "MONTANT_A_PARTAGER": "Net Amount to Share", "DETAILS_PAR_MARIN": "Details per Sailor", "SALAIRE_BASE": "Base Salary", "PRIME_NUITS": "Night Bonus", "SALAIRE_NET": "Net Salary", "DEJA_PAYE": "Already Paid", "RESTE_A_PAYER": "Remaining to be Paid", "PAYER": "Pay", "PAYE": "Paid", "ERROR_NO_SORTIE": "Please select at least one trip", "ERROR_NO_PARTS": "The sum of sailor shares is 0. Please define shares in the 'Sailors' section.", "CALCUL_SUCCESS_TITLE": "Calculation complete!", "PAYMENT_SUCCESS": "Payment recorded!", "PAYMENT_MODAL_TITLE": "Payment for {{name}}", "PAYMENT_MODAL_LABEL": "Amount to pay (Remaining: {{amount}} TND)", "PAYMENT_MODAL": { "ERROR_POSITIVE": "Amount must be positive.", "ERROR_EXCEED": "Amount cannot exceed the remaining balance." }, "TABS": { "OPEN_TRIPS": "Open Trips", "HISTORY": "History", "CALCULATED_TRIPS": "Calculated Trips" }, "NO_OPEN_TRIPS": "No completed trips are pending calculation.", "NO_CALCULATED_TRIPS": "No salary calculations have been performed yet.", "HISTORY": { "MODAL_TITLE": "Calculation Details for: {{destinations}}", "NO_DATA_FOUND_TITLE": "Details Not Found", "NO_DATA_FOUND_TEXT": "Details for this calculation were not found. This might be an old calculation. Do you want to mark this trip as 'open' to recalculate it?", "RECALCULATE_BTN": "Recalculate", "MOVED_FOR_RECALC": "The trip has been moved to the 'Open Trips' tab for recalculation." }, "RESULTS": { "TITLE": "Calculation Results", "CLOSE": "Close", "FINANCIAL_SUMMARY": "Financial Summary", "PROFIT_SHARING": "Profit Sharing" }, "DETAILS_MODAL": { "REVENUE_TITLE": "Revenue Details", "EXPENSE_TITLE": "Expense Details", "INVOICE_NUM": "Invoice No.", "CLIENT": "Client" } },
   "VENTES": { "TITLE": "Sales Management", "ADD_INVOICE": "New Invoice", "ADD_INVOICE_FOR_TRIP": "Add an invoice for this trip", "NO_INVOICES_FOR_TRIP": "No invoices recorded for this trip", "TRIP_TOTAL": "Total sales for the trip", "GENERAL_TOTAL": "Grand total of sales", "NO_TRIPS_AVAILABLE": "No sea trips are available.", "SUCCESS_ADD": "Invoice added successfully!", "SUCCESS_UPDATE": "Invoice updated successfully!", "SUCCESS_DELETE": "Invoice deleted successfully.", "DELETE_CONFIRM_ITEM": "invoice {{number}} ({{amount}} TND)", "ADD_MODAL": { "TITLE": "New Sales Invoice", "SELECT_TRIP": "Select a trip" }, "EDIT_MODAL": { "TITLE": "Edit Invoice" }, "DETAILS_MODAL": { "INVOICE_NUM": "Invoice No.", "CLIENT": "Client" } },
   "FORM": { "ADD": "Add", "EDIT": "Edit", "DELETE": "Delete", "CANCEL": "Cancel", "SAVE": "Save", "REQUIRED": "This field is required.", "REQUIRED_FIELDS": "Please fill in all required fields.", "INVALID_PHONE": "Invalid phone number.", "INVALID_EMAIL": "Invalid email address." },
   "MESSAGES": { "LOADING": "Loading...", "SAVING": "Saving...", "UPDATING": "Updating...", "DELETING": "Deleting...", "CALCULATING": "Calculating...", "LOADING_DETAILS": "Loading details...", "ADDING_SAILOR": "Adding sailor...", "SUCCESS": "Operation successful!", "ERROR_TITLE": "Error", "WARNING_TITLE": "Warning", "ERROR_GENERIC": "An unexpected error occurred. Please try again.", "AREYOUSURE": "Are you sure?", "CONFIRMDELETEMESSAGE": "You are about to delete", "IRREVERSIBLE": "This action cannot be undone.", "SAILOR_ADDED_SUCCESS": "Sailor {{name}} has been added successfully." },
@@ -12660,7 +12713,7 @@ Lignes:       23
 
 ====================================
 FICHIER: ./src/assets/i18n/fr.json
-Lignes:       23
+Lignes:       24
 ====================================
 
 {
@@ -12678,7 +12731,8 @@ Lignes:       23
   "EXPENSES": { "TITLE": "Dépenses", "ADD": "Ajouter une Dépense", "EDIT": "Modifier la Dépense", "TYPE": "Type de dépense", "AMOUNT": "Montant", "DATE": "Date", "DESCRIPTION": "Description", "NOEXPENSE": "Aucune dépense enregistrée pour cette sortie.", "TYPES": { "FUEL": "Carburant", "ICE": "Glace", "OIL_CHANGE": "Vidange", "CREW_CNSS": "CNSS Équipage", "CREW_BONUS": "Prime Équipage", "FOOD": "Alimentation", "VMS": "VMS", "MISC": "Divers" }, "SUCCESS_ADD": "Dépense ajoutée avec succès", "SUCCESS_UPDATE": "Dépense mise à jour avec succès" },
   "POINTAGE": { "TITLE": "Pointage de l'Équipage", "CREW": "Gérer le pointage", "PRESENT": "Présent", "ABSENT": "Absent", "NOCREW": "Aucun marin n'est affecté à ce bateau.", "OBSERVATIONS": "Observations", "ADDOBS": "Ajouter une observation...", "TOTAL": "Total", "SUCCESS_PRESENCE": "Présence enregistrée", "SUCCESS_ABSENCE": "Absence enregistrée", "SUCCESS_OBS": "Observations mises à jour", "ERROR_ADD": "Erreur lors de l'enregistrement du pointage" },
   "AVANCES": { "TITLE": "Avances sur Salaire", "ADD": "Ajouter une Avance", "EDIT": "Modifier l'Avance", "TOTAL": "Total Avances", "TOTAL_GENERAL": "Total Général des Avances", "NO_AVANCES": "Aucune avance pour ce marin.", "SUCCESS_ADD": "Avance ajoutée avec succès.", "SUCCESS_UPDATE": "Avance mise à jour avec succès.", "SUCCESS_DELETE": "Avance supprimée avec succès.", "AMOUNT_POSITIVE": "Le montant doit être un nombre positif.", "ADD_MODAL": { "TITLE": "Ajouter une nouvelle avance" }, "EDIT_MODAL": { "TITLE": "Modifier l'avance" }, "DELETE_CONFIRM_ITEM": "l'avance de {{amount}} DT pour {{name}}" },
-  "SALAIRES": { "TITLE": "Calcul des Salaires", "CALCULER": "Calculer les Salaires", "REVENU_TOTAL": "Revenu Total", "TOTAL_DEPENSES": "Total des Dépenses", "BENEFICE_NET": "Bénéfice Net", "PART_PROPRIETAIRE": "Part Propriétaire (50%)", "PART_EQUIPAGE": "Part Équipage (50%)", "DEDUCTIONS": "Déductions", "NUITS": "Nuits", "MARINS": "Marins", "MONTANT_A_PARTAGER": "Montant Net à Partager", "DETAILS_PAR_MARIN": "Détails par Marin", "SALAIRE_BASE": "Salaire de Base", "PRIME_NUITS": "Prime de Nuits", "SALAIRE_NET": "Salaire Net", "DEJA_PAYE": "Déjà Payé", "RESTE_A_PAYER": "Reste à Payer", "PAYER": "Payer", "PAYE": "Payé", "ERROR_NO_SORTIE": "Veuillez sélectionner au moins une sortie", "ERROR_NO_PARTS": "La somme des parts des marins est de 0. Veuillez définir les parts dans la section 'Marins'.", "CALCUL_SUCCESS_TITLE": "Calcul terminé !", "PAYMENT_SUCCESS": "Paiement enregistré!", "PAYMENT_MODAL_TITLE": "Paiement pour {{name}}", "PAYMENT_MODAL_LABEL": "Montant à payer (Reste: {{amount}} DT)", "PAYMENT_MODAL": { "ERROR_POSITIVE": "Le montant doit être positif.", "ERROR_EXCEED": "Le montant ne peut pas dépasser le reste à payer." }, "TABS": { "OPEN_TRIPS": "Voyages Ouverts", "HISTORY": "Historique", "CALCULATED_TRIPS": "Voyages Calculés" }, "NO_OPEN_TRIPS": "Aucun voyage terminé n'est en attente de calcul.", "NO_CALCULATED_TRIPS": "Aucun calcul de salaire n'a encore été effectué.", "HISTORY": { "MODAL_TITLE": "Détails du Calcul pour : {{destinations}}", "NO_DATA_FOUND_TITLE": "Détails non trouvés", "NO_DATA_FOUND_TEXT": "Les détails pour ce calcul n'ont pas été trouvés. Il s'agit peut-être d'un ancien calcul. Voulez-vous marquer ce voyage comme 'ouvert' pour le recalculer ?", "RECALCULATE_BTN": "Recalculer", "MOVED_FOR_RECALC": "Le voyage a été déplacé vers l'onglet 'Voyages Ouverts'." }, "RESULTS": { "TITLE": "Résultats du Calcul", "CLOSE": "Fermer", "FINANCIAL_SUMMARY": "Résumé Financier", "PROFIT_SHARING": "Partage des Bénéfices" }, "DETAILS_MODAL": { "REVENUE_TITLE": "Détails des Revenus", "EXPENSE_TITLE": "Détails des Dépenses", "INVOICE_NUM": "N° Facture", "CLIENT": "Client" } },
+  "SALAIRES": {
+    "AUTOCALCMESSAGE": "Le calcul des salaires se fait automatiquement à chaque mise à jour des données financières", "TITLE": "Calcul des Salaires", "CALCULER": "Calculer les Salaires", "REVENU_TOTAL": "Revenu Total", "TOTAL_DEPENSES": "Total des Dépenses", "BENEFICE_NET": "Bénéfice Net", "PART_PROPRIETAIRE": "Part Propriétaire (50%)", "PART_EQUIPAGE": "Part Équipage (50%)", "DEDUCTIONS": "Déductions", "NUITS": "Nuits", "MARINS": "Marins", "MONTANT_A_PARTAGER": "Montant Net à Partager", "DETAILS_PAR_MARIN": "Détails par Marin", "SALAIRE_BASE": "Salaire de Base", "PRIME_NUITS": "Prime de Nuits", "SALAIRE_NET": "Salaire Net", "DEJA_PAYE": "Déjà Payé", "RESTE_A_PAYER": "Reste à Payer", "PAYER": "Payer", "PAYE": "Payé", "ERROR_NO_SORTIE": "Veuillez sélectionner au moins une sortie", "ERROR_NO_PARTS": "La somme des parts des marins est de 0. Veuillez définir les parts dans la section 'Marins'.", "CALCUL_SUCCESS_TITLE": "Calcul terminé !", "PAYMENT_SUCCESS": "Paiement enregistré!", "PAYMENT_MODAL_TITLE": "Paiement pour {{name}}", "PAYMENT_MODAL_LABEL": "Montant à payer (Reste: {{amount}} DT)", "PAYMENT_MODAL": { "ERROR_POSITIVE": "Le montant doit être positif.", "ERROR_EXCEED": "Le montant ne peut pas dépasser le reste à payer." }, "TABS": { "OPEN_TRIPS": "Voyages Ouverts", "HISTORY": "Historique", "CALCULATED_TRIPS": "Voyages Calculés" }, "NO_OPEN_TRIPS": "Aucun voyage terminé n'est en attente de calcul.", "NO_CALCULATED_TRIPS": "Aucun calcul de salaire n'a encore été effectué.", "HISTORY": { "MODAL_TITLE": "Détails du Calcul pour : {{destinations}}", "NO_DATA_FOUND_TITLE": "Détails non trouvés", "NO_DATA_FOUND_TEXT": "Les détails pour ce calcul n'ont pas été trouvés. Il s'agit peut-être d'un ancien calcul. Voulez-vous marquer ce voyage comme 'ouvert' pour le recalculer ?", "RECALCULATE_BTN": "Recalculer", "MOVED_FOR_RECALC": "Le voyage a été déplacé vers l'onglet 'Voyages Ouverts'." }, "RESULTS": { "TITLE": "Résultats du Calcul", "CLOSE": "Fermer", "FINANCIAL_SUMMARY": "Résumé Financier", "PROFIT_SHARING": "Partage des Bénéfices" }, "DETAILS_MODAL": { "REVENUE_TITLE": "Détails des Revenus", "EXPENSE_TITLE": "Détails des Dépenses", "INVOICE_NUM": "N° Facture", "CLIENT": "Client" } },
   "VENTES": { "TITLE": "Gestion des Ventes", "ADD_INVOICE": "Nouvelle Facture", "ADD_INVOICE_FOR_TRIP": "Ajouter une facture pour cette sortie", "NO_INVOICES_FOR_TRIP": "Aucune facture enregistrée pour cette sortie", "TRIP_TOTAL": "Total des ventes pour la sortie", "GENERAL_TOTAL": "Total général des ventes", "NO_TRIPS_AVAILABLE": "Aucune sortie en mer n'est disponible.", "SUCCESS_ADD": "Facture ajoutée avec succès !", "SUCCESS_UPDATE": "Facture modifiée avec succès !", "SUCCESS_DELETE": "Facture supprimée avec succès.", "DELETE_CONFIRM_ITEM": "la facture {{number}} ({{amount}} DT)", "ADD_MODAL": { "TITLE": "Nouvelle Facture de Vente", "SELECT_TRIP": "Sélectionner une sortie" }, "EDIT_MODAL": { "TITLE": "Modifier la Facture" }, "DETAILS_MODAL": { "INVOICE_NUM": "N° Facture", "CLIENT": "Client" } },
   "FORM": { "ADD": "Ajouter", "EDIT": "Modifier", "DELETE": "Supprimer", "CANCEL": "Annuler", "SAVE": "Enregistrer", "REQUIRED": "Ce champ est requis.", "REQUIRED_FIELDS": "Veuillez remplir tous les champs obligatoires.", "INVALID_PHONE": "Numéro de téléphone invalide.", "INVALID_EMAIL": "Adresse e-mail invalide." },
   "MESSAGES": { "LOADING": "Chargement...", "SAVING": "Enregistrement...", "UPDATING": "Modification...", "DELETING": "Suppression...", "CALCULATING": "Calcul en cours...", "LOADING_DETAILS": "Chargement des détails...", "ADDING_SAILOR": "Ajout du marin...", "SUCCESS": "Opération réussie !", "ERROR_TITLE": "Erreur", "WARNING_TITLE": "Attention", "ERROR_GENERIC": "Une erreur inattendue est survenue. Veuillez réessayer.", "AREYOUSURE": "Êtes-vous sûr ?", "CONFIRMDELETEMESSAGE": "Vous êtes sur le point de supprimer", "IRREVERSIBLE": "Cette action est irréversible.", "SAILOR_ADDED_SUCCESS": "Le marin {{name}} a été ajouté avec succès." },
@@ -12691,7 +12745,7 @@ Lignes:       23
 ====================================
   RÉSUMÉ
 ====================================
-Total fichiers: 118
-Total lignes: 11820
-Date: Sun Oct 19 08:52:45 CET 2025
+Total fichiers: 122
+Total lignes: 11845
+Date: Sun Oct 19 10:21:56 CET 2025
 ====================================

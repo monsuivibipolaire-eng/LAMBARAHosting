@@ -1,0 +1,115 @@
+<div class="salaires-container">
+  <div class="header">
+    <h1 class="title">{{ 'MENU.SALAIRES' | translate }}</h1>
+    </div>
+
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>{{ 'MESSAGES.LOADING' | translate }}</p>
+  </div>
+
+  <div *ngIf="!loading && !selectedBoat" class="no-data">
+    <svg class="no-data-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <p>{{ 'BOATS.NO_BOAT_SELECTED' | translate }}</p>
+  </div>
+
+  <div *ngIf="!loading && selectedBoat" class="content">
+    <div class="section-card">
+      <h2>1. {{ 'SORTIES.SELECTSORTIES' | translate }}</h2>
+      <div class="sorties-list">
+        <div *ngFor="let sortie of sorties" 
+             class="sortie-item"
+             [class.selected]="isSortieSelected(sortie.id!)"
+             (click)="toggleSortie(sortie.id!)">
+          <input type="checkbox" [checked]="isSortieSelected(sortie.id!)" (click)="$event.stopPropagation()">
+          <div class="sortie-info">
+            <strong>{{ sortie.destination }}</strong>
+            <span>{{ formatDate(sortie.dateDepart) }} - {{ formatDate(sortie.dateRetour) }}</span>
+          </div>
+          <span class="status-badge" [ngClass]="'status-' + sortie.statut">
+            {{ 'SORTIES.STATUS.' + sortie.statut.toUpperCase() | translate }}
+          </span>
+        </div>
+      </div>
+      
+      <button class="btn btn-success btn-lg" 
+             (click)="calculerSalaires()" 
+             [disabled]="selectedSortiesIds.length === 0 || marins.length === 0">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+        </svg>
+        {{ 'SALAIRES.CALCULER' | translate }}
+      </button>
+    </div>
+
+    <div *ngIf="calculated" class="results">
+      <div class="summary-cards">
+        <div class="summary-card revenue">
+          <h3>{{ 'SALAIRES.REVENU_TOTAL' | translate }}</h3>
+          <p class="amount">{{ revenuTotal | number:'1.2-2' }} DT</p>
+        </div>
+        <div class="summary-card expenses">
+          <h3>{{ 'EXPENSES.TITLE' | translate }}</h3>
+          <p class="amount">{{ totalDepenses | number:'1.2-2' }} DT</p>
+        </div>
+        <div class="summary-card benefit">
+          <h3>Bénéfice net</h3>
+          <p class="amount">{{ beneficeNet | number:'1.2-2' }} DT</p>
+        </div>
+      </div>
+
+      <div class="summary-cards">
+        <div class="summary-card owner">
+          <h3>{{ 'SALAIRES.PART_PROPRIETAIRE' | translate }}</h3>
+          <p class="amount big">{{ partProprietaire | number:'1.2-2' }} DT</p>
+        </div>
+        <div class="summary-card crew">
+          <h3>{{ 'SALAIRES.PART_EQUIPAGE' | translate }}</h3>
+          <p class="amount">{{ partEquipage | number:'1.2-2' }} DT</p>
+          <p class="detail">- Déduction nuits: {{ deductionNuits | number:'1.2-2' }} DT</p>
+          <p class="detail">= {{ 'SALAIRES.MONTANT_A_PARTAGER' | translate }}: {{ montantAPartager | number:'1.2-2' }} DT</p>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <h2>2. {{ 'SALAIRES.TITLE' | translate }}</h2>
+        <div class="table-container">
+          <table class="salaires-table">
+            <thead>
+              <tr>
+                <th>{{ 'SAILORS.TITLE' | translate }}</th>
+                <th>{{ 'SAILORS.PART' | translate }}</th> <th>{{ 'SALAIRES.SALAIRE_BASE' | translate }}</th>
+                <th>{{ 'SALAIRES.PRIME_NUITS' | translate }}</th>
+                <th>{{ 'AVANCES.TITLE' | translate }}</th>
+                <th>Déjà payé</th>
+                <th class="reste">Reste à payer</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let detail of salairesDetails">
+                <td class="marin-name">{{ detail.marinNom }}</td>
+                <td>{{ detail.part }}</td> <td>{{ detail.salaireBrut | number:'1.2-2' }} DT</td>
+                <td>{{ detail.primeNuits | number:'1.2-2' }} DT</td>
+                <td class="avances">{{ detail.totalAvances | number:'1.2-2' }} DT</td>
+                <td class="paiements">{{ detail.totalPaiements | number:'1.2-2' }} DT</td>
+                <td class="reste" [class.paid]="detail.resteAPayer <= 0">
+                  <strong>{{ detail.resteAPayer | number:'1.2-2' }} DT</strong>
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-pay" 
+                          (click)="enregistrerPaiement(detail)"
+                          [disabled]="detail.resteAPayer <= 0.01">
+                    {{ detail.resteAPayer > 0.01 ? 'Payer' : 'Payé' }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

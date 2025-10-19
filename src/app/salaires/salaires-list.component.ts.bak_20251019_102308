@@ -115,7 +115,7 @@ export class SalairesListComponent implements OnInit {
 
       const facturesPromises = this.selectedSortiesIds.map(id => this.factureService.getFacturesBySortie(id).pipe(take(1)).toPromise());
       const allFactures = await Promise.all(facturesPromises);
-      const revenuTotal = allFactures.flat().reduce((sum, f) => sum + (f?.montant || 0), 0);
+      const revenuTotal = allFactures.flat().reduce((sum, f) => sum + (f?.montantTotal || 0), 0);
       
       const depensesPromises = this.selectedSortiesIds.map(id => this.depenseService.getDepensesBySortie(id).pipe(take(1)).toPromise());
       const allDepenses = await Promise.all(depensesPromises);
@@ -215,7 +215,7 @@ export class SalairesListComponent implements OnInit {
   showRevenueDetails(): void {
       if (!this.dernierCalcul || !this.dernierCalcul.factures) return;
       const t = { title: this.translate.instant('SALAIRES.DETAILS_MODAL.REVENUE_TITLE'), invoiceNum: this.translate.instant('SALAIRES.DETAILS_MODAL.INVOICE_NUM'), client: this.translate.instant('SALAIRES.DETAILS_MODAL.CLIENT'), date: this.translate.instant('COMMON.DATE'), amount: this.translate.instant('COMMON.AMOUNT') };
-      const rows = this.dernierCalcul.factures.map(f => `<tr><td>${f.numeroFacture}</td><td>${f.client}</td><td>${this.formatDate(f.dateVente)}</td><td class="amount">${f.montant.toFixed(2)} DT</td></tr>`).join('');
+      const rows = this.dernierCalcul.factures.map(f => `<tr><td>${f.numeroFacture}</td><td>${f.client}</td><td>${this.formatDate(f.dateVente)}</td><td class="amount">${f.montantTotal.toFixed(2)} DT</td></tr>`).join('');
       const html = `<div class="details-modal-content"><table class="details-table"><thead><tr><th>${t.invoiceNum}</th><th>${t.client}</th><th>${t.date}</th><th class="amount">${t.amount}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
       Swal.fire({ title: t.title, html: html, width: '800px', showCloseButton: true, showConfirmButton: false });
   }
