@@ -1,6 +1,6 @@
 ====================================
   Projet Angular - Code Source
-  Date: Sun Oct 19 07:41:21 CET 2025
+  Date: Sun Oct 19 08:52:44 CET 2025
 ====================================
 
 Arborescence du projet:
@@ -9,108 +9,61 @@ Arborescence du projet:
 ├── app
 │   ├── app-routing-module.ts
 │   ├── app-routing.module.ts
-│   ├── app-routing.module.ts.fix_backup
 │   ├── app.component.html
-│   ├── app.component.html.bak
 │   ├── app.component.scss
-│   ├── app.component.scss.tmp
 │   ├── app.component.ts
-│   ├── app.component.ts.bak
 │   ├── app.config.ts
 │   ├── app.html
 │   ├── app.module.ts
-│   ├── app.module.ts.bak.contextfix
 │   ├── app.routes.ts
 │   ├── app.ts
 │   ├── auth
 │   │   ├── auth.component.html
-│   │   ├── auth.component.html.bak
 │   │   ├── auth.component.scss
-│   │   ├── auth.component.ts
-│   │   └── auth.component.ts.bak
+│   │   └── auth.component.ts
 │   ├── auth-guard.ts
 │   ├── auth.guard.ts
 │   ├── auth.service.ts
 │   ├── auth.ts
 │   ├── avances
 │   │   ├── avances.component.html
-│   │   ├── avances.component.html.bak
 │   │   ├── avances.component.scss
-│   │   ├── avances.component.ts
-│   │   └── avances.component.ts.bak
+│   │   └── avances.component.ts
 │   ├── bateaux
 │   │   ├── bateau-form.component.html
-│   │   ├── bateau-form.component.html.bak
 │   │   ├── bateau-form.component.scss
-│   │   ├── bateau-form.component.scss.bak
 │   │   ├── bateau-form.component.ts
-│   │   ├── bateau-form.component.ts.bak
 │   │   ├── bateaux-list.component.html
-│   │   ├── bateaux-list.component.html.bak
 │   │   ├── bateaux-list.component.scss
 │   │   ├── bateaux-list.component.ts
-│   │   ├── bateaux-list.component.ts.bak
-│   │   ├── bateaux.module.ts
-│   │   ├── bateaux.module.ts.backup
-│   │   ├── bateaux.module.ts.backup_routes_20251018_153018
-│   │   ├── bateaux.module.ts.backup_routes_final
-│   │   ├── bateaux.module.ts.backup_translate
-│   │   ├── bateaux.module.ts.backup_translate_final
-│   │   └── bateaux.module.ts.backup_translate_final2
+│   │   └── bateaux.module.ts
 │   ├── components
 │   │   └── language-selector
 │   │       ├── language-selector.component.html
-│   │       ├── language-selector.component.html.bak
 │   │       ├── language-selector.component.scss
-│   │       ├── language-selector.component.ts
-│   │       └── language-selector.component.ts.bak
+│   │       └── language-selector.component.ts
 │   ├── dashboard
 │   │   ├── dashboard-home
 │   │   │   ├── dashboard-home.component.html
-│   │   │   ├── dashboard-home.component.html.bak
 │   │   │   ├── dashboard-home.component.scss
-│   │   │   ├── dashboard-home.component.ts
-│   │   │   └── dashboard-home.component.ts.bak
+│   │   │   └── dashboard-home.component.ts
 │   │   ├── dashboard-routing.module.ts
-│   │   ├── dashboard-routing.module.ts.backup
-│   │   ├── dashboard-routing.module.ts.fix_backup
 │   │   ├── dashboard.component.html
-│   │   ├── dashboard.component.html.bak
 │   │   ├── dashboard.component.scss
 │   │   ├── dashboard.component.ts
-│   │   ├── dashboard.component.ts.bak
 │   │   └── dashboard.module.ts
 │   ├── guards
-│   │   ├── boat-selection.guard.ts
-│   │   └── boat-selection.guard.ts.backup
+│   │   └── boat-selection.guard.ts
 │   ├── marins
 │   │   ├── marin-form.component.html
-│   │   ├── marin-form.component.html.bak
 │   │   ├── marin-form.component.scss
-│   │   ├── marin-form.component.scss.bak
 │   │   ├── marin-form.component.ts
-│   │   ├── marin-form.component.ts.backup
-│   │   ├── marin-form.component.ts.backup_correct
-│   │   ├── marin-form.component.ts.backup_final
-│   │   ├── marin-form.component.ts.backup_final_type
-│   │   ├── marin-form.component.ts.backup_fix
-│   │   ├── marin-form.component.ts.backup_routes_20251018_153018
-│   │   ├── marin-form.component.ts.backup_routes_final
-│   │   ├── marin-form.component.ts.bak
 │   │   ├── marins-list.component.html
-│   │   ├── marins-list.component.html.bak
 │   │   ├── marins-list.component.scss
 │   │   ├── marins-list.component.ts
-│   │   ├── marins-list.component.ts.backup_20251018_143344
-│   │   ├── marins-list.component.ts.backup_bateauid
-│   │   ├── marins-list.component.ts.backup_routes_20251018_153019
-│   │   ├── marins-list.component.ts.backup_routes_final
-│   │   ├── marins-list.component.ts.bak
-│   │   ├── marins-list.component.ts.fix_final
 │   │   └── marins.module.ts
 │   ├── mock-data
-│   │   ├── mock-data.component.ts
-│   │   └── mock-data.component.ts.bak
+│   │   └── mock-data.component.ts
 │   ├── models
 │   │   ├── avance.model.ts
 │   │   ├── bateau.model.ts
@@ -122,22 +75,11 @@ Arborescence du projet:
 │   │   ├── partage.model.ts
 │   │   ├── pointage.model.ts
 │   │   ├── salaire.model.ts
-│   │   ├── salaire.model.ts.bak.typefix
 │   │   └── sortie.model.ts
 │   ├── salaires
 │   │   ├── salaires-list.component.html
-│   │   ├── salaires-list.component.html.bak
-│   │   ├── salaires-list.component.html.bak.refactor
 │   │   ├── salaires-list.component.scss
-│   │   ├── salaires-list.component.ts
-│   │   ├── salaires-list.component.ts.bak
-│   │   ├── salaires-list.component.ts.bak.final_fix
-│   │   ├── salaires-list.component.ts.bak.logicfinal
-│   │   ├── salaires-list.component.ts.bak.logicfix
-│   │   ├── salaires-list.component.ts.bak.paymentfix
-│   │   ├── salaires-list.component.ts.bak.refactor
-│   │   ├── salaires-list.component.ts.bak.typefix
-│   │   └── salaires-list.component.ts.bak.upgrade
+│   │   └── salaires-list.component.ts
 │   ├── services
 │   │   ├── alert.service.ts
 │   │   ├── avance.service.ts
@@ -145,110 +87,72 @@ Arborescence du projet:
 │   │   ├── depense.service.ts
 │   │   ├── facture-vente.service.ts
 │   │   ├── facture.service.ts
-│   │   ├── facture.service.ts.bak.upgrade
 │   │   ├── language.service.ts
 │   │   ├── marin.service.ts
 │   │   ├── mock-data.service.ts
-│   │   ├── mock-data.service.ts.bak.mock_update
 │   │   ├── paiement.service.ts
 │   │   ├── partage.service.ts
 │   │   ├── pointage.service.ts
 │   │   ├── salaire.service.ts
-│   │   ├── salaire.service.ts.bak.refactor
 │   │   ├── selected-boat.service.ts
-│   │   ├── sortie.service.ts
-│   │   └── sortie.service.ts.bak.upgrade
+│   │   └── sortie.service.ts
 │   ├── sorties
 │   │   ├── depense-form
 │   │   │   ├── depense-form.component.html
-│   │   │   ├── depense-form.component.html.bak
 │   │   │   ├── depense-form.component.scss
-│   │   │   ├── depense-form.component.ts
-│   │   │   └── depense-form.component.ts.bak
+│   │   │   └── depense-form.component.ts
 │   │   ├── details
 │   │   │   ├── sorties-details.component.html
-│   │   │   ├── sorties-details.component.html.bak
 │   │   │   ├── sorties-details.component.scss
-│   │   │   ├── sorties-details.component.scss.tmp
-│   │   │   ├── sorties-details.component.ts
-│   │   │   └── sorties-details.component.ts.bak
+│   │   │   └── sorties-details.component.ts
 │   │   ├── factures
 │   │   │   ├── factures.component.html
-│   │   │   ├── factures.component.html.bak
 │   │   │   ├── factures.component.scss
-│   │   │   ├── factures.component.ts
-│   │   │   └── factures.component.ts.bak
+│   │   │   └── factures.component.ts
 │   │   ├── form
 │   │   │   ├── sorties-form.component.html
-│   │   │   ├── sorties-form.component.html.bak
 │   │   │   ├── sorties-form.component.scss
-│   │   │   ├── sorties-form.component.scss.tmp
-│   │   │   ├── sorties-form.component.ts
-│   │   │   └── sorties-form.component.ts.bak
+│   │   │   └── sorties-form.component.ts
 │   │   ├── list
 │   │   │   ├── sorties-list.component.html
-│   │   │   ├── sorties-list.component.html.bak
 │   │   │   ├── sorties-list.component.scss
-│   │   │   ├── sorties-list.component.scss.tmp
-│   │   │   ├── sorties-list.component.ts
-│   │   │   └── sorties-list.component.ts.bak
+│   │   │   └── sorties-list.component.ts
 │   │   ├── pointage
 │   │   │   ├── pointage.component.html
-│   │   │   ├── pointage.component.html.bak
 │   │   │   ├── pointage.component.scss
-│   │   │   ├── pointage.component.ts
-│   │   │   └── pointage.component.ts.bak
-│   │   ├── salaires
-│   │   │   ├── salaires.component.html.bak
-│   │   │   └── salaires.component.ts.bak
+│   │   │   └── pointage.component.ts
 │   │   ├── sortie-details.component.html
-│   │   ├── sortie-details.component.html.bak
 │   │   ├── sortie-details.component.scss
 │   │   ├── sortie-details.component.ts
-│   │   ├── sortie-details.component.ts.bak
-│   │   ├── sortie-details.component.ts.bak.facturefix
-│   │   ├── sortie-details.component.ts.bak.finalfix
 │   │   ├── sortie-form.component.html
-│   │   ├── sortie-form.component.html.bak
 │   │   ├── sortie-form.component.scss
-│   │   ├── sortie-form.component.scss.bak
 │   │   ├── sortie-form.component.ts
-│   │   ├── sortie-form.component.ts.bak
 │   │   ├── sorties-list.component.html
-│   │   ├── sorties-list.component.html.bak
 │   │   ├── sorties-list.component.scss
 │   │   ├── sorties-list.component.ts
-│   │   ├── sorties-list.component.ts.bak
 │   │   ├── sorties-routing.module.ts
 │   │   └── sorties.module.ts
 │   └── ventes
 │       ├── ventes-list.component.html
-│       ├── ventes-list.component.html.bak
 │       ├── ventes-list.component.scss
-│       ├── ventes-list.component.ts
-│       └── ventes-list.component.ts.bak
+│       └── ventes-list.component.ts
 ├── assets
 │   └── i18n
 │       ├── ar.json
-│       ├── ar.json.bak
 │       ├── en.json
-│       ├── en.json.bak
-│       ├── fr.json
-│       └── fr.json.bak
+│       └── fr.json
 ├── environments
 │   ├── environment.development.ts
 │   └── environment.ts
 ├── index.html
 ├── main.ts
-├── main.ts.backup
 ├── marins
-│   ├── marins-list.component.scss
-│   └── marins-list.component.scss.tmp
+│   └── marins-list.component.scss
 ├── styles
 │   └── _btn-back.scss
 └── styles.scss
 
-29 directories, 213 files
+28 directories, 118 files
 
 ====================================
   FICHIERS SOURCE
@@ -2142,13 +2046,12 @@ export interface Pointage {
 
 ====================================
 FICHIER: ./src/app/models/salaire.model.ts
-Lignes:       39
+Lignes:       34
 ====================================
 
-import { Depense } from "./depense.model";
-import { Facture } from "./facture.model";
+import { FactureVente } from './facture-vente.model';
+import { Depense } from './depense.model';
 
-// Modèle pour sauvegarder un calcul complet
 export interface CalculSalaire {
   id?: string;
   bateauId: string;
@@ -2156,7 +2059,6 @@ export interface CalculSalaire {
   sortiesDestinations: string[];
   dateCalcul: Date;
   
-  // Résumé financier
   revenuTotal: number;
   totalDepenses: number;
   beneficeNet: number;
@@ -2165,15 +2067,12 @@ export interface CalculSalaire {
   deductionNuits: number;
   montantAPartager: number;
   
-  // Détails par marin
   detailsMarins: DetailSalaireMarin[];
-
-  // Transactions utilisées pour le calcul
-  factures?: Facture[];
+  
+  factures?: FactureVente[];
   depenses?: Depense[];
 }
 
-// Modèle pour les détails de chaque marin au sein d'un calcul
 export interface DetailSalaireMarin {
   marinId: string;
   marinNom: string;
@@ -2224,7 +2123,7 @@ import { Marin } from '../models/marin.model';
 import { Bateau } from '../models/bateau.model';
 import { SalaireService } from '../services/salaire.service';
 import { CalculSalaire, DetailSalaireMarin } from '../models/salaire.model';
-import { Facture } from '../models/facture.model';
+import { FactureVente } from '../models/facture-vente.model';
 import { Depense } from '../models/depense.model';
 
 @Component({
@@ -2353,7 +2252,7 @@ export class SalairesListComponent implements OnInit {
         sortiesDestinations: selectedSorties.map(s => s.destination),
         dateCalcul: new Date(),
         revenuTotal, totalDepenses, beneficeNet, partProprietaire, partEquipage, deductionNuits, montantAPartager, detailsMarins,
-        factures: allFactures as Facture[],
+        factures: allFactures as FactureVente[],
         depenses: allDepenses as Depense[]
       };
       
@@ -2403,7 +2302,7 @@ export class SalairesListComponent implements OnInit {
     if (!this.dernierCalcul) return;
     const factures = this.dernierCalcul.factures || [];
     const t = { title: this.translate.instant('SALAIRES.DETAILS_MODAL.REVENUE_TITLE'), invoiceNum: this.translate.instant('SALAIRES.DETAILS_MODAL.INVOICE_NUM'), client: this.translate.instant('SALAIRES.DETAILS_MODAL.CLIENT'), date: this.translate.instant('COMMON.DATE'), amount: this.translate.instant('COMMON.AMOUNT') };
-    const rows = factures.map(f =>`<tr><td>${f.numeroFacture}</td><td>${f.client}</td><td>${this.formatDate(f.dateFacture)}</td><td class="amount">${f.montantTotal.toFixed(2)} DT</td></tr>`).join('');
+    const rows = factures.map(f =>`<tr><td>${f.numeroFacture}</td><td>${f.client}</td><td>${this.formatDate(f.dateVente)}</td><td class="amount">${f.montantTotal.toFixed(2)} DT</td></tr>`).join('');
     const html = `<style>.details-modal-content{max-height:60vh;overflow-y:auto;padding:1rem 0}.details-table{width:100%;border-collapse:collapse;font-size:.9rem}.details-table th,.details-table td{padding:.75rem;text-align:left;border-bottom:1px solid #e5e7eb}.details-table th{background:#f9fafb;font-weight:600;color:#374151}.details-table .amount{text-align:right;font-weight:700;color:#10b981;white-space:nowrap}body.rtl .details-table th,body.rtl .details-table td{text-align:right}body.rtl .details-table .amount{text-align:left}</style><div class="details-modal-content"><table class="details-table"><thead><tr><th>${t.invoiceNum}</th><th>${t.client}</th><th>${t.date}</th><th class="amount">${t.amount}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
     Swal.fire({ title: t.title, html: html, width: '800px', showCloseButton: true, showConfirmButton: false });
   }
@@ -2755,11 +2654,21 @@ export class DepenseService {
 
 ====================================
 FICHIER: ./src/app/services/facture-vente.service.ts
-Lignes:       37
+Lignes:       46
 ====================================
 
-import { Injectable } from '@angular/core';
-import { Firestore, collection, addDoc, updateDoc, deleteDoc, doc, collectionData, query, where } from '@angular/fire/firestore';
+import { Injectable, inject } from '@angular/core';
+import { 
+  Firestore, 
+  collection, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  collectionData, 
+  query, 
+  where 
+} from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 import { FactureVente } from '../models/facture-vente.model';
 
@@ -2767,9 +2676,8 @@ import { FactureVente } from '../models/facture-vente.model';
   providedIn: 'root'
 })
 export class FactureVenteService {
-  private collectionName = 'factures_vente';
-
-  constructor(private firestore: Firestore) {}
+  private collectionName = 'factures-vente';
+  private firestore = inject(Firestore);
 
   getFacturesBySortie(sortieId: string): Observable<FactureVente[]> {
     const facturesCollection = collection(this.firestore, this.collectionName);
@@ -2786,12 +2694,12 @@ export class FactureVenteService {
   }
 
   async updateFacture(id: string, facture: Partial<FactureVente>): Promise<void> {
-    const factureDoc = doc(this.firestore, `${this.collectionName}/${id}`);
+    const factureDoc = doc(this.firestore, this.collectionName, id);
     return await updateDoc(factureDoc, facture);
   }
 
   async deleteFacture(id: string): Promise<void> {
-    const factureDoc = doc(this.firestore, `${this.collectionName}/${id}`);
+    const factureDoc = doc(this.firestore, this.collectionName, id);
     return await deleteDoc(factureDoc);
   }
 }
@@ -2951,222 +2859,320 @@ export class MarinService {
 
 ====================================
 FICHIER: ./src/app/services/mock-data.service.ts
-Lignes:      215
+Lignes:      313
 ====================================
 
 import { Injectable } from '@angular/core';
-import { Firestore, collection, getDocs, deleteDoc, doc } from '@angular/fire/firestore';
+import { 
+  Firestore, 
+  collection, 
+  getDocs, 
+  deleteDoc,
+  doc,
+  addDoc
+} from '@angular/fire/firestore';
 import { BateauService } from './bateau.service';
 import { MarinService } from './marin.service';
 import { SortieService } from './sortie.service';
 import { DepenseService } from './depense.service';
-import { FactureService } from './facture.service'; // ✅ Utilise le service unifié
-import { AvanceService } from './avance.service';
-import { PaiementService } from './paiement.service';
+import { Bateau } from '../models/bateau.model';
 import { Marin } from '../models/marin.model';
-import { DetailPoisson } from '../models/facture.model'; // ✅ Importe le nouveau modèle
+import { Sortie } from '../models/sortie.model';
+import { FactureVente } from '../models/facture-vente.model';
+import { Depense } from '../models/depense.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MockDataService {
-  
+
+  private typesPoissons = [
+    { nom: 'Daurade royale', prixMin: 28, prixMax: 38 },
+    { nom: 'Loup de mer', prixMin: 32, prixMax: 48 },
+    { nom: 'Rouget barbet', prixMin: 22, prixMax: 32 },
+    { nom: 'Sardine fraîche', prixMin: 6, prixMax: 12 },
+    { nom: 'Thon rouge', prixMin: 55, prixMax: 85 },
+    { nom: 'Mérou brun', prixMin: 38, prixMax: 55 },
+    { nom: 'Saint-Pierre', prixMin: 30, prixMax: 45 },
+    { nom: 'Sole commune', prixMin: 35, prixMax: 52 },
+    { nom: 'Calamar', prixMin: 20, prixMax: 30 },
+    { nom: 'Poulpe', prixMin: 18, prixMax: 28 },
+    { nom: 'Crevettes roses', prixMin: 45, prixMax: 65 },
+    { nom: 'Langoustines', prixMin: 60, prixMax: 80 },
+    { nom: 'Pageot', prixMin: 25, prixMax: 35 },
+    { nom: 'Sar commun', prixMin: 20, prixMax: 30 },
+    { nom: 'Rascasse', prixMin: 28, prixMax: 40 },
+    { nom: 'Mulet', prixMin: 15, prixMax: 25 }
+  ];
+
+  private nomsClients = [
+    'Restaurant La Goulette - Tunis',
+    'Poissonnerie Ben Ahmed - Sfax',
+    'Restaurant Le Pirate - La Marsa',
+    'Marché Central - Sfax',
+    'Restaurant Dar El Jeld - Médina',
+    'Grossiste Fruits de Mer - Monastir',
+    'Poissonnerie du Port - Sousse',
+    'Restaurant La Médina - Hammamet',
+    'Hotel Hasdrubal Thalassa & Spa',
+    'Carrefour Lac 2 - Tunis',
+    'Restaurant Le Corail - Mahdia',
+    'Poissonnerie Zitouna - Sfax',
+    'Hôtel Concorde Les Berges du Lac',
+    'Restaurant Chez Slah - Kerkennah',
+    'Marché de Poissons - Mahdia',
+    'Monoprix Sousse Centre',
+    'Restaurant Fish Market - Gammarth',
+    'Hôtel Mövenpick Sousse',
+    'Grossiste Al Baraka - Gabès',
+    'Poissonnerie El Amel - Sfax'
+  ];
+
   constructor(
     private firestore: Firestore,
     private bateauService: BateauService,
     private marinService: MarinService,
     private sortieService: SortieService,
-    private depenseService: DepenseService,
-    private factureService: FactureService, // ✅ Utilise le service unifié
-    private avanceService: AvanceService,
-    private paiementService: PaiementService
+    private depenseService: DepenseService
   ) {}
 
-  async clearAllData(): Promise<void> {
-    console.log('🗑️ Suppression de toutes les données...');
-    // ✅ CORRECTION : Nettoie `factures` et non `factures_vente`, et ajoute `calculs_salaire`
-    const collections = ['paiements', 'avances', 'factures', 'depenses', 'sorties', 'marins', 'bateaux', 'calculs_salaire'];
-    for (const collectionName of collections) {
-      const collectionRef = collection(this.firestore, collectionName);
-      const snapshot = await getDocs(collectionRef);
-      const deletePromises = snapshot.docs.map(document => 
-        deleteDoc(doc(this.firestore, collectionName, document.id))
-      );
-      await Promise.all(deletePromises);
-      console.log(`✅ ${collectionName}: ${snapshot.size} document(s) supprimé(s)`);
+  async generateAllMockData(): Promise<void> {
+    try {
+      console.log('🧹 Suppression des anciennes données...');
+      await this.clearAllData();
+
+      console.log('🚢 Génération des bateaux...');
+      const bateauxIds = await this.generateBateaux();
+      console.log(`✅ ${bateauxIds.length} bateaux créés`);
+      
+      for (const bateauId of bateauxIds) {
+        console.log(`\n👥 Génération des marins pour le bateau ${bateauId}...`);
+        await this.generateMarins(bateauId);
+        
+        console.log(`⛵ Génération des sorties pour le bateau ${bateauId}...`);
+        const sortiesIds = await this.generateSorties(bateauId);
+        console.log(`✅ ${sortiesIds.length} sorties créées`);
+        
+        for (let i = 0; i < sortiesIds.length; i++) {
+          const sortieId = sortiesIds[i];
+          console.log(`\n📄 Sortie ${i + 1}/${sortiesIds.length} (ID: ${sortieId})`);
+          
+          const nbFactures = await this.generateFacturesDetaillees(sortieId);
+          console.log(`  ✅ ${nbFactures} factures créées`);
+          
+          await this.generateDepenses(sortieId);
+          console.log(`  ✅ 6 dépenses créées`);
+        }
+      }
+      
+      console.log('\n🎉 ✅ Génération terminée!');
+    } catch (error) {
+      console.error('❌ Erreur:', error);
+      throw error;
     }
   }
 
-  async generateAllMockData(): Promise<void> {
-    await this.clearAllData();
-    console.log('🎲 Génération des données fictives...');
-
-    const bateauIds = await this.generateBateaux();
-    const marinsData = await this.generateMarins(bateauIds);
-    const sortieIds = await this.generateSorties(bateauIds);
-    await this.generateDepenses(sortieIds);
-    await this.generateFactures(sortieIds); // ✅ Va appeler la nouvelle fonction
-    await this.generateAvances(marinsData);
-    await this.generatePaiements(marinsData);
-
-    console.log('✅ Données générées avec succès!');
+  private async clearAllData(): Promise<void> {
+    const collections = ['bateaux', 'marins', 'sorties', 'factures-vente', 'depenses', 'calculs-salaire'];
+    
+    for (const collectionName of collections) {
+      const querySnapshot = await getDocs(collection(this.firestore, collectionName));
+      const deletePromises = querySnapshot.docs.map(document => 
+        deleteDoc(doc(this.firestore, collectionName, document.id))
+      );
+      await Promise.all(deletePromises);
+      console.log(`  ✓ ${collectionName}: ${querySnapshot.size} supprimés`);
+    }
   }
 
   private async generateBateaux(): Promise<string[]> {
-    const bateaux = [
+    const bateaux: Omit<Bateau, 'id'>[] = [
       {
-        nom: 'Le Poséidon', immatriculation: 'TN-SF-001', puissance: 350,
-        typeMoteur: 'Diesel Volvo Penta', longueur: 18.5, capaciteEquipage: 12,
-        dateConstruction: new Date('2015-06-15'), portAttache: 'Port de Sfax', statut: 'actif' as const
+        nom: 'El Amel',
+        immatriculation: 'SF-2024-001',
+        typeMoteur: 'Diesel Volvo Penta',
+        puissance: 350,
+        longueur: 18,
+        capaciteEquipage: 6,
+        dateConstruction: new Date('2018-03-15'),
+        portAttache: 'Port de Sfax',
+        statut: 'actif',
+        createdAt: new Date()
       },
       {
-        nom: 'Neptune III', immatriculation: 'TN-SF-002', puissance: 420,
-        typeMoteur: 'Diesel Caterpillar', longueur: 22.0, capaciteEquipage: 15,
-        dateConstruction: new Date('2018-03-20'), portAttache: 'Port de Sfax', statut: 'actif' as const
+        nom: 'La Perle Bleue',
+        immatriculation: 'SF-2023-045',
+        typeMoteur: 'Diesel Caterpillar',
+        puissance: 420,
+        longueur: 22,
+        capaciteEquipage: 8,
+        dateConstruction: new Date('2020-06-20'),
+        portAttache: 'Port de Sfax',
+        statut: 'actif',
+        createdAt: new Date()
       }
     ];
+
     const ids: string[] = [];
     for (const bateau of bateaux) {
-      const id = await this.bateauService.addBateau(bateau as any);
-      ids.push(id);
-      console.log(`✅ Bateau: ${bateau.nom} (ID: ${id})`);
+      const bateauId = await this.bateauService.addBateau(bateau);
+      ids.push(bateauId);
     }
     return ids;
   }
 
-  private async generateMarins(bateauIds: string[]): Promise<{ bateauId: string, marinIds: string[] }[]> {
-    const marinsParBateau = [
-      [
-        { prenom: 'Mohamed', nom: 'Ben Ali', fonction: 'capitaine' as const, part: 3 },
-        { prenom: 'Ali', nom: 'Gannouchi', fonction: 'second' as const, part: 2 },
-        { prenom: 'Ahmed', nom: 'Trabelsi', fonction: 'mecanicien' as const, part: 1.5 },
-        { prenom: 'Karim', nom: 'Hamdi', fonction: 'matelot' as const, part: 1 }
-      ],
-      [
-        { prenom: 'Hichem', nom: 'Jebali', fonction: 'capitaine' as const, part: 2.5 },
-        { prenom: 'Nabil', nom: 'Bouazizi', fonction: 'mecanicien' as const, part: 1.5 },
-        { prenom: 'Fethi', nom: 'Mzali', fonction: 'matelot' as const, part: 1.2 }
-      ]
+  private async generateMarins(bateauId: string): Promise<string[]> {
+    const prenoms = ['Ahmed', 'Mohamed', 'Ali', 'Karim', 'Mehdi', 'Youssef'];
+    const noms = ['Ben Salem', 'Trabelsi', 'Gharbi', 'Hammami', 'Jomaa', 'Ksouri'];
+    const fonctions: Array<'capitaine' | 'second' | 'mecanicien' | 'matelot'> = 
+      ['capitaine', 'second', 'mecanicien', 'matelot', 'matelot', 'matelot'];
+
+    const ids: string[] = [];
+    for (let i = 0; i < 6; i++) {
+      const marin: Omit<Marin, 'id'> = {
+        bateauId,
+        nom: noms[i],
+        prenom: prenoms[i],
+        dateNaissance: new Date(1985 + Math.floor(Math.random() * 15), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1),
+        fonction: fonctions[i],
+        part: fonctions[i] === 'capitaine' ? 2 : fonctions[i] === 'second' ? 1.5 : fonctions[i] === 'mecanicien' ? 1.3 : 1,
+        numeroPermis: `PM-${10000 + i}`,
+        telephone: `+216 ${20 + i} ${Math.floor(Math.random() * 900000 + 100000)}`,
+        email: `${prenoms[i].toLowerCase()}.${noms[i].toLowerCase().replace(' ', '')}@email.com`,
+        adresse: `${Math.floor(Math.random() * 100) + 1} Avenue Habib Bourguiba, Sfax`,
+        dateEmbauche: new Date(2020 + Math.floor(Math.random() * 4), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1),
+        statut: 'actif',
+        createdAt: new Date()
+      };
+      const marinId = await this.marinService.addMarin(marin);
+      ids.push(marinId);
+    }
+    return ids;
+  }
+
+  private async generateSorties(bateauId: string): Promise<string[]> {
+    const destinations = [
+      'Banc de Kerkennah (Zone Nord-Est)',
+      'Golfe de Gabès (Zone Sud)',
+      'Îles Kerkennah (Zone côtière)'
     ];
-    const result: { bateauId: string, marinIds: string[] }[] = [];
-    for (let i = 0; i < bateauIds.length; i++) {
-      const bateauId = bateauIds[i];
-      const marins = marinsParBateau[i];
-      const marinIds: string[] = [];
-      for (const marin of marins) {
-        const newMarin: Omit<Marin, 'id'> = {
-          prenom: marin.prenom, nom: marin.nom, fonction: marin.fonction, part: marin.part, bateauId: bateauId,
-          telephone: `+216 98 ${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}`,
-          email: `${marin.prenom.toLowerCase()}.${marin.nom.toLowerCase()}@example.com`,
-          adresse: 'Avenue Habib Bourguiba, Sfax', dateNaissance: new Date(1980 + i, 5, 15),
-          dateEmbauche: new Date(2018 + i, 0, 1), numeroPermis: `PM-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
-          statut: 'actif' as const
-        };
-        const id = await this.marinService.addMarin(newMarin);
-        marinIds.push(id as string);
-      }
-      result.push({ bateauId, marinIds });
+
+    const ids: string[] = [];
+    const today = new Date();
+    
+    for (let i = 0; i < 3; i++) {
+      const joursAvant = 15 + (i * 15);
+      const dateDepart = new Date(today);
+      dateDepart.setDate(dateDepart.getDate() - joursAvant - 3);
+      
+      const dateRetour = new Date(dateDepart);
+      dateRetour.setDate(dateRetour.getDate() + (2 + i));
+
+      const sortie: Omit<Sortie, 'id'> = {
+        bateauId,
+        dateDepart,
+        dateRetour,
+        destination: destinations[i],
+        statut: 'terminee',
+        salaireCalcule: false,
+        observations: `Sortie ${i + 1} - Excellentes conditions météo`,
+        createdAt: new Date()
+      };
+      const sortieId = await this.sortieService.addSortie(sortie);
+      ids.push(sortieId);
     }
-    return result;
-  }
-  
-  private async generateSorties(bateauIds: string[]): Promise<string[]> {
-    const sortieIds: string[] = [];
-    const destinations = ['Lampedusa', 'Kerkennah', 'Djerba', 'Gabès', 'Zarzis'];
-    const now = new Date();
-    for (const bateauId of bateauIds) {
-      for (let i = 0; i < 5; i++) {
-        const daysAgo = (i + 1) * 7;
-        const dateDepart = new Date(now.getTime() - (daysAgo * 24 * 60 * 60 * 1000));
-        const dureeJours = 3 + Math.floor(Math.random() * 3); // 3 à 5 jours
-        const dateRetour = new Date(dateDepart.getTime() + (dureeJours * 24 * 60 * 60 * 1000));
-        let statut: 'en-cours' | 'terminee' | 'annulee' = (i === 0) ? 'en-cours' : 'terminee';
-        const id = await this.sortieService.addSortie({
-          bateauId: bateauId, destination: destinations[i], dateDepart, dateRetour, statut
-        });
-        sortieIds.push(id);
-      }
-    }
-    return sortieIds;
+    return ids;
   }
 
-  private async generateDepenses(sortieIds: string[]): Promise<void> {
-    const types: Array<'fuel' | 'ice' | 'food' | 'misc'> = ['fuel', 'ice', 'food', 'misc'];
-    for (const sortieId of sortieIds) {
-      for (let i = 0; i < 3; i++) {
-        const type = types[Math.floor(Math.random() * types.length)];
-        const montant = 150 + Math.random() * 500;
-        const date = new Date(Date.now() - (Math.floor(Math.random() * 10) * 24 * 60 * 60 * 1000));
-        await this.depenseService.addDepense({
-          sortieId: sortieId, type, montant: Math.round(montant * 100) / 100, date,
-          description: `Dépense de ${type}`
-        } as Depense);
-      }
-    }
-    console.log('✅ Dépenses créées');
-  }
-
-  // ✅ CORRECTION : La fonction est entièrement réécrite pour créer des factures détaillées
-  private async generateFactures(sortieIds: string[]): Promise<void> {
-    const fishTypes = ['Dorade', 'Loup de mer', 'Rouget', 'Crevettes', 'Soles', 'Calmar'];
-
-    for (const sortieId of sortieIds) {
-       for (let i = 0; i < 2; i++) { // 2 factures par sortie
+  private async generateFacturesDetaillees(sortieId: string): Promise<number> {
+    const nombreFactures = Math.floor(Math.random() * 4) + 5;
+    console.log(`  📝 Génération de ${nombreFactures} factures...`);
+    
+    for (let i = 0; i < nombreFactures; i++) {
+      const nombreTypesPoissons = Math.floor(Math.random() * 4) + 3;
+      const poissonsSelectionnes = this.shuffleArray([...this.typesPoissons])
+        .slice(0, nombreTypesPoissons);
+      
+      let montantTotalFacture = 0;
+      let detailsTexte = '';
+      
+      for (const poisson of poissonsSelectionnes) {
+        const quantite = Math.floor(Math.random() * 120) + 30;
+        const prixUnitaire = Math.floor(
+          (Math.random() * (poisson.prixMax - poisson.prixMin) + poisson.prixMin) * 100
+        ) / 100;
+        const montantTotal = Math.round(quantite * prixUnitaire * 100) / 100;
         
-        const detailsPoissons: DetailPoisson[] = [];
-        const itemCount = 2 + Math.floor(Math.random() * 3); // 2 à 4 types de poissons
+        detailsTexte += `${poisson.nom}: ${quantite} kg × ${prixUnitaire} DT = ${montantTotal} DT\n`;
+        montantTotalFacture += montantTotal;
+      }
 
-        for (let j = 0; j < itemCount; j++) {
-            const typePoisson = fishTypes[Math.floor(Math.random() * fishTypes.length)];
-            const quantite = Math.round(5 + Math.random() * 45); // 5 à 50 kg
-            const prixUnitaire = Math.round(15 + Math.random() * 25); // 15 à 40 DT
-            const montantTotal = quantite * prixUnitaire;
-            detailsPoissons.push({ typePoisson, quantite, prixUnitaire, montantTotal });
-        }
+      montantTotalFacture = Math.round(montantTotalFacture * 100) / 100;
 
-        const montantTotalFacture = detailsPoissons.reduce((sum, item) => sum + item.montantTotal, 0);
-
-        await this.factureService.addFacture({
-          sortieId: sortieId,
-          numeroFacture: `F-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-          client: 'Marché Central Sfax',
-          dateFacture: new Date(Date.now() - (Math.floor(Math.random() * 10) * 24 * 60 * 60 * 1000)),
-          montantTotal: Math.round(montantTotalFacture * 100) / 100,
-          detailsPoissons: detailsPoissons,
-          paye: Math.random() > 0.3 // 70% de chance d'être payée
-        });
+      const numeroFacture = `FA-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000).padStart(4, '0')}`;
+      const client = this.nomsClients[Math.floor(Math.random() * this.nomsClients.length)];
+      
+      const facture: Omit<FactureVente, 'id'> = {
+        sortieId,
+        numeroFacture,
+        client,
+        dateVente: new Date(),
+        montantTotal: montantTotalFacture,
+        details: detailsTexte.trim(),
+        createdAt: new Date()
+      };
+      
+      try {
+        await addDoc(collection(this.firestore, 'factures-vente'), facture);
+        console.log(`    ✓ ${numeroFacture} - ${client} - ${montantTotalFacture} DT`);
+      } catch (error) {
+        console.error(`    ✗ Erreur facture ${i + 1}:`, error);
       }
     }
-    console.log('✅ Factures détaillées créées');
+    
+    return nombreFactures;
   }
 
-  private async generateAvances(marinsData: { bateauId: string, marinIds: string[] }[]): Promise<void> {
-    for (const { bateauId, marinIds } of marinsData) {
-      for (const marinId of marinIds) {
-        for (let i = 0; i < 2; i++) {
-          const montant = 150 + i * 100;
-          const date = new Date(Date.now() - ((i + 1) * 15 * 24 * 60 * 60 * 1000));
-          await this.avanceService.addAvance({
-            bateauId: bateauId, marinId: marinId, montant,
-            dateAvance: date, description: `Avance mois précédent`
-          });
-        }
-      }
+  private async generateDepenses(sortieId: string): Promise<void> {
+    const depensesData: Array<{
+      type: 'fuel' | 'ice' | 'oil_change' | 'crew_cnss' | 'crew_bonus' | 'food' | 'vms' | 'misc';
+      montantMin: number;
+      montantMax: number;
+      description: string;
+    }> = [
+      { type: 'fuel', montantMin: 1200, montantMax: 2500, description: 'Carburant diesel' },
+      { type: 'ice', montantMin: 200, montantMax: 450, description: 'Glace' },
+      { type: 'food', montantMin: 350, montantMax: 600, description: 'Provisions' },
+      { type: 'crew_cnss', montantMin: 500, montantMax: 800, description: 'CNSS équipage' },
+      { type: 'vms', montantMin: 50, montantMax: 100, description: 'VMS' },
+      { type: 'oil_change', montantMin: 300, montantMax: 500, description: 'Entretien moteur' }
+    ];
+    
+    for (const depenseData of depensesData) {
+      const montant = Math.floor(
+        Math.random() * (depenseData.montantMax - depenseData.montantMin) + depenseData.montantMin
+      );
+
+      const depense: Omit<Depense, 'id'> = {
+        sortieId,
+        type: depenseData.type,
+        montant,
+        date: new Date(),
+        description: depenseData.description,
+        createdAt: new Date()
+      };
+      
+      await this.depenseService.addDepense(depense);
     }
-    console.log('✅ Avances créées');
   }
 
-  private async generatePaiements(marinsData: { bateauId: string, marinIds: string[] }[]): Promise<void> {
-    for (const { marinIds } of marinsData) {
-      for (const marinId of marinIds) {
-        const montant = 600;
-        const date = new Date(Date.now() - (35 * 24 * 60 * 60 * 1000));
-        await this.paiementService.addPaiement({
-          marinId, montant, datePaiement: date, sortiesIds: []
-        });
-      }
+  private shuffleArray<T>(array: T[]): T[] {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
     }
-    console.log('✅ Paiements créés');
+    return newArray;
   }
 }
 
@@ -3371,22 +3377,22 @@ export class SelectedBoatService {
 
 ====================================
 FICHIER: ./src/app/services/sortie.service.ts
-Lignes:       86
+Lignes:       87
 ====================================
 
 import { Injectable } from '@angular/core';
 import { Firestore, collection, query, where, collectionData, addDoc, updateDoc, deleteDoc, doc, docData } from '@angular/fire/firestore';
 import { Observable, of, combineLatest } from 'rxjs';
-import { switchMap, map, tap } from 'rxjs/operators';
+import { switchMap, map } from 'rxjs/operators';
 import { Sortie } from '../models/sortie.model';
 import { Depense } from '../models/depense.model';
-import { Facture } from '../models/facture.model';
+import { FactureVente } from '../models/facture-vente.model';
 import { DepenseService } from './depense.service';
-import { FactureService } from './facture.service';
+import { FactureVenteService } from './facture-vente.service';
 
 export interface SortieDetails extends Sortie {
   depenses: Depense[];
-  factures: Facture[];
+  factures: FactureVente[];
   totalDepenses: number;
   totalFactures: number;
 }
@@ -3400,7 +3406,7 @@ export class SortieService {
   constructor(
     private firestore: Firestore,
     private depenseService: DepenseService,
-    private factureService: FactureService
+    private factureVenteService: FactureVenteService
   ) {}
 
   getSorties(): Observable<Sortie[]> {
@@ -3415,21 +3421,21 @@ export class SortieService {
   getSortiesByBateau(bateauId: string): Observable<SortieDetails[]> {
     const q = query(this.sortiesCollection, where('bateauId', '==', bateauId));
     const sorties$ = collectionData(q, { idField: 'id' }) as Observable<Sortie[]>;
-    
+
     return sorties$.pipe(
-      switchMap(sorties => {
+      switchMap((sorties) => {
         if (sorties.length === 0) {
           return of([]);
         }
-        const sortieDetailsObservables = sorties.map(sortie => {
+
+        const sortieDetailsObservables = sorties.map((sortie) => {
           const depenses$ = this.depenseService.getDepensesBySortie(sortie.id!);
-          const factures$ = this.factureService.getFacturesBySortie(sortie.id!);
+          const factures$ = this.factureVenteService.getFacturesBySortie(sortie.id!);
 
           return combineLatest([depenses$, factures$]).pipe(
             map(([depenses, factures]) => {
               const totalDepenses = depenses.reduce((sum, item) => sum + item.montant, 0);
               const totalFactures = factures.reduce((sum, item) => sum + item.montantTotal, 0);
-              
               return {
                 ...sortie,
                 depenses,
@@ -3440,6 +3446,7 @@ export class SortieService {
             })
           );
         });
+
         return combineLatest(sortieDetailsObservables);
       })
     );
@@ -12685,6 +12692,6 @@ Lignes:       23
   RÉSUMÉ
 ====================================
 Total fichiers: 118
-Total lignes: 11717
-Date: Sun Oct 19 07:41:22 CET 2025
+Total lignes: 11820
+Date: Sun Oct 19 08:52:45 CET 2025
 ====================================

@@ -1,4 +1,9 @@
 {
+  "FACTURES": {
+    "TITLE": "الفواتير",
+    "NOFACTURE": "لا توجد فواتير مسجلة لهذه الرحلة.",
+    "ADD": "إضافة فاتورة"
+  },
   "AUTH": { "WELCOME": "مرحباً بك", "SIGN_IN": "الرجاء تسجيل الدخول إلى حسابك", "SIGNUP": "املأ المعلومات للتسجيل", "CREATE_ACCOUNT": "إنشاء حساب جديد", "EMAIL": "البريد الإلكتروني", "PASSWORD": "كلمة المرور", "LOGIN": "تسجيل الدخول", "NO_ACCOUNT": "ليس لديك حساب؟ سجل الآن", "HAVE_ACCOUNT": "هل لديك حساب بالفعل؟ تسجيل الدخول" },
   "DASHBOARD": { "TITLE": "لوحة التحكم", "WELCOME": "مرحباً بك في لوحة التحكم", "ACTIVITIES": "الأنشطة", "RECENT_ACTIVITIES": "النشاطات الأخيرة", "NO_ACTIVITIES": "لا توجد أنشطة حديثة لعرضها", "TOTAL_BOATS": "إجمالي المراكب", "TOTAL_SAILORS": "إجمالي البحارة", "ACTIVE_BOATS": "المراكب النشطة", "MAINTENANCE": "تحت الصيانة", "BOAT_ADDED": "تمت إضافة المركب", "BOAT_UPDATED": "تم تحديث المركب", "SAILOR_ADDED": "تمت إضافة البحار", "SAILOR_UPDATED": "تم تحديث البحار", "TIME_AGO": { "NOW": "الآن", "MINUTES": "قبل {{minutes}} د", "HOURS": "قبل {{hours}} س", "DAYS": "قبل {{days}} ي" } },
   "MENU": { "HOME": "الرئيسية", "BOATS": "المراكب", "SORTIES": "الرحلات البحرية", "AVANCES": "السلف", "SALAIRES": "الرواتب", "VENTES": "المبيعات", "MOCK_DATA": "بيانات تجريبية", "SELECT_BOAT_FIRST": "اختر مركبًا أولاً للوصول" },

@@ -1,4 +1,9 @@
 {
+  "FACTURES": {
+    "TITLE": "Factures",
+    "NOFACTURE": "Aucune facture enregistrée pour cette sortie.",
+    "ADD": "Ajouter une facture"
+  },
   "AUTH": { "WELCOME": "Bienvenue", "SIGN_IN": "Veuillez vous connecter à votre compte", "SIGNUP": "Remplissez les informations pour vous inscrire", "CREATE_ACCOUNT": "Créer un compte", "EMAIL": "Adresse e-mail", "PASSWORD": "Mot de passe", "LOGIN": "Se connecter", "NO_ACCOUNT": "Vous n'avez pas de compte ? S'inscrire", "HAVE_ACCOUNT": "Vous avez déjà un compte ? Se connecter" },
   "DASHBOARD": { "TITLE": "Tableau de bord", "WELCOME": "Bienvenue sur votre tableau de bord", "ACTIVITIES": "Activités", "RECENT_ACTIVITIES": "Activité Récente", "NO_ACTIVITIES": "Aucune activité récente à afficher", "TOTAL_BOATS": "Bateaux au total", "TOTAL_SAILORS": "Marins au total", "ACTIVE_BOATS": "Bateaux Actifs", "MAINTENANCE": "En Maintenance", "BOAT_ADDED": "Bateau ajouté", "BOAT_UPDATED": "Bateau mis à jour", "SAILOR_ADDED": "Marin ajouté", "SAILOR_UPDATED": "Marin mis à jour", "TIME_AGO": { "NOW": "À l'instant", "MINUTES": "Il y a {{minutes}} min", "HOURS": "Il y a {{hours}}h", "DAYS": "Il y a {{days}}j" } },
   "MENU": { "HOME": "Accueil", "BOATS": "Bateaux", "SORTIES": "Sorties en mer", "AVANCES": "Avances", "SALAIRES": "Salaires", "VENTES": "Ventes", "MOCK_DATA": "Données Test", "SELECT_BOAT_FIRST": "Sélectionnez un bateau pour accéder à cette section" },

@@ -78,8 +78,6 @@ export class SalairesListComponent implements OnInit {
       });
       this.loading = false;
     });
-    // Calcul automatique
-    this.autoCalculateSalaries();
   }
   
   selectTab(tabName: 'ouvertes' | 'historique'): void {
@@ -264,19 +262,5 @@ export class SalairesListComponent implements OnInit {
 
   toggleAccordion(panel: string): void {
     this.accordionState[panel] = !this.accordionState[panel];
-  }
-
-  /**
-   * Calcul automatique des salaires
-   */
-  private autoCalculateSalaries(): void {
-    if (this.sortiesOuvertes && this.sortiesOuvertes.length > 0 && this.marins && this.marins.length > 0) {
-      this.selectedSortiesIds = this.sortiesOuvertes.map((s: any) => s.id!);
-      setTimeout(() => {
-        if (this.calculerSalaires) {
-          this.calculerSalaires();
-        }
-      }, 500);
-    }
   }
 }

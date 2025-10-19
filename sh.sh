@@ -1,32 +1,33 @@
 #!/bin/bash
+set -e
 
-# Script pour supprimer tous les fichiers inutilisés (backups, temporaires, fixes) dans src/
+echo "🔧 Restauration complète de salaires-list.component.html depuis backup..."
 
-BASE_DIR="src/app"
+HTML="src/app/salaires/salaires-list.component.html"
 
-echo "🔍 Suppression des fichiers inutiles dans $BASE_DIR..."
+# Trouver le dernier backup valide AVANT les modifications destructives
+BACKUPS=$(ls -t "${HTML}.bak_"* 2>/dev/null)
 
-# Extensions et motifs à supprimer
-PATTERNS=(
-  "*.bak"
-  "*.bak_*"
-  "*.bak.*"
-  "*.tmp"
-  "*.fix*"
-  "*.backup"
-  "*.backup_*"
-  "*~"
-)
+if [ -z "$BACKUPS" ]; then
+    echo "❌ ERREUR: Aucun fichier de sauvegarde trouvé!"
+    echo "Le fichier HTML a été corrompu et il n'y a pas de backup."
+    echo "Vous devez restaurer manuellement depuis votre contrôle de version (git)."
+    exit 1
+fi
 
-# Supprimer les fichiers correspondants aux motifs
-for pattern in "${PATTERNS[@]}"; do
-  echo "🗑️  Suppression des fichiers $pattern"
-  find "$BASE_DIR" -type f -name "$pattern" -print -exec rm -f {} +
-done
+# Prendre le backup le plus ancien (avant toutes les corruptions)
+OLDEST_BACKUP=$(echo "$BACKUPS" | tail -1)
+echo "📦 Restauration depuis: $OLDEST_BACKUP"
 
-# Supprimer également les dossiers vides résultants
-echo "🧹 Suppression des dossiers vides"
-find "$BASE_DIR" -type d -empty -print -delete
+cp "$OLDEST_BACKUP" "$HTML"
 
+echo "✅ Fichier HTML restauré!"
 echo ""
-echo "✅ Tous les fichiers inutiles ont été supprimés."
+echo "⚠️  IMPORTANT: Ne plus utiliser de scripts automatiques sur ce fichier."
+echo "Pour supprimer le bouton 'Calculer', éditez MANUELLEMENT le fichier:"
+echo "   $HTML"
+echo ""
+echo "Recherchez et supprimez UNIQUEMENT le bloc:"
+echo "   <button ...>Calculer...</button>"
+echo ""
+echo "➡️ Recompilez ensuite votre application."
