@@ -1,0 +1,1 @@
+import{R as o,l as e}from"./chunk-O6FOITNJ.js";var t=class t{constructor(){this.changeSubject=new e;this.change$=this.changeSubject.asObservable()}notifyFinancialChange(){this.changeSubject.next()}};t.\u0275fac=function(c){return new(c||t)},t.\u0275prov=o({token:t,factory:t.\u0275fac,providedIn:"root"});var a=t;export{a};
