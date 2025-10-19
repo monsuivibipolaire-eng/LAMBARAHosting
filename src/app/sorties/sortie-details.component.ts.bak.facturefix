@@ -1,48 +1,12 @@
-#!/bin/bash
-
-# ==============================================================================
-# SCRIPT pour corriger l'affichage des factures dans la page des détails d'une sortie.
-#
-# Remplace le contenu de `sortie-details.component.ts` pour forcer
-# l'utilisation du service `FactureVenteService` au lieu de `FactureService`.
-# ==============================================================================
-
-# --- Configuration ---
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m'
-
-# Fichier à remplacer
-FILE_PATH="src/app/sorties/sortie-details.component.ts"
-
-# --- Vérifications ---
-if [ ! -f "$FILE_PATH" ]; then
-    echo -e "${RED}Erreur : Fichier non trouvé :${NC} $FILE_PATH"
-    echo "Assurez-vous d'exécuter ce script depuis la racine de votre projet."
-    exit 1
-fi
-
-echo -e "🔧 Fichier cible : ${YELLOW}$FILE_PATH${NC}"
-
-# Créer une sauvegarde du fichier original
-cp "$FILE_PATH" "${FILE_PATH}.bak.facturefix"
-echo "  -> Une sauvegarde a été créée : ${FILE_PATH}.bak.facturefix"
-
-echo "  -> Remplacement du fichier par la version corrigée..."
-
-# --- Remplacement complet du fichier ---
-# Utiliser `cat` pour écraser le fichier avec le contenu correct.
-cat > "$FILE_PATH" << 'EOF'
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { Location } from '@angular/common';
+
 import { Sortie } from '../models/sortie.model';
 import { SortieService } from '../services/sortie.service';
-// ✅ CORRECTION : Importer les bons modèles et services
-import { FactureVente } from '../models/facture-vente.model';
-import { FactureVenteService } from '../services/facture-vente.service';
+import { Facture } from '../models/facture.model';
+import { FactureService } from '../services/facture.service';
 import { Depense } from '../models/depense.model';
 import { DepenseService } from '../services/depense.service';
 import { AlertService } from '../services/alert.service';
@@ -56,15 +20,13 @@ import { AlertService } from '../services/alert.service';
 export class SortieDetailsComponent implements OnInit {
   sortie!: Observable<Sortie | undefined>;
   depenses!: Observable<Depense[]>;
-  // ✅ CORRECTION : Utiliser le bon type de modèle
-  factures!: Observable<FactureVente[]>;
+  factures!: Observable<Facture[]>;
   sortieId!: string;
 
   constructor(
     private route: ActivatedRoute,
     private sortieService: SortieService,
-    // ✅ CORRECTION : Injecter le bon service de factures
-    private factureVenteService: FactureVenteService,
+    private factureService: FactureService,
     private depenseService: DepenseService,
     private alertService: AlertService,
     private router: Router,
@@ -81,8 +43,7 @@ export class SortieDetailsComponent implements OnInit {
   }
 
   loadFactures(): void {
-    // ✅ CORRECTION : Appeler le bon service
-    this.factures = this.factureVenteService.getFacturesBySortie(this.sortieId);
+    this.factures = this.factureService.getFacturesBySortie(this.sortieId);
   }
 
   goBack(): void {
@@ -109,6 +70,7 @@ export class SortieDetailsComponent implements OnInit {
 
   async deleteDepense(depense: Depense): Promise<void> {
     if (!depense.id) return;
+    
     const confirmed = await this.alertService.confirmDelete(`la dépense de type ${depense.type}`);
     if (confirmed) {
       try {
@@ -135,13 +97,3 @@ export class SortieDetailsComponent implements OnInit {
     return types[type] || type;
   }
 }
-EOF
-
-if [ $? -eq 0 ]; then
-    echo -e "  -> ${GREEN}Succès : Le fichier a été remplacé par la version corrigée.${NC}"
-else
-    echo -e "  -> ${RED}Erreur : Un problème est survenu lors de l'écriture dans le fichier.${NC}"
-    exit 1
-fi
-
-echo -e "\n${GREEN}✅ Opération terminée. Le problème d'affichage des factures est résolu.${NC}"

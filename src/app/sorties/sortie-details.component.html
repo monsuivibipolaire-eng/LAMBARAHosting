@@ -64,7 +64,7 @@
         <div class="item-info">
           <div class="item-type">{{ getExpenseTypeName(depense.type) }}</div>
           <div class="item-details">
-            <span class="item-date">{{ depense.date | date:'dd/MM/yyyy' }}</span>
+            <span class="item-date">{{ formatDate(depense.date) }}</span>
             <span class="item-description" *ngIf="depense.description">{{ depense.description }}</span>
           </div>
         </div>
