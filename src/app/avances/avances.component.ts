@@ -102,99 +102,110 @@ export class AvancesComponent implements OnInit {
   }
 
   async addAvance(): Promise<void> {
-    if (!this.selectedBoat) return;
+  if (!this.selectedBoat) return;
 
-    const marinsOptions = this.marins.reduce((acc, marin) => {
-      acc[marin.id!] = `${marin.prenom} ${marin.nom} (${this.translate.instant('SAILORS.FUNCTION_TYPE.' + marin.fonction.toUpperCase())})`;
-      return acc;
-    }, {} as any);
+  const marinsOptions = this.marins.reduce((acc, marin) => {
+    acc[marin.id!] = `${marin.prenom} ${marin.nom} - ${this.translate.instant('SAILORS.FUNCTION_TYPE.' + marin.fonction.toUpperCase())}`;
+    return acc;
+  }, {} as any);
 
-    const t = {
-      title: this.translate.instant('AVANCES.ADD_MODAL.TITLE'),
-      sailor: this.translate.instant('SAILORS.TITLE'),
-      selectSailor: this.translate.instant('SAILORS.SELECT_SAILOR'),
-      amount: this.translate.instant('COMMON.AMOUNT_D T'),
-      amountPlaceholder: this.translate.instant('COMMON.AMOUNT_IN_TND'),
-      date: this.translate.instant('COMMON.DATE'),
-      description: this.translate.instant('COMMON.DESCRIPTION'),
-      descriptionPlaceholder: this.translate.instant('COMMON.DESCRIPTION_OPTIONAL'),
-      add: this.translate.instant('FORM.ADD'),
-      cancel: this.translate.instant('FORM.CANCEL'),
-      requiredFields: this.translate.instant('FORM.REQUIRED_FIELDS'),
-      amountPositive: this.translate.instant('AVANCES.AMOUNT_POSITIVE')
-    };
+  const t = {
+    title: this.translate.instant('AVANCES.ADD_MODAL.TITLE'),
+    sailor: this.translate.instant('SAILORS.TITLE'),
+    selectSailor: this.translate.instant('SAILORS.SELECT_SAILOR'),
+    amount: this.translate.instant('COMMON.AMOUNT_D_T'),
+    amountPlaceholder: this.translate.instant('COMMON.AMOUNT_IN_TND'),
+    date: this.translate.instant('COMMON.DATE'),
+    description: this.translate.instant('COMMON.DESCRIPTION'),
+    descriptionPlaceholder: this.translate.instant('COMMON.DESCRIPTION_OPTIONAL'),
+    add: this.translate.instant('FORM.ADD'),
+    cancel: this.translate.instant('FORM.CANCEL'),
+    requiredFields: this.translate.instant('FORM.REQUIRED_FIELDS'),
+    amountPositive: this.translate.instant('AVANCES.AMOUNT_POSITIVE')
+  };
 
-    const { value: formValues } = await Swal.fire({
-      title: `<i class="swal-icon-money"></i> ${t.title}`,
-      html: `
-        <div class="swal-form">
-          <div class="form-group">
-            <label class="form-label"><i class="swal-icon-user"></i> ${t.sailor} <span class="required-star">*</span></label>
-            <select id="swal-marin" class="swal2-input">
-              <option value="">${t.selectSailor}</option>
-              ${Object.keys(marinsOptions).map(id => `<option value="${id}">${marinsOptions[id]}</option>`).join('')}
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label"><i class="swal-icon-cash"></i> ${t.amount} <span class="required-star">*</span></label>
-            <input id="swal-montant" type="number" class="swal2-input" placeholder="0.00" step="0.01" min="0">
-            <div class="input-helper">${t.amountPlaceholder}</div>
-          </div>
-          <div class="form-group">
-            <label class="form-label"><i class="swal-icon-calendar"></i> ${t.date} <span class="required-star">*</span></label>
-            <input id="swal-date" type="date" class="swal2-input" value="${this.getTodayDate()}">
-          </div>
-          <div class="form-group">
-            <label class="form-label"><i class="swal-icon-details"></i> ${t.description}</label>
-            <textarea id="swal-description" class="swal2-textarea" placeholder="${t.descriptionPlaceholder}"></textarea>
-          </div>
-        </div>`,
-      focusConfirm: false,
-      showCancelButton: true,
-      confirmButtonText: t.add,
-      cancelButtonText: t.cancel,
-      confirmButtonColor: '#10b981',
-      preConfirm: () => {
-        const marinId = (document.getElementById('swal-marin') as HTMLSelectElement).value;
-        const montant = parseFloat((document.getElementById('swal-montant') as HTMLInputElement).value);
-        const date = (document.getElementById('swal-date') as HTMLInputElement).value;
-        if (!marinId || !montant || !date) {
-          Swal.showValidationMessage(t.requiredFields);
-          return false;
-        }
-        if (montant <= 0) {
-          Swal.showValidationMessage(t.amountPositive);
-          return false;
-        }
-        return {
-          marinId,
-          montant,
-          date,
-          description: (document.getElementById('swal-description') as HTMLTextAreaElement).value
-        };
+  const { value: formValues } = await Swal.fire({
+    title: `<i class="swal-icon-money"></i> ${t.title}`,
+    html: `
+      <div class="swal-form">
+        <div class="form-group">
+          <label class="form-label"><i class="swal-icon-user"></i> ${t.sailor} <span class="required-star">*</span></label>
+          <select id="swal-marin" class="swal2-input">
+            <option value="">${t.selectSailor}</option>
+            ${Object.keys(marinsOptions).map(id => `<option value="${id}">${marinsOptions[id]}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label"><i class="swal-icon-cash"></i> ${t.amount} <span class="required-star">*</span></label>
+          <input id="swal-montant" type="number" class="swal2-input" placeholder="0.00" step="0.01" min="0" />
+          <div class="input-helper">${t.amountPlaceholder}</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label"><i class="swal-icon-calendar"></i> ${t.date} <span class="required-star">*</span></label>
+          <input id="swal-date" type="date" class="swal2-input" value="${this.getTodayDate()}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label"><i class="swal-icon-details"></i> ${t.description}</label>
+          <textarea id="swal-description" class="swal2-textarea" placeholder="${t.descriptionPlaceholder}"></textarea>
+        </div>
+      </div>
+    `,
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: t.add,
+    cancelButtonText: t.cancel,
+    confirmButtonColor: '#10b981',
+    preConfirm: () => {
+      const marinId = (document.getElementById('swal-marin') as HTMLSelectElement).value;
+      const montant = parseFloat((document.getElementById('swal-montant') as HTMLInputElement).value);
+      const date = (document.getElementById('swal-date') as HTMLInputElement).value;
+
+      if (!marinId || !montant || !date) {
+        Swal.showValidationMessage(t.requiredFields);
+        return false;
       }
-    });
 
-    if (formValues) {
-      try {
-        this.alertService.loading();
-        const newAvance: any = {
-          marinId: formValues.marinId,
-          bateauId: this.selectedBoat.id!,
-          montant: formValues.montant,
-          dateAvance: new Date(formValues.date)
-        };
-        if (formValues.description && formValues.description.trim() !== '') {
-          newAvance.description = formValues.description.trim();
-        }
-        await this.avanceService.addAvance(newAvance);
-        this.alertService.success(this.translate.instant('AVANCES.SUCCESS_ADD'));
-      } catch (error) {
-        console.error('Erreur:', error);
-        this.alertService.error();
+      if (montant <= 0) {
+        Swal.showValidationMessage(t.amountPositive);
+        return false;
       }
+
+      return {
+        marinId,
+        montant,
+        date,
+        description: (document.getElementById('swal-description') as HTMLTextAreaElement).value
+      };
+    }
+  });
+
+  if (formValues) {
+    try {
+      this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
+      
+      const newAvance: any = {
+        marinId: formValues.marinId,
+        bateauId: this.selectedBoat.id!,
+        montant: formValues.montant,
+        dateAvance: new Date(formValues.date),
+        createdAt: new Date() // ✅ AJOUT: Date de création
+      };
+
+      if (formValues.description && formValues.description.trim() !== '') {
+        newAvance.description = formValues.description.trim();
+      }
+
+      // ✅ CORRECTION: Attendre l'enregistrement
+      await this.avanceService.addAvance(newAvance);
+      
+      this.alertService.success(this.translate.instant('AVANCES.SUCCESS_ADD'));
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout de l\'avance:', error);
+      this.alertService.error();
     }
   }
+}
+
 
   async editAvance(avance: Avance): Promise<void> {
     const t = {

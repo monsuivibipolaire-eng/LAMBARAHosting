@@ -19,8 +19,10 @@ export class AvanceService {
     return collectionData(q, { idField: 'id' }) as Observable<Avance[]>;
   }
 
-  getAvancesByBateau(bateauId: string) {
-    return this.getAvancesByMarin(bateauId as any);
+  getAvancesByBateau(bateauId: string): Observable<Avance[]> {
+    const col = collection(this.firestore, this.collectionName);
+    const q = query(col, where('bateauId', '==', bateauId));
+    return collectionData(q, { idField: 'id' }) as Observable<Avance[]>;
   }
 
   getAvance(id: string): Observable<Avance | undefined> {
