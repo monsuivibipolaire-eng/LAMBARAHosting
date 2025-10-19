@@ -240,10 +240,11 @@ export class SalairesListComponent implements OnInit {
       cancelButtonText: this.translate.instant('FORM.CANCEL'),
       confirmButtonColor: '#10b981',
       inputValidator: (value) => {
-        if (!value) { return this.translate.instant('FORM.REQUIRED'); }
+      if (!value) return this.translate.instant('FORM.REQUIRED');
         const amount = parseFloat(value);
-        if (amount <= 0) { return this.translate.instant('SALAIRES.PAYMENT_MODAL.ERROR_POSITIVE'); }
-        if (amount > detail.resteAPayer) { return this.translate.instant('SALAIRES.PAYMENT_MODAL.ERROR_EXCEED'); }
+        if (amount <= 0) return this.translate.instant('SALAIRES.PAYMENTMODAL.ERRORPOSITIVE');
+        // ✅ CORRECTION: Permettre le paiement exact du solde
+        if (amount > detail.resteAPayer + 0.005) return this.translate.instant('SALAIRES.PAYMENTMODAL.ERROREXCEED');
         return null;
       }
     });
@@ -253,12 +254,24 @@ export class SalairesListComponent implements OnInit {
         this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
         const montantPaye = parseFloat(montant);
 
-        await this.paiementService.addPaiement({
-          marinId: detail.marinId,
-          montant: montantPaye,
-          datePaiement: new Date(),
-          sortiesIds: this.dernierCalcul!.sortiesIds
+      // 1. Enregistrer le paiement dans la collection "paiements"
+      await this.paiementService.addPaiement({
+        marinId: detail.marinId,
+        montant: montantPaye,
+        datePaiement: new Date(),
+        sortiesIds: this.dernierCalcul!.sortiesIds
+      });
+
+      // 2. Mettre à jour l'état local
+      detail.totalPaiements += montantPaye;
+      detail.resteAPayer -= montantPaye;
+
+      // 3. ✅ NOUVEAU: Sauvegarder dans Firestore (calculs_salaire)
+      if (this.dernierCalcul && this.dernierCalcul.id) {
+        await this.salaireService.updateCalculSalaire(this.dernierCalcul.id, {
+          detailsMarins: this.dernierCalcul.detailsMarins
         });
+      }
 
         // Mettre à jour l'état local pour un rafraîchissement instantané
         detail.totalPaiements += montantPaye;

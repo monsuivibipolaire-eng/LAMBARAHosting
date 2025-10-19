@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Firestore, collection, addDoc, collectionData, query, where, orderBy } from '@angular/fire/firestore';
+import { Firestore, collection, addDoc, collectionData, query, where, orderBy, doc, updateDoc } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 import { CalculSalaire } from '../models/salaire.model';
 
@@ -14,7 +14,10 @@ export class SalaireService {
     const calculsCollection = collection(this.firestore, this.calculsSalaireCollection);
     return await addDoc(calculsCollection, calcul);
   }
-
+  async updateCalculSalaire(id: string, data: Partial<CalculSalaire>): Promise<void> {
+    const docRef = doc(this.firestore, this.calculsSalaireCollection, id);
+    await updateDoc(docRef, { ...data });
+  }
   getCalculsBySortieId(sortieId: string): Observable<CalculSalaire[]> {
     const calculsCollection = collection(this.firestore, this.calculsSalaireCollection);
     const q = query(calculsCollection, where('sortiesIds', 'array-contains', sortieId));
