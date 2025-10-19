@@ -58,7 +58,7 @@ export class MarinFormComponent implements OnInit {
   loadMarin(): void {
     if (this.marinId) {
       this.marinService.getMarin(this.marinId).subscribe(marin => {
-        if (!marin) return;        this.marinForm.patchValue({
+        this.marinForm.patchValue({
           ...marin,
           dateNaissance: this.formatDate(marin.dateNaissance!),
           dateEmbauche: this.formatDate(marin.dateEmbauche!)
