@@ -1,19 +1,10 @@
 #!/bin/bash
-set -e
 
-echo "🔧 Correction montantTotal → montant dans salaires-list.component.ts..."
+echo "🔧 Correction de la virgule manquante dans mock-data.service.ts..."
 
-TS_FILE="src/app/salaires/salaires-list.component.ts"
-cp "$TS_FILE" "${TS_FILE}.bak_$(date +%Y%m%d_%H%M%S)"
+# Trouver et corriger la ligne avec notes
+sed -i '215s/\(`\)$/\1,/' src/app/services/mock-data.service.ts
 
-# 1. Remplacer f.montantTotal par f.montant (dans reduce)
-sed -i '' 's/f\.montantTotal/f.montant/g' "$TS_FILE"
-
-# 2. Remplacer f?.montantTotal par f?.montant
-sed -i '' 's/f?\.montantTotal/f?.montant/g' "$TS_FILE"
-
-# 3. Remplacer ${f.montantTotal par ${f.montant (dans template strings)
-sed -i '' 's/\${f\.montantTotal/\${f.montant/g' "$TS_FILE"
-
-echo "✅ Toutes les occurrences de montantTotal remplacées par montant"
-echo "➡️ Recompilez: ng serve"
+echo "✅ mock-data.service.ts ligne 215 corrigée (virgule ajoutée)"
+echo ""
+echo "🔄 Redémarrez: ng serve"

@@ -1,12 +1,26 @@
 import { Injectable } from '@angular/core';
-import { Firestore, collection, addDoc, updateDoc, deleteDoc, doc, query, where, collectionData, docData } from '@angular/fire/firestore';
+import { 
+  Firestore, 
+  collection, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  query, 
+  where, 
+  collectionData, 
+  docData,
+  orderBy
+} from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 import { FactureVente } from '../models/facture-vente.model';
 import { FinancialEventsService } from './financial-events.service';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class FactureVenteService {
-  private collectionName = 'factures-vente';
+  private collectionName = 'factures_vente';
 
   constructor(
     private firestore: Firestore,
@@ -15,7 +29,13 @@ export class FactureVenteService {
 
   getFacturesBySortie(sortieId: string): Observable<FactureVente[]> {
     const col = collection(this.firestore, this.collectionName);
-    const q = query(col, where('sortieId','==', sortieId));
+    const q = query(col, where('sortieId', '==', sortieId));
+    return collectionData(q, { idField: 'id' }) as Observable<FactureVente[]>;
+  }
+
+  getAllFactures(): Observable<FactureVente[]> {
+    const col = collection(this.firestore, this.collectionName);
+    const q = query(col, orderBy('dateVente', 'desc'));
     return collectionData(q, { idField: 'id' }) as Observable<FactureVente[]>;
   }
 
@@ -24,7 +44,7 @@ export class FactureVenteService {
     return docData(d, { idField: 'id' }) as Observable<FactureVente | undefined>;
   }
 
-  async addFacture(facture: Omit<FactureVente,'id'>): Promise<string> {
+  async addFacture(facture: Omit<FactureVente, 'id'>): Promise<string> {
     const col = collection(this.firestore, this.collectionName);
     const ref = await addDoc(col, facture);
     this.finEvents.notifyFinancialChange();
@@ -33,7 +53,7 @@ export class FactureVenteService {
 
   async updateFacture(id: string, facture: Partial<FactureVente>): Promise<void> {
     const d = doc(this.firestore, this.collectionName, id);
-    await updateDoc(d, facture);
+    await updateDoc(d, { ...facture });
     this.finEvents.notifyFinancialChange();
   }
 

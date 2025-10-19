@@ -1,93 +1,65 @@
-<div class="dashboard-home">
-  <h2 class="welcome-title">{{ 'DASHBOARD.WELCOME' | translate }}</h2>
-  
-  <!-- Cartes de statistiques -->
-  <div class="stats-grid" *ngIf="stats$ | async as stats">
+<div class="dashboard-container">
+  <h1 class="title">{{ 'DASHBOARD.TITLE' | translate }}</h1>
+
+  <!-- Statistiques -->
+  <div class="stats-grid" *ngIf="stats | async as statsData">
     <div class="stat-card blue">
-      <div class="stat-icon">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-        </svg>
-      </div>
+      <div class="stat-icon">🚢</div>
       <div class="stat-content">
-        <div class="stat-value">{{ stats.totalBoats }}</div>
+        <div class="stat-value">{{ statsData.totalBoats }}</div>
         <div class="stat-label">{{ 'DASHBOARD.TOTAL_BOATS' | translate }}</div>
       </div>
     </div>
 
     <div class="stat-card green">
-      <div class="stat-icon">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      </div>
+      <div class="stat-icon">✅</div>
       <div class="stat-content">
-        <div class="stat-value">{{ stats.activeBoats }}</div>
+        <div class="stat-value">{{ statsData.activeBoats }}</div>
         <div class="stat-label">{{ 'DASHBOARD.ACTIVE_BOATS' | translate }}</div>
       </div>
     </div>
 
-    <div class="stat-card yellow">
-      <div class="stat-icon">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-      </div>
+    <div class="stat-card orange">
+      <div class="stat-icon">🔧</div>
       <div class="stat-content">
-        <div class="stat-value">{{ stats.maintenanceBoats }}</div>
+        <div class="stat-value">{{ statsData.maintenanceBoats }}</div>
         <div class="stat-label">{{ 'DASHBOARD.MAINTENANCE' | translate }}</div>
       </div>
     </div>
 
     <div class="stat-card purple">
-      <div class="stat-icon">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-      </div>
+      <div class="stat-icon">👥</div>
       <div class="stat-content">
-        <div class="stat-value">{{ stats.totalSailors }}</div>
+        <div class="stat-value">{{ statsData.totalSailors }}</div>
         <div class="stat-label">{{ 'DASHBOARD.TOTAL_SAILORS' | translate }}</div>
       </div>
     </div>
   </div>
 
-  <!-- Section des dernières activités -->
+  <!-- Activités récentes -->
   <div class="activities-section">
-    <div class="section-header">
-      <h3 class="section-title">{{ 'DASHBOARD.RECENT_ACTIVITIES' | translate }}</h3>
-      <span class="activity-count">{{ recentActivities.length }} {{ 'DASHBOARD.ACTIVITIES' | translate }}</span>
+    <h2 class="section-title">{{ 'DASHBOARD.RECENT_ACTIVITIES' | translate }}</h2>
+
+    <div *ngIf="loading" class="loading">
+      <div class="spinner"></div>
+      <p>{{ 'MESSAGES.LOADING' | translate }}</p>
     </div>
 
-    <div class="activities-container" *ngIf="!loading">
-      <div class="activity-item" *ngFor="let activity of recentActivities">
-        <div class="activity-icon" [style.background-color]="activity.color + '20'" [style.color]="activity.color">
+    <div *ngIf="!loading && recentActivities.length === 0" class="no-activities">
+      <p>{{ 'DASHBOARD.NO_ACTIVITIES' | translate }}</p>
+    </div>
+
+    <div *ngIf="!loading && recentActivities.length > 0" class="activities-list">
+      <div *ngFor="let activity of recentActivities" class="activity-item">
+        <div class="activity-icon" [style.background-color]="activity.color">
           {{ activity.icon }}
         </div>
         <div class="activity-content">
-          <div class="activity-title">
-            <span class="activity-name">{{ activity.name }}</span>
-          </div>
-          <div class="activity-description">
-            {{ getActionText(activity) | translate }}
-          </div>
+          <div class="activity-name">{{ activity.name }}</div>
+          <div class="activity-action">{{ getActionText(activity) | translate }}</div>
         </div>
-        <div class="activity-time">
-          {{ getTimeAgo(activity.date) }}
-        </div>
+        <div class="activity-time">{{ getTimeAgo(activity.date) }}</div>
       </div>
-
-      <div class="no-activities" *ngIf="recentActivities.length === 0">
-        <svg class="no-data-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-        </svg>
-        <p>{{ 'DASHBOARD.NO_ACTIVITIES' | translate }}</p>
-      </div>
-    </div>
-
-    <div class="loading-spinner" *ngIf="loading">
-      <div class="spinner"></div>
-      <p>{{ 'MESSAGES.LOADING' | translate }}</p>
     </div>
   </div>
 </div>

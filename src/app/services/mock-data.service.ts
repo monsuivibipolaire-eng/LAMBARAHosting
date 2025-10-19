@@ -212,7 +212,7 @@ export class MockDataService {
         destination: destinations[i],
         statut: 'terminee',
         salaireCalcule: false,
-        observations: `Sortie ${i + 1} - Excellentes conditions météo`,
+        notes: `Sortie ${i + 1} - Excellentes conditions météorologiques. Retour prévu avec bonne pêche.`,
         createdAt: new Date()
       };
       const sortieId = await this.sortieService.addSortie(sortie);

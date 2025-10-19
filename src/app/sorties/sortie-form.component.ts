@@ -1,111 +1,130 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { SelectedBoatService } from '../services/selected-boat.service';
-import { SortieService } from '../services/sortie.service';
-import { AlertService } from '../services/alert.service';
-import { Bateau } from '../models/bateau.model';
 import { TranslateService } from '@ngx-translate/core';
+import { SortieService } from '../services/sortie.service';
+import { SelectedBoatService } from '../services/selected-boat.service';
+import { AlertService } from '../services/alert.service';
+import { Sortie } from '../models/sortie.model';
+import { Bateau } from '../models/bateau.model';
 
 @Component({
-  standalone: false,
   selector: 'app-sortie-form',
+  standalone: false,
   templateUrl: './sortie-form.component.html',
   styleUrls: ['./sortie-form.component.scss']
 })
 export class SortieFormComponent implements OnInit {
-  form!: FormGroup;
+  sortie: any = {};
   isEditMode = false;
-  id?: string;
-  loading = false;
+  sortieId?: string;
   selectedBoat: Bateau | null = null;
+  loading = false;
 
   constructor(
-    private fb: FormBuilder,
     private sortieService: SortieService,
-    private alertService: AlertService,
-    private route: ActivatedRoute,
-    private router: Router,
     private selectedBoatService: SelectedBoatService,
+    private alertService: AlertService,
+    private router: Router,
+    private route: ActivatedRoute,
     private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
-    this.id = this.route.snapshot.paramMap.get('id') ?? undefined;
-    this.isEditMode = !!this.id;
-    
     this.selectedBoat = this.selectedBoatService.getSelectedBoat();
-    if (!this.selectedBoat && !this.isEditMode) {
-      this.alertService.error(this.translate.instant('BOATS.NO_BOAT_SELECTED_DETAILS'));
+    
+    if (!this.selectedBoat) {
+      this.alertService.error(this.translate.instant('BOATS.NO_BOAT_SELECTED'));
       this.router.navigate(['/dashboard/bateaux']);
       return;
     }
+
+    this.sortieId = this.route.snapshot.paramMap.get('id') || undefined;
     
-    this.form = this.fb.group({
-      bateauId: [this.selectedBoat?.id || '', Validators.required],
-      destination: ['', Validators.required],
-      dateDepart: ['', Validators.required],
-      dateRetour: ['', Validators.required],
-      statut: ['en-cours', Validators.required],
-      observations: ['']
-    });
-
-    this.form.get('bateauId')?.disable();
-
-    if (this.isEditMode) { this.loadSortie(); }
-  }
-
-  loadSortie(): void {
-    this.sortieService.getSortie(this.id!).subscribe(sortie => {
-      this.form.patchValue({
-        ...sortie,
-        dateDepart: this.formatDate(sortie.dateDepart),
-        dateRetour: this.formatDate(sortie.dateRetour)
+    if (this.sortieId) {
+      this.isEditMode = true;
+      this.loading = true;
+      this.sortieService.getSortie(this.sortieId).subscribe(sortie => {
+        if (sortie) {
+          this.sortie = {
+            destination: sortie.destination,
+            dateDepart: this.formatDate(sortie.dateDepart),
+            dateRetour: sortie.dateRetour ? this.formatDate(sortie.dateRetour) : '',
+            statut: sortie.statut,
+            notes: sortie.notes || ''
+          };
+        } else {
+          this.alertService.error(this.translate.instant('TRIPS.NOT_FOUND'));
+          this.router.navigate(['/dashboard/sorties']);
+        }
+        this.loading = false;
       });
-    });
+    }
   }
 
   formatDate(date: any): string {
-    if (date?.toDate) { return date.toDate().toISOString().split('T')[0]; }
-    if (date instanceof Date) { return date.toISOString().split('T')[0]; }
+    if (!date) return '';
+    if (date.toDate && typeof date.toDate === 'function') {
+      return date.toDate().toISOString().split('T')[0];
+    }
+    if (date instanceof Date) {
+      return date.toISOString().split('T')[0];
+    }
+    if (typeof date === 'string') {
+      return new Date(date).toISOString().split('T')[0];
+    }
     return '';
   }
 
   async onSubmit(): Promise<void> {
-    if (this.form.valid) {
+    if (!this.selectedBoat) {
+      this.alertService.error(this.translate.instant('BOATS.NO_BOAT_SELECTED'));
+      return;
+    }
+
+    if (!this.sortie.destination || !this.sortie.dateDepart) {
+      this.alertService.error(this.translate.instant('FORM.REQUIRED_FIELDS'));
+      return;
+    }
+
+    try {
       this.loading = true;
       this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
-      const data = {
-        ...this.form.getRawValue(),
-        dateDepart: new Date(this.form.value.dateDepart),
-        dateRetour: new Date(this.form.value.dateRetour)
+
+      const sortieData: any = {
+        bateauId: this.selectedBoat.id!,
+        destination: this.sortie.destination,
+        dateDepart: new Date(this.sortie.dateDepart),
+        statut: this.sortie.statut || 'en_cours'
       };
-      try {
-        if (this.isEditMode) {
-          await this.sortieService.updateSortie(this.id!, data);
-          this.alertService.success(this.translate.instant('SORTIES.SUCCESS_UPDATE'));
-        } else {
-          await this.sortieService.addSortie(data);
-          this.alertService.success(this.translate.instant('SORTIES.SUCCESS_ADD'));
-        }
-        this.router.navigate(['/dashboard/sorties']);
-      } catch (error) {
-        this.alertService.error();
-      } finally {
-        this.loading = false;
+
+      if (this.sortie.dateRetour) {
+        sortieData.dateRetour = new Date(this.sortie.dateRetour);
       }
-    } else {
-      this.markFormGroupTouched(this.form);
-      this.alertService.warning(this.translate.instant('FORM.REQUIRED_FIELDS'));
+
+      if (this.sortie.notes && this.sortie.notes.trim()) {
+        sortieData.notes = this.sortie.notes.trim();
+      }
+
+      if (this.isEditMode && this.sortieId) {
+        sortieData.updatedAt = new Date();
+        await this.sortieService.updateSortie(this.sortieId, sortieData);
+        this.alertService.success(this.translate.instant('TRIPS.SUCCESS_UPDATE'));
+      } else {
+        sortieData.createdAt = new Date();
+        await this.sortieService.addSortie(sortieData);
+        this.alertService.success(this.translate.instant('TRIPS.SUCCESS_ADD'));
+      }
+
+      this.router.navigate(['/dashboard/sorties']);
+    } catch (error) {
+      console.error('Erreur:', error);
+      this.alertService.error();
+    } finally {
+      this.loading = false;
     }
   }
 
-  markFormGroupTouched(formGroup: FormGroup): void {
-    Object.keys(formGroup.controls).forEach(key => {
-      formGroup.get(key)?.markAsTouched();
-    });
+  cancel(): void {
+    this.router.navigate(['/dashboard/sorties']);
   }
-
-  cancel(): void { this.router.navigate(['/dashboard/sorties']); }
-  goBack(): void { this.cancel(); }
 }

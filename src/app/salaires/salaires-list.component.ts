@@ -70,8 +70,8 @@ export class SalairesListComponent implements OnInit {
       this.sortiesOuvertes = sorties.filter(s => s.statut === 'terminee' && !s.salaireCalcule);
       this.sortiesCalculees = sorties.filter(s => s.salaireCalcule === true)
         .sort((a, b) => {
-          const dateA = (a.dateRetour as any).toDate ? (a.dateRetour as any).toDate().getTime() : new Date(a.dateRetour).getTime();
-          const dateB = (b.dateRetour as any).toDate ? (b.dateRetour as any).toDate().getTime() : new Date(b.dateRetour).getTime();
+        const dateA = (a.dateRetour as any)?.toDate ? (a.dateRetour as any).toDate().getTime() : (a.dateRetour ? new Date(a.dateRetour).getTime() : 0);
+        const dateB = (b.dateRetour as any)?.toDate ? (b.dateRetour as any).toDate().getTime() : (b.dateRetour ? new Date(b.dateRetour).getTime() : 0);
           return dateB - dateA;
         });
       

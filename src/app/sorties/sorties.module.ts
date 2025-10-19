@@ -39,4 +39,4 @@ const routes: Routes = [
     PointageComponent
   ]
 })
-export class SortiesModule { }
+export class SortiesModule {}
