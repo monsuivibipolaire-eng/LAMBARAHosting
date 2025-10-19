@@ -14,7 +14,7 @@ import { Marin } from '../models/marin.model';
 import { Bateau } from '../models/bateau.model';
 import { SalaireService } from '../services/salaire.service';
 import { CalculSalaire, DetailSalaireMarin } from '../models/salaire.model';
-import { FactureVente } from '../models/facture-vente.model';
+import { Facture } from '../models/facture.model';
 import { Depense } from '../models/depense.model';
 
 @Component({
@@ -143,7 +143,7 @@ export class SalairesListComponent implements OnInit {
         sortiesDestinations: selectedSorties.map(s => s.destination),
         dateCalcul: new Date(),
         revenuTotal, totalDepenses, beneficeNet, partProprietaire, partEquipage, deductionNuits, montantAPartager, detailsMarins,
-        factures: allFactures as FactureVente[],
+        factures: allFactures as Facture[],
         depenses: allDepenses as Depense[]
       };
       
@@ -193,7 +193,7 @@ export class SalairesListComponent implements OnInit {
     if (!this.dernierCalcul) return;
     const factures = this.dernierCalcul.factures || [];
     const t = { title: this.translate.instant('SALAIRES.DETAILS_MODAL.REVENUE_TITLE'), invoiceNum: this.translate.instant('SALAIRES.DETAILS_MODAL.INVOICE_NUM'), client: this.translate.instant('SALAIRES.DETAILS_MODAL.CLIENT'), date: this.translate.instant('COMMON.DATE'), amount: this.translate.instant('COMMON.AMOUNT') };
-    const rows = factures.map(f =>`<tr><td>${f.numeroFacture}</td><td>${f.client}</td><td>${this.formatDate(f.dateVente)}</td><td class="amount">${f.montantTotal.toFixed(2)} DT</td></tr>`).join('');
+    const rows = factures.map(f =>`<tr><td>${f.numeroFacture}</td><td>${f.client}</td><td>${this.formatDate(f.dateFacture)}</td><td class="amount">${f.montantTotal.toFixed(2)} DT</td></tr>`).join('');
     const html = `<style>.details-modal-content{max-height:60vh;overflow-y:auto;padding:1rem 0}.details-table{width:100%;border-collapse:collapse;font-size:.9rem}.details-table th,.details-table td{padding:.75rem;text-align:left;border-bottom:1px solid #e5e7eb}.details-table th{background:#f9fafb;font-weight:600;color:#374151}.details-table .amount{text-align:right;font-weight:700;color:#10b981;white-space:nowrap}body.rtl .details-table th,body.rtl .details-table td{text-align:right}body.rtl .details-table .amount{text-align:left}</style><div class="details-modal-content"><table class="details-table"><thead><tr><th>${t.invoiceNum}</th><th>${t.client}</th><th>${t.date}</th><th class="amount">${t.amount}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
     Swal.fire({ title: t.title, html: html, width: '800px', showCloseButton: true, showConfirmButton: false });
   }

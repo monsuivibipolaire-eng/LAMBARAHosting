@@ -1,7 +1,6 @@
-import { Depense } from "./depense.model";
-import { Facture } from "./facture.model";
+import { FactureVente } from './facture-vente.model';
+import { Depense } from './depense.model';
 
-// Modèle pour sauvegarder un calcul complet
 export interface CalculSalaire {
   id?: string;
   bateauId: string;
@@ -9,7 +8,6 @@ export interface CalculSalaire {
   sortiesDestinations: string[];
   dateCalcul: Date;
   
-  // Résumé financier
   revenuTotal: number;
   totalDepenses: number;
   beneficeNet: number;
@@ -18,15 +16,12 @@ export interface CalculSalaire {
   deductionNuits: number;
   montantAPartager: number;
   
-  // Détails par marin
   detailsMarins: DetailSalaireMarin[];
-
-  // Transactions utilisées pour le calcul
-  factures?: Facture[];
+  
+  factures?: FactureVente[];
   depenses?: Depense[];
 }
 
-// Modèle pour les détails de chaque marin au sein d'un calcul
 export interface DetailSalaireMarin {
   marinId: string;
   marinNom: string;

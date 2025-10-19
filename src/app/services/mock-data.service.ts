@@ -109,7 +109,7 @@ export class MockDataService {
   }
 
   private async clearAllData(): Promise<void> {
-    const collections = ['bateaux', 'marins', 'sorties', 'factures-vente', 'depenses'];
+    const collections = ['bateaux', 'marins', 'sorties', 'factures-vente', 'depenses', 'calculs-salaire'];
     
     for (const collectionName of collections) {
       const querySnapshot = await getDocs(collection(this.firestore, collectionName));
