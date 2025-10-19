@@ -9,7 +9,6 @@
     <h1 class="title">{{ 'SORTIES.DETAILSTITLE' | translate }}</h1>
   </div>
 
-  <!-- Informations Générales -->
   <div class="info-card" *ngIf="sortie | async as sortie">
     <div class="section-header">
       <h2>{{ 'SORTIES.GENERALINFO' | translate }}</h2>
@@ -43,7 +42,6 @@
     </div>
   </div>
 
-  <!-- Section Dépenses -->
   <div class="section-card">
     <div class="section-header">
       <h2>{{ 'EXPENSES.TITLE' | translate }}</h2>
@@ -57,7 +55,7 @@
 
     <div *ngIf="depenses | async as depensesList" class="list-items">
       <div *ngIf="depensesList.length === 0" class="no-data">
-        {{ 'EXPENSES.NOEXPENSE' | translate }}
+        <p>{{ 'EXPENSES.NOEXPENSE' | translate }}</p>
       </div>
       
       <div *ngFor="let depense of depensesList" class="list-item">
@@ -71,67 +69,45 @@
         <div class="item-actions">
           <span class="item-amount">{{ depense.montant }} DT</span>
           <button class="btn-icon btn-warning" (click)="editDepense(depense.id!)">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-            </svg>
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
           </button>
           <button class="btn-icon btn-danger" (click)="deleteDepense(depense)">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-            </svg>
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Section Factures -->
   <div class="section-card">
     <div class="section-header">
       <h2>{{ 'FACTURES.TITLE' | translate }}</h2>
+      <button class="btn btn-primary" (click)="addFacture()">
+        <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+        </svg>
+        {{ 'FACTURES.ADD' | translate }}
+      </button>
     </div>
     <div *ngIf="factures | async as facturesList; else noFactures" class="list-items">
       <div *ngIf="facturesList.length === 0" class="no-data">
-        {{ 'FACTURES.NOFACTURE' | translate }}
+        <p>{{ 'FACTURES.NOFACTURE' | translate }}</p>
       </div>
       <div *ngFor="let facture of facturesList" class="list-item">
-        <span class="item-type">{{ facture.numeroFacture }} - {{ facture.client }}</span>
-        <span class="item-amount">{{ facture.montantTotal | number:'1.2-2' }} TND</span>
+        <div class="item-info">
+          <div class="item-type">{{ facture.numeroFacture }}</div>
+           <div class="item-details">
+            <span class="item-date">{{ facture.client }}</span>
+            <span class="item-description">{{ formatDate(facture.dateVente) }}</span>
+          </div>
+        </div>
+        <div class="item-actions">
+          <span class="item-amount">{{ facture.montantTotal | number:'1.2-2' }} DT</span>
+        </div>
       </div>
     </div>
     <ng-template #noFactures>
-      <div class="no-data">{{ 'FACTURES.NOFACTURE' | translate }}</div>
+      <div class="no-data"><p>{{ 'FACTURES.NOFACTURE' | translate }}</p></div>
     </ng-template>
   </div>
 </div>
-
-<!-- Bouton Salaires -->
-<div class="section-card" style="margin-top: 1.5rem;">
-  <div class="section-header">
-    <h2>Gestion des salaires</h2>
-    <a [routerLink]="['/dashboard/sorties/salaires', sortieId]" class="btn btn-primary">
-      <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-      </svg>
-      {{ 'SALAIRES.CALCULER' | translate }}
-    </a>
-  </div>
-</div>
-
-  <!-- Section Calcul des Salaires -->
-  <div class="section-card">
-    <div class="section-header">
-      <h2>{{ 'SALAIRES.TITLE' | translate }}</h2>
-      <a [routerLink]="['/dashboard/sorties/salaires', sortieId]" class="btn btn-success">
-        <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-        </svg>
-        {{ 'SALAIRES.CALCULER' | translate }}
-      </a>
-    </div>
-    <div class="section-content">
-      <p style="color: #6b7280; margin: 0;">
-        {{ 'SALAIRES.DESCRIPTION' | translate }}
-      </p>
-    </div>
-  </div>

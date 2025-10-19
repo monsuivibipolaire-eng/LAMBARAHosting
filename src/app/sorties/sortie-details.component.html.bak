@@ -64,7 +64,7 @@
         <div class="item-info">
           <div class="item-type">{{ getExpenseTypeName(depense.type) }}</div>
           <div class="item-details">
-            <span class="item-date">{{ depense.date | date:'dd/MM/yyyy' }}</span>
+            <span class="item-date">{{ formatDate(depense.date) }}</span>
             <span class="item-description" *ngIf="depense.description">{{ depense.description }}</span>
           </div>
         </div>
@@ -104,34 +104,3 @@
     </ng-template>
   </div>
 </div>
-
-<!-- Bouton Salaires -->
-<div class="section-card" style="margin-top: 1.5rem;">
-  <div class="section-header">
-    <h2>Gestion des salaires</h2>
-    <a [routerLink]="['/dashboard/sorties/salaires', sortieId]" class="btn btn-primary">
-      <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-      </svg>
-      {{ 'SALAIRES.CALCULER' | translate }}
-    </a>
-  </div>
-</div>
-
-  <!-- Section Calcul des Salaires -->
-  <div class="section-card">
-    <div class="section-header">
-      <h2>{{ 'SALAIRES.TITLE' | translate }}</h2>
-      <a [routerLink]="['/dashboard/sorties/salaires', sortieId]" class="btn btn-success">
-        <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-        </svg>
-        {{ 'SALAIRES.CALCULER' | translate }}
-      </a>
-    </div>
-    <div class="section-content">
-      <p style="color: #6b7280; margin: 0;">
-        {{ 'SALAIRES.DESCRIPTION' | translate }}
-      </p>
-    </div>
-  </div>

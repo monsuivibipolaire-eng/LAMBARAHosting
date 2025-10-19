@@ -1,39 +1,3 @@
-#!/bin/bash
-
-# ==============================================================================
-# SCRIPT FINAL pour corriger le composant SortieDetailsComponent.
-#
-# Actions :
-#   1. Réintègre les méthodes manquantes (addDepense, editDepense, deleteDepense).
-#   2. Conserve les correctifs précédents pour l'affichage et l'ajout des factures.
-# ==============================================================================
-
-# --- Configuration ---
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m'
-
-# Fichier à remplacer
-FILE_PATH="src/app/sorties/sortie-details.component.ts"
-
-# --- Vérifications ---
-if [ ! -f "$FILE_PATH" ]; then
-    echo -e "${RED}Erreur : Fichier non trouvé :${NC} $FILE_PATH"
-    echo "Assurez-vous d'exécuter ce script depuis la racine de votre projet."
-    exit 1
-fi
-
-echo -e "🔧 Fichier cible : ${YELLOW}$FILE_PATH${NC}"
-
-# Créer une sauvegarde
-cp "$FILE_PATH" "${FILE_PATH}.bak.finalfix"
-echo "  -> Une sauvegarde a été créée : ${FILE_PATH}.bak.finalfix"
-
-echo "  -> Remplacement du fichier par la version finale et complète..."
-
-# --- Remplacement complet du fichier ---
-cat > "$FILE_PATH" << 'EOF'
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, take } from 'rxjs';
@@ -96,41 +60,6 @@ export class SortieDetailsComponent implements OnInit {
     const d = date.toDate ? date.toDate() : new Date(date);
     return new Intl.DateTimeFormat('fr-FR').format(d);
   }
-
-  // --- LOGIQUE POUR LES DÉPENSES (RÉINTÉGRÉE) ---
-
-  addDepense(): void {
-    this.router.navigate(['/dashboard/sorties/details', this.sortieId, 'depenses', 'add']);
-  }
-
-  editDepense(depenseId: string): void {
-    this.router.navigate(['/dashboard/sorties/details', this.sortieId, 'depenses', 'edit', depenseId]);
-  }
-
-  async deleteDepense(depense: Depense): Promise<void> {
-    if (!depense.id) return;
-    const confirmed = await this.alertService.confirmDelete(`la dépense de type ${depense.type}`);
-    if (confirmed) {
-      try {
-        await this.depenseService.deleteDepense(depense.id);
-        this.alertService.toast('Dépense supprimée avec succès', 'success');
-      } catch (error) {
-        this.alertService.error('Erreur lors de la suppression');
-        console.error(error);
-      }
-    }
-  }
-
-  getExpenseTypeName(type: string): string {
-    const types: any = {
-      'fuel': 'Carburant', 'ice': 'Glace', 'oilchange': 'Vidange',
-      'crewcnss': 'CNSS Équipage', 'crewbonus': 'Prime Équipage',
-      'food': 'Alimentation', 'vms': 'VMS', 'misc': 'Divers'
-    };
-    return types[type] || type;
-  }
-
-  // --- LOGIQUE POUR LES FACTURES (AJOUTÉE PRÉCÉDEMMENT) ---
 
   addFacture(): void {
     this.sortie.pipe(take(1)).subscribe(sortie => {
@@ -208,20 +137,19 @@ export class SortieDetailsComponent implements OnInit {
         };
         await this.factureVenteService.addFacture(newFacture);
         this.alertService.success('Facture ajoutée avec succès!');
-        this.loadFactures();
+        this.loadFactures(); // Recharger la liste
       } catch (error) {
         this.alertService.error('Erreur lors de l\'ajout');
       }
     }
   }
+
+  getExpenseTypeName(type: string): string {
+    const types: any = {
+      'fuel': 'Carburant', 'ice': 'Glace', 'oilchange': 'Vidange',
+      'crewcnss': 'CNSS Équipage', 'crewbonus': 'Prime Équipage',
+      'food': 'Alimentation', 'vms': 'VMS', 'misc': 'Divers'
+    };
+    return types[type] || type;
+  }
 }
-EOF
-
-if [ $? -eq 0 ]; then
-    echo -e "  -> ${GREEN}Succès : Le fichier a été remplacé par la version finale et complète.${NC}"
-else
-    echo -e "  -> ${RED}Erreur : Un problème est survenu lors de la modification.${NC}"
-    exit 1
-fi
-
-echo -e "\n${GREEN}✅ Opération terminée. Toutes les erreurs devraient être corrigées.${NC}"

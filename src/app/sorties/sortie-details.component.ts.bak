@@ -2,11 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { Location } from '@angular/common';
-
 import { Sortie } from '../models/sortie.model';
 import { SortieService } from '../services/sortie.service';
-import { Facture } from '../models/facture.model';
-import { FactureService } from '../services/facture.service';
+// ✅ CORRECTION : Importer les bons modèles et services
+import { FactureVente } from '../models/facture-vente.model';
+import { FactureVenteService } from '../services/facture-vente.service';
 import { Depense } from '../models/depense.model';
 import { DepenseService } from '../services/depense.service';
 import { AlertService } from '../services/alert.service';
@@ -20,13 +20,15 @@ import { AlertService } from '../services/alert.service';
 export class SortieDetailsComponent implements OnInit {
   sortie!: Observable<Sortie | undefined>;
   depenses!: Observable<Depense[]>;
-  factures!: Observable<Facture[]>;
+  // ✅ CORRECTION : Utiliser le bon type de modèle
+  factures!: Observable<FactureVente[]>;
   sortieId!: string;
 
   constructor(
     private route: ActivatedRoute,
     private sortieService: SortieService,
-    private factureService: FactureService,
+    // ✅ CORRECTION : Injecter le bon service de factures
+    private factureVenteService: FactureVenteService,
     private depenseService: DepenseService,
     private alertService: AlertService,
     private router: Router,
@@ -43,7 +45,8 @@ export class SortieDetailsComponent implements OnInit {
   }
 
   loadFactures(): void {
-    this.factures = this.factureService.getFacturesBySortie(this.sortieId);
+    // ✅ CORRECTION : Appeler le bon service
+    this.factures = this.factureVenteService.getFacturesBySortie(this.sortieId);
   }
 
   goBack(): void {
@@ -70,7 +73,6 @@ export class SortieDetailsComponent implements OnInit {
 
   async deleteDepense(depense: Depense): Promise<void> {
     if (!depense.id) return;
-    
     const confirmed = await this.alertService.confirmDelete(`la dépense de type ${depense.type}`);
     if (confirmed) {
       try {

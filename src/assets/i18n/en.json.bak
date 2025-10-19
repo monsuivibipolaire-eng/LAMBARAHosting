@@ -1,9 +1,4 @@
 {
-  "FACTURES": {
-    "TITLE": "Invoices",
-    "NOFACTURE": "No invoices recorded for this trip.",
-    "ADD": "Add Invoice"
-  },
   "AUTH": { "WELCOME": "Welcome", "SIGN_IN": "Please sign in to your account", "SIGNUP": "Fill in the information to sign up", "CREATE_ACCOUNT": "Create an Account", "EMAIL": "Email Address", "PASSWORD": "Password", "LOGIN": "Sign In", "NO_ACCOUNT": "Don't have an account? Sign Up", "HAVE_ACCOUNT": "Already have an account? Sign In" },
   "DASHBOARD": { "TITLE": "Dashboard", "WELCOME": "Welcome to your dashboard", "ACTIVITIES": "Activities", "RECENT_ACTIVITIES": "Recent Activity", "NO_ACTIVITIES": "No recent activity to display", "TOTAL_BOATS": "Total Boats", "TOTAL_SAILORS": "Total Sailors", "ACTIVE_BOATS": "Active Boats", "MAINTENANCE": "In Maintenance", "BOAT_ADDED": "Boat added", "BOAT_UPDATED": "Boat updated", "SAILOR_ADDED": "Sailor added", "SAILOR_UPDATED": "Sailor updated", "TIME_AGO": { "NOW": "Just now", "MINUTES": "{{minutes}} min ago", "HOURS": "{{hours}}h ago", "DAYS": "{{days}}d ago" } },
   "MENU": { "HOME": "Home", "BOATS": "Boats", "SORTIES": "Sea Trips", "AVANCES": "Advances", "SALAIRES": "Salaries", "VENTES": "Sales", "MOCK_DATA": "Mock Data", "SELECT_BOAT_FIRST": "Select a boat first to access this section" },
