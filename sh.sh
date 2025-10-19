@@ -6,9 +6,9 @@ FILE="src/app/salaires/salaires-list.component.ts"
 
 # 1. Sauvegarde
 cp "$FILE" "${FILE}.bak_$(date +%Y%m%d_%H%M%S)"
-echo "📝 Sauvegarde créée : ${FILE}.bak_$(date +%Y%m%d_%H%M%S)"
+echo "📝 Sauvegarde créée"
 
-# 2. Remplacer Facture par FactureVente partout
+# 2. Remplacer Facture par FactureVente
 perl -i -pe 's/\bFacture\b/FactureVente/g' "$FILE"
 echo "✅ Remplacement de 'Facture' par 'FactureVente'"
 
@@ -20,21 +20,15 @@ echo "✅ Correction du cast allFactures"
 perl -i -pe 's/f\.dateFacture/f.dateVente/g' "$FILE"
 echo "✅ Remplacement de 'dateFacture' par 'dateVente'"
 
-# 5. Vérifier les imports : importer FactureVente et retirer Facture
-perl -i -pe '
-  # ajouter import FactureVente si manquant
-  unless (/FactureVente.*from.*facture-vente.model/) {
-    s|(import .*facture-model.*;)|$1\nimport { FactureVente } from "..\/models\/facture-vente.model";|
-  }
-  # retirer import { Facture } from '../models/facture.model';
-  s|import \{ Facture \} from ..\/models\/facture.model';||;
-' "$FILE"
-echo "✅ Imports mis à jour"
+# 5. Retirer l'import de Facture (ancien modèle)
+sed -i.bak "/import { Facture } from '..\/models\/facture.model';/d" "$FILE"
+echo "✅ Suppression de l'import de Facture"
 
-# 6. Retirer toute référence à dateFacture dans les templates
-perl -i -pe 's/\$\{this\.formatDate\(f\.dateFacture\)\}/\$\{this.formatDate(f.dateVente)\}/g' "$FILE"
-echo "✅ Templates mis à jour"
+# 6. Ajouter import de FactureVente s'il manque
+grep -q "import { FactureVente } from '../models/facture-vente.model';" "$FILE" || \
+perl -i -pe "s|(import .*facture-vente.service.*;)|\1\nimport { FactureVente } from '../models/facture-vente.model';|" "$FILE"
+echo "✅ Ajout de l'import de FactureVente si nécessaire"
 
 echo ""
 echo "🎉 Corrections appliquées avec succès !"
-echo "➡️  Recompilez votre application pour vérifier."
+echo "➡️ Recompilez votre application."
