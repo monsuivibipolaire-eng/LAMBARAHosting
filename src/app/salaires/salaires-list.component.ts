@@ -229,30 +229,30 @@ export class SalairesListComponent implements OnInit {
   }
 
   // ✅ NOUVELLE MÉTHODE POUR ENREGISTRER UN PAIEMENT
-  async enregistrerPaiement(detail: DetailSalaireMarin): Promise<void> {
-    const { value: montant } = await Swal.fire({
-      title: this.translate.instant('SALAIRES.PAYMENT_MODAL_TITLE', { name: detail.marinNom }),
-      input: 'number',
-      inputLabel: this.translate.instant('SALAIRES.PAYMENT_MODAL_LABEL', { amount: detail.resteAPayer.toFixed(2) }),
-      inputValue: detail.resteAPayer > 0 ? detail.resteAPayer.toFixed(2) : 0,
-      showCancelButton: true,
-      confirmButtonText: this.translate.instant('FORM.SAVE'),
-      cancelButtonText: this.translate.instant('FORM.CANCEL'),
-      confirmButtonColor: '#10b981',
-      inputValidator: (value) => {
+ async enregistrerPaiement(detail: DetailSalaireMarin): Promise<void> {
+  const { value: montant } = await Swal.fire({
+    title: this.translate.instant('SALAIRES.PAYMENT_MODAL_TITLE', { name: detail.marinNom }),
+    input: 'number',
+    inputLabel: this.translate.instant('SALAIRES.PAYMENT_MODAL_LABEL', { amount: detail.resteAPayer.toFixed(2) }),
+    inputValue: detail.resteAPayer > 0 ? detail.resteAPayer.toFixed(2) : 0,
+    showCancelButton: true,
+    confirmButtonText: this.translate.instant('FORM.SAVE'),
+    cancelButtonText: this.translate.instant('FORM.CANCEL'),
+    confirmButtonColor: '#10b981',
+    inputValidator: (value) => {
       if (!value) return this.translate.instant('FORM.REQUIRED');
-        const amount = parseFloat(value);
-        if (amount <= 0) return this.translate.instant('SALAIRES.PAYMENTMODAL.ERRORPOSITIVE');
-        // ✅ CORRECTION: Permettre le paiement exact du solde
-        if (amount > detail.resteAPayer + 0.005) return this.translate.instant('SALAIRES.PAYMENTMODAL.ERROREXCEED');
-        return null;
-      }
-    });
+      const amount = parseFloat(value);
+      if (amount <= 0) return this.translate.instant('SALAIRES.PAYMENTMODAL.ERRORPOSITIVE');
+      // ✅ Tolérance pour les arrondis (0.01 DT)
+      if (amount > detail.resteAPayer + 0.01) return this.translate.instant('SALAIRES.PAYMENTMODAL.ERROREXCEED');
+      return null;
+    }
+  });
 
-    if (montant) {
-      try {
-        this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
-        const montantPaye = parseFloat(montant);
+  if (montant) {
+    try {
+      this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
+      const montantPaye = parseFloat(montant);
 
       // 1. Enregistrer le paiement dans la collection "paiements"
       await this.paiementService.addPaiement({
@@ -262,28 +262,33 @@ export class SalairesListComponent implements OnInit {
         sortiesIds: this.dernierCalcul!.sortiesIds
       });
 
-      // 2. Mettre à jour l'état local
+      // 2. ✅ Mettre à jour l'état local UNE SEULE FOIS
       detail.totalPaiements += montantPaye;
-      detail.resteAPayer -= montantPaye;
+      
+      // 3. ✅ Recalculer le reste à payer basé sur le salaire total
+      const salaireTotal = detail.salaireBrut + detail.primeNuits;
+      detail.resteAPayer = salaireTotal - detail.totalAvances - detail.totalPaiements;
+      
+      // 4. ✅ Arrondir pour éviter les problèmes de précision
+      if (Math.abs(detail.resteAPayer) < 0.01) {
+        detail.resteAPayer = 0;
+      }
 
-      // 3. ✅ NOUVEAU: Sauvegarder dans Firestore (calculs_salaire)
+      // 5. ✅ Sauvegarder dans Firestore (calculs_salaire)
       if (this.dernierCalcul && this.dernierCalcul.id) {
         await this.salaireService.updateCalculSalaire(this.dernierCalcul.id, {
           detailsMarins: this.dernierCalcul.detailsMarins
         });
       }
 
-        // Mettre à jour l'état local pour un rafraîchissement instantané
-        detail.totalPaiements += montantPaye;
-        detail.resteAPayer -= montantPaye;
-
-        this.alertService.success(this.translate.instant('SALAIRES.PAYMENT_SUCCESS'));
-      } catch (error) {
-        console.error('Erreur:', error);
-        this.alertService.error();
-      }
+      this.alertService.success(this.translate.instant('SALAIRES.PAYMENT_SUCCESS'));
+    } catch (error) {
+      console.error('Erreur:', error);
+      this.alertService.error();
     }
   }
+}
+
 
   private calculerNombreNuits(sortie: Sortie): number {
     if (!sortie?.dateDepart || !sortie?.dateRetour) return 0;
