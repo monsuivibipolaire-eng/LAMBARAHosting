@@ -166,6 +166,7 @@ export class MockDataService {
     const ids: string[] = [];
     for (let i = 0; i < 6; i++) {
       const marin: Omit<Marin, 'id'> = {
+    coefficientSalaire: 1.0,
         bateauId,
         nom: noms[i],
         prenom: prenoms[i],
@@ -229,7 +230,7 @@ export class MockDataService {
       const poissonsSelectionnes = this.shuffleArray([...this.typesPoissons])
         .slice(0, nombreTypesPoissons);
       
-      let montantTotalFacture = 0;
+      let montantFacture = 0;
       let detailsTexte = '';
       
       for (const poisson of poissonsSelectionnes) {
@@ -237,30 +238,30 @@ export class MockDataService {
         const prixUnitaire = Math.floor(
           (Math.random() * (poisson.prixMax - poisson.prixMin) + poisson.prixMin) * 100
         ) / 100;
-        const montantTotal = Math.round(quantite * prixUnitaire * 100) / 100;
+        const montant = Math.round(quantite * prixUnitaire * 100) / 100;
         
-        detailsTexte += `${poisson.nom}: ${quantite} kg × ${prixUnitaire} DT = ${montantTotal} DT\n`;
-        montantTotalFacture += montantTotal;
+        detailsTexte += `${poisson.nom}: ${quantite} kg × ${prixUnitaire} DT = ${montant} DT\n`;
+        montantFacture += montant;
       }
 
-      montantTotalFacture = Math.round(montantTotalFacture * 100) / 100;
+      montantFacture = Math.round(montantFacture * 100) / 100;
 
       const numeroFacture = `FA-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000).padStart(4, '0')}`;
       const client = this.nomsClients[Math.floor(Math.random() * this.nomsClients.length)];
       
       const facture: Omit<FactureVente, 'id'> = {
+      montant: montantFacture,
         sortieId,
         numeroFacture,
         client,
         dateVente: new Date(),
-        montantTotal: montantTotalFacture,
         details: detailsTexte.trim(),
         createdAt: new Date()
       };
       
       try {
         await addDoc(collection(this.firestore, 'factures-vente'), facture);
-        console.log(`    ✓ ${numeroFacture} - ${client} - ${montantTotalFacture} DT`);
+        console.log(`    ✓ ${numeroFacture} - ${client} - ${montantFacture} DT`);
       } catch (error) {
         console.error(`    ✗ Erreur facture ${i + 1}:`, error);
       }

@@ -1,133 +1,128 @@
-<div class="salaires-container">
-  <div class="header">
-    <h1 class="title">{{ 'SALAIRES.TITLE' | translate }}</h1>
-  </div>
-
-  <div *ngIf="loading" class="loading">
-    <div class="spinner"></div>
-    <p>{{ 'MESSAGES.LOADING' | translate }}</p>
-  </div>
-
-  <div *ngIf="!loading && selectedBoat" class="content">
-    <div class="tabs">
-      <button class="tab-button" [class.active]="activeTab === 'ouvertes'" (click)="selectTab('ouvertes')">
-        {{ 'SALAIRES.TABS.OPEN_TRIPS' | translate }}
-        <span class="badge">{{ sortiesOuvertes.length }}</span>
-      </button>
-      <button class="tab-button" [class.active]="activeTab === 'historique'" (click)="selectTab('historique')">
-        {{ 'SALAIRES.TABS.HISTORY' | translate }}
-        <span class="badge">{{ historiqueDesCalculs.length }}</span>
-      </button>
-    </div>
-
-    <div *ngIf="dernierCalcul" class="results-container">
-  <div class="results-header">
-    <h2>{{ 'SALAIRES.RESULTS.TITLE' | translate }}</h2>
-    <button class="btn-close-results" (click)="dernierCalcul = null" [title]="'SALAIRES.RESULTS.CLOSE' | translate">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    </button>
-  </div>
-
-  <div class="accordion">
-    <div class="accordion-item">
-      <button class="accordion-header" (click)="toggleAccordion('summary')">
-        <span>{{ 'SALAIRES.RESULTS.FINANCIAL_SUMMARY' | translate }}</span>
-        <svg class="chevron" [class.rotate]="accordionState['summary']" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      <div class="accordion-content" [class.open]="accordionState['summary']">
-        <div class="summary-grid">
-          <div class="summary-item">
-            <span>{{ 'SALAIRES.REVENU_TOTAL' | translate }}</span>
-            <strong class="revenue">
-              {{ dernierCalcul.revenuTotal | number:'1.2-2' }} DT
-              <button (click)="showRevenueDetails()" class="details-link">({{ 'COMMON.VIEW_DETAILS' | translate }})</button>
-            </strong>
+<div class="container-fluid p-4">
+  <div class="row mb-4">
+    <div class="col-12">
+      <h2 class="mb-4">حساب الرواتب</h2>
+      
+      <!-- Statistiques -->
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+              <h5>الرحلات الإجمالية</h5>
+              <h2>{{ sorties.length }}</h2>
+            </div>
           </div>
-          <div class="summary-item">
-            <span>{{ 'SALAIRES.TOTAL_DEPENSES' | translate }}</span>
-            <strong class="expenses">
-              {{ dernierCalcul.totalDepenses | number:'1.2-2' }} DT
-              <button (click)="showExpenseDetails()" class="details-link">({{ 'COMMON.VIEW_DETAILS' | translate }})</button>
-            </strong>
+        </div>
+        <div class="col-md-3">
+          <div class="card bg-success text-white">
+            <div class="card-body text-center">
+              <h5>الرحلات المحسوبة</h5>
+              <h2>{{ sortiesCalculees }}</h2>
+            </div>
           </div>
-          <div class="summary-item">
-            <span>{{ 'SALAIRES.BENEFICE_NET' | translate }}</span>
-            <strong class="benefit">{{ dernierCalcul.beneficeNet | number:'1.2-2' }} DT</strong>
+        </div>
+        <div class="col-md-3">
+          <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+              <h5>الرحلات المفتوحة</h5>
+              <h2>{{ sortiesOuvertes }}</h2>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card bg-info text-white">
+            <div class="card-body text-center">
+              <h5>البحارة</h5>
+              <h2>{{ marins.length }}</h2>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="accordion-item">
-      <button class="accordion-header" (click)="toggleAccordion('sharing')">
-        <span>{{ 'SALAIRES.RESULTS.PROFIT_SHARING' | translate }}</span>
-        <svg class="chevron" [class.rotate]="accordionState['sharing']" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      <div class="accordion-content" [class.open]="accordionState['sharing']">
-        <div class="summary-grid">
-          <div class="summary-item">
-            <span>{{ 'SALAIRES.PART_PROPRIETAIRE' | translate }}</span>
-            <strong>{{ dernierCalcul.partProprietaire | number:'1.2-2' }} DT</strong>
-          </div>
-          <div class="summary-item">
-            <span>{{ 'SALAIRES.PART_EQUIPAGE' | translate }}</span>
-            <strong>{{ dernierCalcul.partEquipage | number:'1.2-2' }} DT</strong>
-          </div>
-          <div class="summary-item">
-            <span>- {{ 'SALAIRES.DEDUCTIONS' | translate }} ({{ 'SALAIRES.NUITS' | translate }})</span>
-            <strong class="expenses">{{ dernierCalcul.deductionNuits | number:'1.2-2' }} DT</strong>
-          </div>
-          <div class="summary-item net-share">
-            <span>{{ 'SALAIRES.MONTANT_A_PARTAGER' | translate }}</span>
-            <strong>{{ dernierCalcul.montantAPartager | number:'1.2-2' }} DT</strong>
-          </div>
+      <!-- Bouton calcul global pour sorties sélectionnées -->
+      <div class="row mb-3" *ngIf="selectedSortiesIds.length > 0">
+        <div class="col-12">
+          <button class="btn btn-success btn-lg w-100" (click)="calculerSalairesSelectionnes()">
+            <i class="fas fa-calculator me-2"></i>
+            حساب الرواتب للرحلات المختارة ({{ selectedSortiesIds.length }})
+          </button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="accordion-item">
-      <button class="accordion-header" (click)="toggleAccordion('details')">
-        <span>{{ 'SALAIRES.DETAILS_PAR_MARIN' | translate }}</span>
-        <svg class="chevron" [class.rotate]="accordionState['details']" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      <div class="accordion-content open" [class.open]="accordionState['details']">
-        <div class="table-container">
-          <table class="salaires-table">
-            <thead>
+  <!-- Liste des sorties de mer (toutes, ordre descendant par date) -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white">
+          <h5 class="mb-0">قائمة الرحلات البحرية (من الأحدث إلى الأقدم)</h5>
+        </div>
+        <div class="card-body p-0">
+          <!-- Table des sorties -->
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
               <tr>
-                <th>{{ 'SAILORS.TITLE' | translate }}</th>
-                <th>{{ 'SAILORS.PART' | translate }}</th>
-                <th>{{ 'SALAIRES.SALAIRE_BASE' | translate }}</th>
-                <th>{{ 'SALAIRES.PRIME_NUITS' | translate }}</th>
-                <th>{{ 'AVANCES.TITLE' | translate }}</th>
-                <th>{{ 'SALAIRES.DEJA_PAYE' | translate }}</th>
-                <th class="reste">{{ 'SALAIRES.RESTE_A_PAYER' | translate }}</th>
-                <th>{{ 'BOATS.ACTIONS' | translate }}</th>
+                <th width="5%">
+                  <input type="checkbox" (change)="toggleSelectAll($event)" 
+                         [checked]="isAllSelected()">
+                </th>
+                <th width="15%">تاريخ البداية</th>
+                <th width="15%">تاريخ النهاية</th>
+                <th width="15%">الحالة</th>
+                <th width="15%">حالة الحساب</th>
+                <th width="20%">المبلغ الإجمالي</th>
+                <th width="15%">إجراءات</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let detail of dernierCalcul.detailsMarins">
-                <td class="marin-name">{{ detail.marinNom }}</td>
-                <td>{{ detail.part }}</td>
-                <td>{{ detail.salaireBrut | number:'1.2-2' }}</td>
-                <td>{{ detail.primeNuits | number:'1.2-2' }}</td>
-                <td class="avances">-{{ detail.totalAvances | number:'1.2-2' }}</td>
-                <td class="paiements">-{{ detail.totalPaiements | number:'1.2-2' }}</td>
-                <td class="reste" [class.paid]="detail.resteAPayer <= 0">
-                  <strong>{{ detail.resteAPayer | number:'1.2-2' }} DT</strong>
+              <tr *ngFor="let sortie of sorties" 
+                  [class.table-success]="sortie.salaireCalcule"
+                  [class.table-warning]="!sortie.salaireCalcule && sortie.statut === 'terminee'">
+                <td>
+                  <input type="checkbox" 
+                         [checked]="isSortieSelected(sortie.id!)"
+                         (change)="toggleSortieSelection(sortie.id!)"
+                         [disabled]="sortie.salaireCalcule">
+                </td>
+                <td>{{ sortie.dateDebut | date:'dd/MM/yyyy' }}</td>
+                <td>{{ sortie.dateFin | date:'dd/MM/yyyy' }}</td>
+                <td>
+                  <span class="badge" 
+                        [class.bg-success]="sortie.statut === 'terminee'"
+                        [class.bg-warning]="sortie.statut === 'en_cours'"
+                        [class.bg-secondary]="sortie.statut === 'annulee'">
+                    {{ sortie.statut === 'terminee' ? 'مكتملة' : (sortie.statut === 'en_cours' ? 'جارية' : 'ملغاة') }}
+                  </span>
                 </td>
                 <td>
-                  <button class="btn btn-sm btn-pay" (click)="enregistrerPaiement(detail)" [disabled]="detail.resteAPayer <= 0">
-                    {{ detail.resteAPayer <= 0 ? ('SALAIRES.PAYE' | translate) : ('SALAIRES.PAYER' | translate) }}
+                  <span class="badge" 
+                        [class.bg-primary]="sortie.salaireCalcule"
+                        [class.bg-warning]="!sortie.salaireCalcule">
+                    {{ sortie.salaireCalcule ? 'محسوبة' : 'غير محسوبة' }}
+                  </span>
+                </td>
+                <td>
+                  <strong>{{ getTotalVentesSortie(sortie) | currency:'TND' }}</strong>
+                </td>
+                <td>
+                  <!-- Bouton calculer UNIQUEMENT pour sorties non calculées -->
+                  <button *ngIf="!sortie.salaireCalcule && sortie.statut === 'terminee'" 
+                          class="btn btn-sm btn-success"
+                          (click)="calculerUneSortie(sortie.id!)">
+                    <i class="fas fa-calculator me-1"></i>
+                    حساب
                   </button>
+                  <span *ngIf="sortie.salaireCalcule" class="text-success">
+                    <i class="fas fa-check-circle me-1"></i>
+                    تم الحساب
+                  </span>
+                </td>
+              </tr>
+              <tr *ngIf="sorties.length === 0">
+                <td colspan="7" class="text-center text-muted py-4">
+                  <i class="fas fa-ship fa-3x mb-3 d-block"></i>
+                  لا توجد رحلات بحرية لهذا القارب
                 </td>
               </tr>
             </tbody>
@@ -136,48 +131,80 @@
       </div>
     </div>
   </div>
-</div>
-    
-    <div *ngIf="!dernierCalcul">
-      <div *ngIf="activeTab === 'ouvertes'" class="tab-content">
-        <div class="section-card">
-          <h2>{{ 'SORTIES.SELECTSORTIES' | translate }}</h2>
-          <div *ngIf="sortiesOuvertes.length > 0; else noOpenTrips" class="sorties-list">
-            <div *ngFor="let sortie of sortiesOuvertes" 
-                 class="sortie-item" [class.selected]="isSortieSelected(sortie.id!)" (click)="toggleSortie(sortie.id!)">
-              <input type="checkbox" [checked]="isSortieSelected(sortie.id!)" (click)="$event.stopPropagation()">
-              <div class="sortie-info">
-                <strong>{{ sortie.destination }}</strong>
-                <span>{{ formatDate(sortie.dateDepart) }} - {{ formatDate(sortie.dateRetour) }}</span>
-              </div>
-            </div>
-          </div>
-          <ng-template #noOpenTrips><div class="no-data-small"><p>{{ 'SALAIRES.NO_OPEN_TRIPS' | translate }}</p></div></ng-template>
-          
-          <button class="btn btn-success btn-lg" (click)="calculerSalaires()" [disabled]="selectedSortiesIds.length === 0 || marins.length === 0">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-            {{ 'SALAIRES.CALCULER' | translate }}
-          </button>
+
+  <!-- Résultats de calcul par marin -->
+  <div class="row mt-4" *ngIf="resultatCalcul && resultatCalcul.length > 0">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">نتائج حساب الرواتب</h5>
+        </div>
+        <div class="card-body">
+          <table class="table table-bordered">
+            <thead class="table-light">
+              <tr>
+                <th>البحار</th>
+                <th>السلف</th>
+                <th>الراتب المستحق</th>
+                <th>الباقي للدفع</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let marin of resultatCalcul">
+                <td>
+                  <strong>{{ marin.nom }} {{ marin.prenom }}</strong><br>
+                  <small class="text-muted">{{ marin.fonction }}</small>
+                </td>
+                <td class="text-danger">
+                  <strong>{{ marin.totalAvances | currency:'TND' }}</strong>
+                </td>
+                <td class="text-success">
+                  <strong>{{ marin.salaireCalcule | currency:'TND' }}</strong>
+                </td>
+                <td [class.text-success]="marin.resteAPayer >= 0" 
+                    [class.text-danger]="marin.resteAPayer < 0">
+                  <strong>{{ marin.resteAPayer | currency:'TND' }}</strong>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot class="table-secondary">
+              <tr>
+                <td><strong>الإجمالي</strong></td>
+                <td><strong>{{ getTotalAvances() | currency:'TND' }}</strong></td>
+                <td><strong>{{ getTotalSalaires() | currency:'TND' }}</strong></td>
+                <td><strong>{{ getTotalReste() | currency:'TND' }}</strong></td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </div>
+    </div>
+  </div>
 
-      <div *ngIf="activeTab === 'historique'" class="tab-content">
-        <div class="section-card">
-          <h2>{{ 'SALAIRES.TABS.CALCULATED_TRIPS' | translate }}</h2>
-          <div *ngIf="historiqueDesCalculs.length > 0; else noCalculatedTrips" class="sorties-list-history">
-            <div *ngFor="let calcul of historiqueDesCalculs" class="sortie-item-history">
-              <div class="sortie-info">
-                <strong>{{ calcul.sortiesDestinations.join(', ') }}</strong>
-                <span>Calcul du {{ formatDate(calcul.dateCalcul) }}</span>
+  <!-- Historique des calculs -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0">سجل الحسابات السابقة</h5>
+        </div>
+        <div class="card-body">
+          <div *ngFor="let calcul of historiqueDesCalculs" class="border-bottom pb-3 mb-3">
+            <div class="row">
+              <div class="col-md-4">
+                <strong>{{ calcul.dateCalcul | date:'dd/MM/yyyy HH:mm' }}</strong>
               </div>
-              <div class="calcul-info">
-                <span class="total-label">{{ 'SALAIRES.BENEFICE_NET' | translate }}</span>
-                <span class="total-value">{{ calcul.beneficeNet | number:'1.2-2' }} DT</span>
+              <div class="col-md-4">
+                <span class="badge bg-secondary">{{ calcul.nombreSorties }} رحلة</span>
               </div>
-              <button class="btn btn-secondary btn-sm" (click)="viewCalculDetails(calcul)">{{ 'COMMON.VIEW_DETAILS' | translate }}</button>
+              <div class="col-md-4 text-end">
+                <strong class="text-success">{{ calcul.total | currency:'TND' }}</strong>
+              </div>
             </div>
           </div>
-          <ng-template #noCalculatedTrips><div class="no-data-small"><p>{{ 'SALAIRES.NO_CALCULATED_TRIPS' | translate }}</p></div></ng-template>
+          <div *ngIf="historiqueDesCalculs.length === 0" class="text-center text-muted py-4">
+            لا توجد حسابات سابقة
+          </div>
         </div>
       </div>
     </div>

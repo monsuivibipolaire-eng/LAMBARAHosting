@@ -57,7 +57,7 @@
           <div *ngFor="let facture of item.factures" class="facture-card">
             <div class="facture-header-card">
               <span class="facture-numero">{{ facture.numeroFacture }}</span>
-              <span class="facture-montant">{{ facture.montantTotal | number:'1.2-2' }} DT</span>
+              <span class="facture-montant">{{ facture.montant | number:'1.2-2' }} DT</span>
             </div>
             <div class="facture-body">
               <p><strong>{{ 'VENTES.DETAILS_MODAL.CLIENT' | translate }}:</strong> {{ facture.client }}</p>

@@ -1,5 +1,6 @@
 export interface Marin {
   id?: string;
+  coefficientSalaire: number;
   bateauId: string;
   nom: string;
   prenom: string;

@@ -188,6 +188,7 @@ export class PointageComponent implements OnInit {
           bateauId: this.sortie!.bateauId,
           email: `${formValues.prenom}.${formValues.nom}@email.com`.toLowerCase(),
           numeroPermis: 'N/A',
+    coefficientSalaire: 1.0,
           dateEmbauche: new Date(),
           adresse: 'N/A',
           statut: 'actif'

@@ -167,7 +167,7 @@ export class SortieDetailsComponent implements OnInit {
           numeroFacture: formValues.numero,
           client: formValues.client,
           dateVente: new Date(formValues.date),
-          montantTotal: formValues.montant,
+          montant: formValues.montant,
           details: formValues.details || undefined
         };
         await this.factureVenteService.addFacture(newFacture);

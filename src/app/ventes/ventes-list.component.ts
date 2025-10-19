@@ -61,7 +61,7 @@ export class VentesListComponent implements OnInit {
       combineLatest(facturesObservables).subscribe((allFactures: FactureVente[][]) => {
         this.sortiesWithFactures = sorties.map((sortie, index) => {
           const factures = allFactures[index];
-          const totalVentes = factures.reduce((sum, f) => sum + f.montantTotal, 0);
+          const totalVentes = factures.reduce((sum, f) => sum + f.montant, 0);
           
           return {
             sortie,
@@ -268,7 +268,7 @@ export class VentesListComponent implements OnInit {
           numeroFacture: formValues.numero,
           client: formValues.client,
           dateVente: new Date(formValues.date),
-          montantTotal: formValues.montant,
+          montant: formValues.montant,
           details: formValues.details || undefined
         };
 
@@ -440,7 +440,7 @@ export class VentesListComponent implements OnInit {
           numeroFacture: formValues.numero,
           client: formValues.client,
           dateVente: new Date(formValues.date),
-          montantTotal: formValues.montant,
+          montant: formValues.montant,
           details: formValues.details || undefined
         };
 
@@ -483,7 +483,7 @@ export class VentesListComponent implements OnInit {
           </div>
           <div class="form-group">
             <label class="form-label">Montant total (DT)</label>
-            <input id="swal-montant" type="number" class="custom-input" value="${facture.montantTotal}" step="0.01" min="0">
+            <input id="swal-montant" type="number" class="custom-input" value="${facture.montant}" step="0.01" min="0">
           </div>
           <div class="form-group">
             <label class="form-label">Détails</label>
@@ -516,7 +516,7 @@ export class VentesListComponent implements OnInit {
           numeroFacture: formValues.numero,
           client: formValues.client,
           dateVente: new Date(formValues.date),
-          montantTotal: formValues.montant,
+          montant: formValues.montant,
           details: formValues.details || undefined
         });
         
@@ -532,7 +532,7 @@ export class VentesListComponent implements OnInit {
 
   async supprimerFacture(facture: FactureVente): Promise<void> {
     const confirmed = await this.alertService.confirmDelete(
-      `la facture ${facture.numeroFacture} (${facture.montantTotal} DT)`
+      `la facture ${facture.numeroFacture} (${facture.montant} DT)`
     );
 
     if (confirmed) {

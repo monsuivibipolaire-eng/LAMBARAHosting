@@ -39,7 +39,7 @@
       <div *ngFor="let facture of factures" class="facture-card">
         <div class="facture-header">
           <h3>{{ facture.numeroFacture }}</h3>
-          <span class="facture-amount">{{ facture.montantTotal | number:'1.2-2' }} DT</span>
+          <span class="facture-amount">{{ facture.montant | number:'1.2-2' }} DT</span>
         </div>
         <div class="facture-body">
           <p><strong>Client:</strong> {{ facture.client }}</p>

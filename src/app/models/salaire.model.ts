@@ -2,7 +2,7 @@ import { FactureVente } from './facture-vente.model';
 import { Depense } from './depense.model';
 
 export interface CalculSalaire {
-  id?: string;
+  nombreSorties?: number;  id?: string;
   bateauId: string;
   sortiesIds: string[];
   sortiesDestinations: string[];

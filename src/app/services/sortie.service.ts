@@ -53,7 +53,7 @@ export class SortieService {
           return combineLatest([depenses$, factures$]).pipe(
             map(([depenses, factures]) => {
               const totalDepenses = depenses.reduce((sum, item) => sum + item.montant, 0);
-              const totalFactures = factures.reduce((sum, item) => sum + item.montantTotal, 0);
+              const totalFactures = factures.reduce((sum, item) => sum + item.montant, 0);
               return {
                 ...sortie,
                 depenses,

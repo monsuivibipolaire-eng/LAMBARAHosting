@@ -1,282 +1,223 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import Swal from 'sweetalert2';
-import { take, combineLatest } from 'rxjs';
-import { SortieService, SortieDetails } from '../services/sortie.service';
-import { MarinService } from '../services/marin.service';
-import { AvanceService } from '../services/avance.service';
-import { PaiementService } from '../services/paiement.service';
+import { Firestore, collection, query, where, orderBy, collectionData, doc, updateDoc } from '@angular/fire/firestore';
+import { Observable, combineLatest, forkJoin } from 'rxjs';
 import { SelectedBoatService } from '../services/selected-boat.service';
-import { AlertService } from '../services/alert.service';
-import { Marin } from '../models/marin.model';
-import { Bateau } from '../models/bateau.model';
+import { MarinService } from '../services/marin.service';
 import { SalaireService } from '../services/salaire.service';
-import { CalculSalaire, DetailSalaireMarin } from '../models/salaire.model';
-import { FactureVente } from '../models/facture-vente.model';
-import { Depense } from '../models/depense.model';
+import { AvanceService } from '../services/avance.service';
+import { FactureVenteService } from '../services/facture-vente.service';
+import { DepenseService } from '../services/depense.service';
+import { FinancialEventsService } from '../services/financial-events.service';
+import { SortieMer } from '../models/sortie-mer.model';
+import { Marin } from '../models/marin.model';
 
 @Component({
   selector: 'app-salaires-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule],
   templateUrl: './salaires-list.component.html',
   styleUrls: ['./salaires-list.component.scss']
 })
 export class SalairesListComponent implements OnInit {
-  selectedBoat: Bateau | null = null;
-  marins: Marin[] = [];
-  selectedSortiesIds: string[] = [];
-  
-  activeTab: 'ouvertes' | 'historique' = 'ouvertes';
-  sortiesOuvertes: SortieDetails[] = [];
-  sortiesCalculees: SortieDetails[] = [];
-  historiqueDesCalculs: CalculSalaire[] = [];
 
-  dernierCalcul: CalculSalaire | null = null;
-  accordionState: { [key: string]: boolean } = { summary: true, sharing: true, details: true };
-  loading = true;
+  // Retourne le total des ventes d’une sortie
+  getTotalVentesSortie(sortie: any): number { return sortie.totalVentes ?? 0; }
+
+
+  /**
+   * Helper: total des ventes pour une sortie (doit être chargé au préalable)
+   */
+  selectedBoat: any = null;
+  sorties: SortieMer[] = [];  // Toutes les sorties (ouvertes + fermées)
+  marins: Marin[] = [];
+  historiqueDesCalculs: any[] = [];
+  sortiesOuvertes: number = 0;
+  sortiesCalculees: number = 0;
+  selectedSortiesIds: string[] = [];  // Sorties sélectionnées par l'utilisateur
+  resultatCalcul: any[] = [];  // Résultats détaillés par marin (avances, salaire, reste)
 
   constructor(
-    private sortieService: SortieService,
-    private marinService: MarinService,
-    private avanceService: AvanceService,
-    private paiementService: PaiementService,
-    private salaireService: SalaireService,
+    private firestore: Firestore,
     private selectedBoatService: SelectedBoatService,
-    private alertService: AlertService,
-    private translate: TranslateService
+    private marinService: MarinService,
+    private salaireService: SalaireService,
+    private avanceService: AvanceService,
+    private factureVenteService: FactureVenteService,
+    private depenseService: DepenseService,
+    private finEvents: FinancialEventsService
   ) {}
 
   ngOnInit(): void {
     this.selectedBoat = this.selectedBoatService.getSelectedBoat();
-    if (this.selectedBoat) {
+    if (this.selectedBoat && this.selectedBoat.id) {
       this.loadData();
-    } else {
-      this.loading = false;
     }
+
+    // Recharger données à chaque changement financier
+    this.finEvents.change$.subscribe(() => {
+      this.selectedBoat = this.selectedBoatService.getSelectedBoat();
+      if (this.selectedBoat && this.selectedBoat.id) {
+        this.loadData();
+      }
+    });
   }
 
   loadData(): void {
-    if (!this.selectedBoat?.id) return;
-    this.loading = true;
-    const boatId = this.selectedBoat.id;
+    const bateauId = this.selectedBoat.id;
+    const sortiesCollection = collection(this.firestore, 'sorties-mer');
+    const sortiesQuery = query(
+      sortiesCollection,
+      where('bateauId', '==', bateauId),
+      orderBy('dateFin', 'desc')  // Ordre descendant par date (plus récentes en premier)
+    );
 
-    combineLatest([
-      this.sortieService.getSortiesByBateau(boatId),
-      this.marinService.getMarinsByBateau(boatId),
-      this.salaireService.getCalculsByBateau(boatId)
-    ]).subscribe(([sorties, marins, calculs]) => {
-      this.sortiesOuvertes = sorties.filter(s => s.statut === 'terminee' && !s.salaireCalcule);
-      this.sortiesCalculees = sorties.filter(s => s.salaireCalcule === true);
-      this.marins = marins;
-      this.historiqueDesCalculs = calculs.sort((a, b) => {
-        const dateA = (a.dateCalcul as any).toDate ? (a.dateCalcul as any).toDate() : new Date(a.dateCalcul);
-        const dateB = (b.dateCalcul as any).toDate ? (b.dateCalcul as any).toDate() : new Date(b.dateCalcul);
-        return dateB.getTime() - dateA.getTime();
-      });
-      this.loading = false;
+    const sorties$ = collectionData(sortiesQuery, { idField: 'id' }) as Observable<SortieMer[]>;
+    const marins$ = this.marinService.getMarinsByBateau(bateauId);
+    const calculs$ = this.salaireService.getCalculsByBateau(bateauId);
+
+    combineLatest([sorties$, marins$, calculs$]).subscribe(([sorties, marins, calculs]) => {
+      this.sorties = sorties;
+      this.marins = marins || [];
+      this.historiqueDesCalculs = calculs ? calculs.sort((a, b) => 
+        new Date(b.dateCalcul).getTime() - new Date(a.dateCalcul).getTime()
+      ) : [];
+
+      // Stats
+      this.sortiesOuvertes = sorties.filter(s => !s.salaireCalcule && s.statut === 'terminee').length;
+      this.sortiesCalculees = sorties.filter(s => s.salaireCalcule === true).length;
     });
-    // Calcul automatique
-    this.autoCalculateSalaries();
-  }
-  
-  selectTab(tabName: 'ouvertes' | 'historique'): void {
-    this.activeTab = tabName;
-    this.dernierCalcul = null;
   }
 
-  toggleSortie(sortieId: string): void {
-    this.dernierCalcul = null;
-    const index = this.selectedSortiesIds.indexOf(sortieId);
-    if (index > -1) { this.selectedSortiesIds.splice(index, 1); } else { this.selectedSortiesIds.push(sortieId); }
-  }
-
+  // Sélection des sorties
   isSortieSelected(sortieId: string): boolean {
     return this.selectedSortiesIds.includes(sortieId);
   }
 
-  async calculerSalaires(): Promise<void> {
+  toggleSortieSelection(sortieId: string): void {
+    const index = this.selectedSortiesIds.indexOf(sortieId);
+    if (index > -1) {
+      this.selectedSortiesIds.splice(index, 1);
+    } else {
+      this.selectedSortiesIds.push(sortieId);
+    }
+  }
+
+  isAllSelected(): boolean {
+    const selectables = this.sorties.filter(s => !s.salaireCalcule && s.statut === 'terminee');
+    return selectables.length > 0 && selectables.every(s => this.selectedSortiesIds.includes(s.id!));
+  }
+
+  toggleSelectAll(event: any): void {
+    const checked = event.target.checked;
+    const selectables = this.sorties.filter(s => !s.salaireCalcule && s.statut === 'terminee');
+    if (checked) {
+      this.selectedSortiesIds = selectables.map(s => s.id!);
+    } else {
+      this.selectedSortiesIds = [];
+    }
+  }
+
+  // Calculer UNE seule sortie (bouton sur la ligne)
+  async calculerUneSortie(sortieId: string): Promise<void> {
+    this.selectedSortiesIds = [sortieId];
+    await this.calculerSalairesSelectionnes();
+  }
+
+  // Calculer TOUTES les sorties sélectionnées
+  async calculerSalairesSelectionnes(): Promise<void> {
     if (this.selectedSortiesIds.length === 0) {
-      this.alertService.error(this.translate.instant('SALAIRES.ERROR_NO_SORTIE'));
-      return;
-    }
-    const totalParts = this.marins.reduce((sum, marin) => sum + (marin.part || 0), 0);
-    if (totalParts <= 0) {
-      this.alertService.error(this.translate.instant('SALAIRES.ERROR_NO_PARTS'));
+      alert('يرجى اختيار رحلة واحدة على الأقل');
       return;
     }
 
+    console.log('🔄 Calcul des salaires pour', this.selectedSortiesIds.length, 'sorties...');
+    
     try {
-      this.alertService.loading(this.translate.instant('MESSAGES.CALCULATING'));
-      const allSorties = [...this.sortiesOuvertes, ...this.sortiesCalculees];
-      const selectedSorties = allSorties.filter(s => this.selectedSortiesIds.includes(s.id!));
+      // Charger les données financières pour chaque sortie sélectionnée
+      const calculsParMarin: any = {};  // { marinId: { avances, salaire, reste } }
 
-      const allFactures = selectedSorties.flatMap(s => s.factures);
-      const allDepenses = selectedSorties.flatMap(s => s.depenses);
-
-      const revenuTotal = allFactures.reduce((sum, f) => sum + (f?.montantTotal || 0), 0);
-      const totalDepenses = allDepenses.reduce((sum, d) => sum + (d?.montant || 0), 0);
-      
-      const beneficeNet = revenuTotal - totalDepenses;
-      const partProprietaire = beneficeNet * 0.5;
-      const partEquipage = beneficeNet * 0.5;
-      const totalNuits = selectedSorties.reduce((total, s) => total + this.calculerNombreNuits(s), 0);
-      const deductionNuits = totalNuits * this.marins.length * 5;
-      const montantAPartager = partEquipage - deductionNuits;
-
-      let detailsMarins: DetailSalaireMarin[] = [];
+      // Pour chaque marin, calculer son salaire total sur les sorties sélectionnées
       for (const marin of this.marins) {
-        const part = marin.part || 0;
-        const salaireBrut = totalParts > 0 ? (montantAPartager * part) / totalParts : 0;
-        const primeNuits = totalNuits * 5;
-        const avances = await this.avanceService.getAvancesByMarin(marin.id!).pipe(take(1)).toPromise();
-        const totalAvances = avances?.reduce((sum, a) => sum + a.montant, 0) || 0;
-        const paiements = await this.paiementService.getPaiementsByMarin(marin.id!).pipe(take(1)).toPromise();
-        const totalPaiements = paiements?.reduce((sum, p) => sum + p.montant, 0) || 0;
-        const resteAPayer = salaireBrut + primeNuits - totalAvances - totalPaiements;
-        detailsMarins.push({ marinId: marin.id!, marinNom: `${marin.prenom} ${marin.nom}`, part, salaireBrut, primeNuits, totalAvances, totalPaiements, resteAPayer });
+        let totalAvances = 0;
+        let salaireCalcule = 0;
+
+        for (const sortieId of this.selectedSortiesIds) {
+          const sortie = this.sorties.find(s => s.id === sortieId);
+          if (!sortie) continue;
+
+          // Charger avances du marin pour cette sortie
+          const avances = await this.avanceService.getAvancesByMarin(marin.id!).toPromise();
+          const avancesSortie = avances?.filter(a => a.id === sortieId) || [];
+          totalAvances += avancesSortie.reduce((sum, a) => sum + a.montant, 0);
+
+          // Calculer salaire (exemple simplifié : revenus - dépenses, réparti selon coefficient)
+          const ventes = await this.factureVenteService.getFacturesBySortie(sortieId).toPromise();
+          const depenses = await this.depenseService.getDepensesBySortie(sortieId).toPromise();
+          
+          const totalVentes = ventes?.reduce((sum, v) => sum + v.montant, 0) || 0;
+          const totalDepenses = depenses?.reduce((sum, d) => sum + d.montant, 0) || 0;
+          const benefice = totalVentes - totalDepenses;
+
+          // Répartir selon coefficient (somme coefficients tous marins)
+          const sommeCoefficients = this.marins.reduce((sum, m) => sum + m.coefficientSalaire, 0);
+          const partMarin = (benefice * marin.coefficientSalaire) / sommeCoefficients;
+          salaireCalcule += partMarin;
+        }
+
+        calculsParMarin[marin.id!] = {
+          nom: marin.nom,
+          prenom: marin.prenom,
+          fonction: marin.fonction,
+          totalAvances,
+          salaireCalcule,
+          resteAPayer: salaireCalcule - totalAvances
+        };
       }
 
-      const calculData: Omit<CalculSalaire, 'id'> = {
-        bateauId: this.selectedBoat!.id!,
-        sortiesIds: this.selectedSortiesIds,
-        sortiesDestinations: selectedSorties.map(s => s.destination),
-        dateCalcul: new Date(),
-        revenuTotal, totalDepenses, beneficeNet, partProprietaire, partEquipage, deductionNuits, montantAPartager, detailsMarins,
-        factures: allFactures as FactureVente[],
-        depenses: allDepenses as Depense[]
-      };
-      
-      await this.salaireService.saveCalculSalaire(calculData);
+      // Afficher résultats
+      this.resultatCalcul = Object.values(calculsParMarin);
+      console.log('✅ Calcul terminé:', this.resultatCalcul);
 
+      // Marquer les sorties comme calculées
       for (const sortieId of this.selectedSortiesIds) {
-        await this.sortieService.updateSortie(sortieId, { salaireCalcule: true });
+        const sortieRef = doc(this.firestore, 'sorties-mer', sortieId);
+        await updateDoc(sortieRef, { salaireCalcule: true });
       }
 
-      this.alertService.close();
-      this.dernierCalcul = calculData as CalculSalaire;
-      this.accordionState = { summary: true, sharing: true, details: true };
+      // Sauvegarder l'historique du calcul
+      await this.salaireService.saveCalculSalaire({
+        bateauId: this.selectedBoat.id,
+        dateCalcul: new Date(),
+        nombreSorties: this.selectedSortiesIds.length,
+        total: this.getTotalSalaires(),
+        marins: this.resultatCalcul.map(m => m.nom + ' ' + m.prenom)
+      } as any);
+
+      // Réinitialiser sélection et recharger
       this.selectedSortiesIds = [];
       this.loadData();
-      this.alertService.toast(this.translate.instant('SALAIRES.CALCUL_SUCCESS_TITLE'), 'success');
+      this.finEvents.notifyFinancialChange();
+
+      alert('تم حساب الرواتب بنجاح');
     } catch (error) {
-      console.error('Erreur:', error);
-      this.alertService.close();
-      this.alertService.error();
+      console.error('Erreur calcul:', error);
+      alert('حدث خطأ أثناء حساب الرواتب');
     }
   }
 
-  viewCalculDetails(calcul: CalculSalaire): void {
-    this.displayCalculInView(calcul);
-  }
-  
-  async reopenSortieForRecalculation(sortie: SortieDetails): Promise<void> {
-    try {
-        this.alertService.loading(this.translate.instant('MESSAGES.UPDATING'));
-        await this.sortieService.updateSortie(sortie.id!, { salaireCalcule: false });
-        this.loadData();
-        this.activeTab = 'ouvertes';
-        this.alertService.success(this.translate.instant('SALAIRES.HISTORY.MOVED_FOR_RECALC'));
-    } catch (error) { console.error(error); this.alertService.error();
-    }
+  // Totaux pour affichage
+  getTotalAvances(): number {
+    return this.resultatCalcul.reduce((sum, m) => sum + m.totalAvances, 0);
   }
 
-  private displayCalculInView(calcul: CalculSalaire): void {
-    this.dernierCalcul = calcul;
-    this.accordionState = { summary: true, sharing: true, details: true };
-    this.activeTab = 'historique';
-    this.alertService.close();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  getTotalSalaires(): number {
+    return this.resultatCalcul.reduce((sum, m) => sum + m.salaireCalcule, 0);
   }
 
-  showRevenueDetails(): void {
-    if (!this.dernierCalcul) return;
-    const factures = this.dernierCalcul.factures || [];
-    const t = { title: this.translate.instant('SALAIRES.DETAILS_MODAL.REVENUE_TITLE'), invoiceNum: this.translate.instant('SALAIRES.DETAILS_MODAL.INVOICE_NUM'), client: this.translate.instant('SALAIRES.DETAILS_MODAL.CLIENT'), date: this.translate.instant('COMMON.DATE'), amount: this.translate.instant('COMMON.AMOUNT') };
-    const rows = factures.map(f =>`<tr><td>${f.numeroFacture}</td><td>${f.client}</td><td>${this.formatDate(f.dateVente)}</td><td class="amount">${f.montantTotal.toFixed(2)} DT</td></tr>`).join('');
-    const html = `<style>.details-modal-content{max-height:60vh;overflow-y:auto;padding:1rem 0}.details-table{width:100%;border-collapse:collapse;font-size:.9rem}.details-table th,.details-table td{padding:.75rem;text-align:left;border-bottom:1px solid #e5e7eb}.details-table th{background:#f9fafb;font-weight:600;color:#374151}.details-table .amount{text-align:right;font-weight:700;color:#10b981;white-space:nowrap}body.rtl .details-table th,body.rtl .details-table td{text-align:right}body.rtl .details-table .amount{text-align:left}</style><div class="details-modal-content"><table class="details-table"><thead><tr><th>${t.invoiceNum}</th><th>${t.client}</th><th>${t.date}</th><th class="amount">${t.amount}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-    Swal.fire({ title: t.title, html: html, width: '800px', showCloseButton: true, showConfirmButton: false });
-  }
-
-  showExpenseDetails(): void {
-    if (!this.dernierCalcul) return;
-    const depenses = this.dernierCalcul.depenses || [];
-    const t = { title: this.translate.instant('SALAIRES.DETAILS_MODAL.EXPENSE_TITLE'), type: this.translate.instant('EXPENSES.TYPE'), date: this.translate.instant('COMMON.DATE'), description: this.translate.instant('COMMON.DESCRIPTION'), amount: this.translate.instant('COMMON.AMOUNT') };
-    const rows = depenses.map(d =>`<tr><td>${this.translate.instant('EXPENSES.TYPES.' + d.type.toUpperCase())}</td><td>${this.formatDate(d.date)}</td><td>${d.description || '-'}</td><td class="amount">${d.montant.toFixed(2)} DT</td></tr>`).join('');
-    const html = `<style>.details-modal-content{max-height:60vh;overflow-y:auto;padding:1rem 0}.details-table{width:100%;border-collapse:collapse;font-size:.9rem}.details-table th,.details-table td{padding:.75rem;text-align:left;border-bottom:1px solid #e5e7eb}.details-table th{background:#f9fafb;font-weight:600;color:#374151}.details-table .amount{text-align:right;font-weight:700;color:#ef4444;white-space:nowrap}body.rtl .details-table th,body.rtl .details-table td{text-align:right}body.rtl .details-table .amount{text-align:left}</style><div class="details-modal-content"><table class="details-table"><thead><tr><th>${t.type}</th><th>${t.date}</th><th>${t.description}</th><th class="amount">${t.amount}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-    Swal.fire({ title: t.title, html: html, width: '800px', showCloseButton: true, showConfirmButton: false });
-  }
-
-  async enregistrerPaiement(detail: DetailSalaireMarin): Promise<void> {
-    const { value: montant } = await Swal.fire({
-      title: this.translate.instant('SALAIRES.PAYMENT_MODAL_TITLE', { name: detail.marinNom }),
-      input: 'number',
-      inputLabel: this.translate.instant('SALAIRES.PAYMENT_MODAL_LABEL', { amount: detail.resteAPayer.toFixed(2) }),
-      inputValue: detail.resteAPayer > 0 ? detail.resteAPayer.toFixed(2) : 0,
-      showCancelButton: true,
-      confirmButtonText: this.translate.instant('FORM.SAVE'),
-      cancelButtonText: this.translate.instant('FORM.CANCEL'),
-      confirmButtonColor: '#10b981',
-      inputValidator: (value) => {
-        if (!value) { return this.translate.instant('FORM.REQUIRED'); }
-        const amount = parseFloat(value);
-        if (amount <= 0) { return this.translate.instant('SALAIRES.PAYMENT_MODAL.ERROR_POSITIVE'); }
-        if (amount > detail.resteAPayer) { return this.translate.instant('SALAIRES.PAYMENT_MODAL.ERROR_EXCEED'); }
-        return null;
-      }
-    });
-    if (montant) {
-      try {
-        this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
-        const montantPaye = parseFloat(montant);
-        await this.paiementService.addPaiement({
-          marinId: detail.marinId,
-          montant: montantPaye,
-          datePaiement: new Date(),
-          sortiesIds: this.dernierCalcul!.sortiesIds
-        });
-        detail.totalPaiements += montantPaye;
-        detail.resteAPayer -= montantPaye;
-        this.alertService.success(this.translate.instant('SALAIRES.PAYMENT_SUCCESS'));
-      } catch (error) {
-        console.error('Erreur:', error);
-        this.alertService.error();
-      }
-    }
-  }
-
-  private calculerNombreNuits(sortie: SortieDetails): number {
-    if (!sortie?.dateDepart || !sortie?.dateRetour) return 0;
-    const depart = (sortie.dateDepart as any).toDate ? (sortie.dateDepart as any).toDate() : new Date(sortie.dateDepart);
-    const retour = (sortie.dateRetour as any).toDate ? (sortie.dateRetour as any).toDate() : new Date(sortie.dateRetour);
-    const diffTime = Math.abs(retour.getTime() - depart.getTime());
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  }
-
-  formatDate(date: any): string {
-    if (!date) return '';
-    if (date?.toDate) return date.toDate().toLocaleDateString('fr-FR');
-    if (date instanceof Date) return date.toLocaleDateString('fr-FR');
-    return new Date(date).toLocaleDateString('fr-FR');
-  }
-
-  toggleAccordion(panel: string): void {
-    this.accordionState[panel] = !this.accordionState[panel];
-  }
-
-  /**
-   * Calcul automatique des salaires
-   */
-  private autoCalculateSalaries(): void {
-    if (this.sortiesOuvertes && this.sortiesOuvertes.length > 0 && this.marins && this.marins.length > 0) {
-      this.selectedSortiesIds = this.sortiesOuvertes.map((s: any) => s.id!);
-      setTimeout(() => {
-        if (this.calculerSalaires) {
-          this.calculerSalaires();
-        }
-      }, 500);
-    }
+  getTotalReste(): number {
+    return this.resultatCalcul.reduce((sum, m) => sum + m.resteAPayer, 0);
   }
 }
+
+  // Méthode helper pour calculer total ventes d'une sortie (pour affichage dans template)

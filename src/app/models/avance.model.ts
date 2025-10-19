@@ -1,4 +1,7 @@
 export interface Avance {
+  sortieId?: string;
+
+
   id?: string;
   marinId: string;
   bateauId: string;

@@ -51,7 +51,7 @@ export class FacturesComponent implements OnInit {
   }
 
   getTotalVentes(): number {
-    return this.factures.reduce((sum, f) => sum + f.montantTotal, 0);
+    return this.factures.reduce((sum, f) => sum + f.montant, 0);
   }
 
   async ajouterFacture(): Promise<void> {
@@ -121,7 +121,7 @@ export class FacturesComponent implements OnInit {
           numeroFacture: formValues.numero,
           client: formValues.client,
           dateVente: new Date(formValues.date),
-          montantTotal: formValues.montant,
+          montant: formValues.montant,
           details: formValues.details || undefined
         };
 
@@ -159,7 +159,7 @@ export class FacturesComponent implements OnInit {
           
           <div style="margin-bottom: 1rem;">
             <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Montant total (DT) *</label>
-            <input id="swal-montant" type="number" class="swal2-input" value="${facture.montantTotal}" step="0.01" min="0" style="width: 90%;">
+            <input id="swal-montant" type="number" class="swal2-input" value="${facture.montant}" step="0.01" min="0" style="width: 90%;">
           </div>
           
           <div style="margin-bottom: 1rem;">
@@ -193,7 +193,7 @@ export class FacturesComponent implements OnInit {
           numeroFacture: formValues.numero,
           client: formValues.client,
           dateVente: new Date(formValues.date),
-          montantTotal: formValues.montant,
+          montant: formValues.montant,
           details: formValues.details || undefined
         });
         
@@ -209,7 +209,7 @@ export class FacturesComponent implements OnInit {
 
   async supprimerFacture(facture: FactureVente): Promise<void> {
     const confirmed = await this.alertService.confirmDelete(
-      `la facture ${facture.numeroFacture} (${facture.montantTotal} DT)`
+      `la facture ${facture.numeroFacture} (${facture.montant} DT)`
     );
 
     if (confirmed) {
