@@ -24,6 +24,7 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
+            "baseHref": "/LAMBARAHosting/",
             "outputPath": "dist/LAMBARA",
             "browser": "src/main.ts",
             "polyfills": [
