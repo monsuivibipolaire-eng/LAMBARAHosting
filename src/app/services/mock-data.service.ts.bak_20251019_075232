@@ -1,20 +1,23 @@
+// src/app/services/mock-data.service.ts
+
 import { Injectable } from '@angular/core';
 import { 
   Firestore, 
   collection, 
+  addDoc, 
   getDocs, 
   deleteDoc,
-  doc,
-  addDoc
+  doc 
 } from '@angular/fire/firestore';
 import { BateauService } from './bateau.service';
 import { MarinService } from './marin.service';
 import { SortieService } from './sortie.service';
+import { FactureService } from './facture.service';
 import { DepenseService } from './depense.service';
 import { Bateau } from '../models/bateau.model';
 import { Marin } from '../models/marin.model';
 import { Sortie } from '../models/sortie.model';
-import { FactureVente } from '../models/facture-vente.model';
+import { Facture, DetailPoisson } from '../models/facture.model';
 import { Depense } from '../models/depense.model';
 
 @Injectable({
@@ -22,46 +25,39 @@ import { Depense } from '../models/depense.model';
 })
 export class MockDataService {
 
+  // Types de poissons tunisiens avec prix moyens
   private typesPoissons = [
-    { nom: 'Daurade royale', prixMin: 28, prixMax: 38 },
-    { nom: 'Loup de mer', prixMin: 32, prixMax: 48 },
-    { nom: 'Rouget barbet', prixMin: 22, prixMax: 32 },
-    { nom: 'Sardine fraîche', prixMin: 6, prixMax: 12 },
-    { nom: 'Thon rouge', prixMin: 55, prixMax: 85 },
-    { nom: 'Mérou brun', prixMin: 38, prixMax: 55 },
-    { nom: 'Saint-Pierre', prixMin: 30, prixMax: 45 },
-    { nom: 'Sole commune', prixMin: 35, prixMax: 52 },
-    { nom: 'Calamar', prixMin: 20, prixMax: 30 },
-    { nom: 'Poulpe', prixMin: 18, prixMax: 28 },
-    { nom: 'Crevettes roses', prixMin: 45, prixMax: 65 },
-    { nom: 'Langoustines', prixMin: 60, prixMax: 80 },
-    { nom: 'Pageot', prixMin: 25, prixMax: 35 },
-    { nom: 'Sar commun', prixMin: 20, prixMax: 30 },
-    { nom: 'Rascasse', prixMin: 28, prixMax: 40 },
-    { nom: 'Mulet', prixMin: 15, prixMax: 25 }
+    { nom: 'Daurade', prixMin: 25, prixMax: 35, unite: 'kg' },
+    { nom: 'Loup de mer', prixMin: 30, prixMax: 45, unite: 'kg' },
+    { nom: 'Rouget', prixMin: 20, prixMax: 30, unite: 'kg' },
+    { nom: 'Sardine', prixMin: 8, prixMax: 15, unite: 'kg' },
+    { nom: 'Thon rouge', prixMin: 50, prixMax: 80, unite: 'kg' },
+    { nom: 'Mérou', prixMin: 35, prixMax: 50, unite: 'kg' },
+    { nom: 'Saint-Pierre', prixMin: 28, prixMax: 40, unite: 'kg' },
+    { nom: 'Sole', prixMin: 32, prixMax: 48, unite: 'kg' },
+    { nom: 'Calamar', prixMin: 18, prixMax: 28, unite: 'kg' },
+    { nom: 'Poulpe', prixMin: 15, prixMax: 25, unite: 'kg' },
+    { nom: 'Crevettes roses', prixMin: 40, prixMax: 60, unite: 'kg' },
+    { nom: 'Langoustines', prixMin: 55, prixMax: 75, unite: 'kg' }
   ];
 
+  // Noms de clients tunisiens (restaurants, poissonneries, grossistes)
   private nomsClients = [
-    'Restaurant La Goulette - Tunis',
-    'Poissonnerie Ben Ahmed - Sfax',
-    'Restaurant Le Pirate - La Marsa',
-    'Marché Central - Sfax',
-    'Restaurant Dar El Jeld - Médina',
-    'Grossiste Fruits de Mer - Monastir',
-    'Poissonnerie du Port - Sousse',
-    'Restaurant La Médina - Hammamet',
-    'Hotel Hasdrubal Thalassa & Spa',
-    'Carrefour Lac 2 - Tunis',
-    'Restaurant Le Corail - Mahdia',
-    'Poissonnerie Zitouna - Sfax',
-    'Hôtel Concorde Les Berges du Lac',
-    'Restaurant Chez Slah - Kerkennah',
-    'Marché de Poissons - Mahdia',
-    'Monoprix Sousse Centre',
-    'Restaurant Fish Market - Gammarth',
-    'Hôtel Mövenpick Sousse',
-    'Grossiste Al Baraka - Gabès',
-    'Poissonnerie El Amel - Sfax'
+    'Restaurant La Goulette',
+    'Poissonnerie Ben Ahmed',
+    'Restaurant Le Pirate',
+    'Marché Central Sfax',
+    'Restaurant Dar El Jeld',
+    'Grossiste Fruits de Mer Monastir',
+    'Poissonnerie du Port',
+    'Restaurant La Médina',
+    'Hotel Hasdrubal Thalassa',
+    'Supermarché Carrefour Tunis',
+    'Restaurant Le Corail',
+    'Poissonnerie Zitouna',
+    'Hôtel Concorde',
+    'Restaurant Chez Slah',
+    'Marché de Poissons Mahdia'
   ];
 
   constructor(
@@ -69,47 +65,37 @@ export class MockDataService {
     private bateauService: BateauService,
     private marinService: MarinService,
     private sortieService: SortieService,
+    private factureService: FactureService,
     private depenseService: DepenseService
   ) {}
 
   async generateAllMockData(): Promise<void> {
     try {
-      console.log('🧹 Suppression des anciennes données...');
+      // Supprimer les anciennes données
       await this.clearAllData();
 
-      console.log('🚢 Génération des bateaux...');
+      // Générer les bateaux
       const bateauxIds = await this.generateBateaux();
-      console.log(`✅ ${bateauxIds.length} bateaux créés`);
       
+      // Pour chaque bateau, générer marins, sorties, factures et dépenses
       for (const bateauId of bateauxIds) {
-        console.log(`\n👥 Génération des marins pour le bateau ${bateauId}...`);
-        await this.generateMarins(bateauId);
-        
-        console.log(`⛵ Génération des sorties pour le bateau ${bateauId}...`);
+        const marinsIds = await this.generateMarins(bateauId);
         const sortiesIds = await this.generateSorties(bateauId);
-        console.log(`✅ ${sortiesIds.length} sorties créées`);
         
-        for (let i = 0; i < sortiesIds.length; i++) {
-          const sortieId = sortiesIds[i];
-          console.log(`\n📄 Sortie ${i + 1}/${sortiesIds.length} (ID: ${sortieId})`);
-          
-          const nbFactures = await this.generateFacturesDetaillees(sortieId);
-          console.log(`  ✅ ${nbFactures} factures créées`);
-          
+        // Générer des factures détaillées pour chaque sortie
+        for (const sortieId of sortiesIds) {
+          await this.generateFacturesDetaillees(sortieId);
           await this.generateDepenses(sortieId);
-          console.log(`  ✅ 6 dépenses créées`);
         }
       }
-      
-      console.log('\n🎉 ✅ Génération terminée!');
     } catch (error) {
-      console.error('❌ Erreur:', error);
+      console.error('Erreur génération mock data:', error);
       throw error;
     }
   }
 
   private async clearAllData(): Promise<void> {
-    const collections = ['bateaux', 'marins', 'sorties', 'factures-vente', 'depenses'];
+    const collections = ['bateaux', 'marins', 'sorties', 'factures', 'depenses'];
     
     for (const collectionName of collections) {
       const querySnapshot = await getDocs(collection(this.firestore, collectionName));
@@ -117,7 +103,6 @@ export class MockDataService {
         deleteDoc(doc(this.firestore, collectionName, document.id))
       );
       await Promise.all(deletePromises);
-      console.log(`  ✓ ${collectionName}: ${querySnapshot.size} supprimés`);
     }
   }
 
@@ -145,6 +130,18 @@ export class MockDataService {
         dateConstruction: new Date('2020-06-20'),
         portAttache: 'Port de Sfax',
         statut: 'actif',
+        createdAt: new Date()
+      },
+      {
+        nom: 'Neptune',
+        immatriculation: 'SF-2022-089',
+        typeMoteur: 'Diesel Yanmar',
+        puissance: 280,
+        longueur: 15,
+        capaciteEquipage: 5,
+        dateConstruction: new Date('2019-09-10'),
+        portAttache: 'Port de Sfax',
+        statut: 'maintenance',
         createdAt: new Date()
       }
     ];
@@ -181,120 +178,131 @@ export class MockDataService {
         createdAt: new Date()
       };
       const marinId = await this.marinService.addMarin(marin);
-      ids.push(marinId);
+      ids.push(bateauId);
     }
     return ids;
   }
 
   private async generateSorties(bateauId: string): Promise<string[]> {
     const destinations = [
-      'Banc de Kerkennah (Zone Nord-Est)',
-      'Golfe de Gabès (Zone Sud)',
-      'Îles Kerkennah (Zone côtière)'
+      'Banc de Kerkennah',
+      'Zone côtière Sfax',
+      'Golfe de Gabès',
+      'Îles Kerkennah',
+      'Zone Sud Monastir',
+      'Banc de Mahdia'
     ];
 
     const ids: string[] = [];
     const today = new Date();
     
-    for (let i = 0; i < 3; i++) {
-      const joursAvant = 15 + (i * 15);
+    // Générer 8 sorties sur les 60 derniers jours
+    for (let i = 0; i < 8; i++) {
+      const joursAvant = Math.floor(Math.random() * 60);
       const dateDepart = new Date(today);
       dateDepart.setDate(dateDepart.getDate() - joursAvant - 3);
       
       const dateRetour = new Date(dateDepart);
-      dateRetour.setDate(dateRetour.getDate() + (2 + i));
+      dateRetour.setDate(dateRetour.getDate() + Math.floor(Math.random() * 3) + 1);
 
       const sortie: Omit<Sortie, 'id'> = {
         bateauId,
         dateDepart,
         dateRetour,
-        destination: destinations[i],
+        destination: destinations[Math.floor(Math.random() * destinations.length)],
         statut: 'terminee',
         salaireCalcule: false,
-        observations: `Sortie ${i + 1} - Excellentes conditions météo`,
+        observations: '',
         createdAt: new Date()
       };
-      const sortieId = await this.sortieService.addSortie(sortie);
-      ids.push(sortieId);
+      const docRef = await this.sortieService.addSortie(sortie);
+      ids.push(bateauId);
     }
     return ids;
   }
 
-  private async generateFacturesDetaillees(sortieId: string): Promise<number> {
-    const nombreFactures = Math.floor(Math.random() * 4) + 5;
-    console.log(`  📝 Génération de ${nombreFactures} factures...`);
+  private async generateFacturesDetaillees(sortieId: string): Promise<void> {
+    // Générer 2 à 4 factures par sortie
+    const nombreFactures = Math.floor(Math.random() * 3) + 2;
     
     for (let i = 0; i < nombreFactures; i++) {
-      const nombreTypesPoissons = Math.floor(Math.random() * 4) + 3;
+      // Générer les détails des poissons (2 à 5 types différents)
+      const nombreTypesPoissons = Math.floor(Math.random() * 4) + 2;
+      const detailsPoissons: DetailPoisson[] = [];
+      
+      // Sélectionner des types de poissons aléatoires
       const poissonsSelectionnes = this.shuffleArray([...this.typesPoissons])
         .slice(0, nombreTypesPoissons);
       
       let montantTotalFacture = 0;
-      let detailsTexte = '';
       
       for (const poisson of poissonsSelectionnes) {
-        const quantite = Math.floor(Math.random() * 120) + 30;
-        const prixUnitaire = Math.floor(
-          (Math.random() * (poisson.prixMax - poisson.prixMin) + poisson.prixMin) * 100
-        ) / 100;
-        const montantTotal = Math.round(quantite * prixUnitaire * 100) / 100;
+        const quantite = Math.floor(Math.random() * 80) + 20; // 20 à 100 kg
+        const prixUnitaire = Math.floor(Math.random() * (poisson.prixMax - poisson.prixMin) + poisson.prixMin);
+        const montantTotal = quantite * prixUnitaire;
         
-        detailsTexte += `${poisson.nom}: ${quantite} kg × ${prixUnitaire} DT = ${montantTotal} DT\n`;
+        detailsPoissons.push({
+          typePoisson: poisson.nom,
+          quantite,
+          prixUnitaire,
+          montantTotal
+        });
+        
         montantTotalFacture += montantTotal;
       }
 
-      montantTotalFacture = Math.round(montantTotalFacture * 100) / 100;
-
+      // Créer la facture
       const numeroFacture = `FA-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000).padStart(4, '0')}`;
       const client = this.nomsClients[Math.floor(Math.random() * this.nomsClients.length)];
       
-      const facture: Omit<FactureVente, 'id'> = {
+      const facture: Omit<Facture, 'id'> = {
         sortieId,
         numeroFacture,
+        dateFacture: new Date(),
         client,
-        dateVente: new Date(),
         montantTotal: montantTotalFacture,
-        details: detailsTexte.trim(),
+        detailsPoissons,
+        paye: Math.random() > 0.3, // 70% de chances d'être payé
         createdAt: new Date()
       };
       
-      try {
-        await addDoc(collection(this.firestore, 'factures-vente'), facture);
-        console.log(`    ✓ ${numeroFacture} - ${client} - ${montantTotalFacture} DT`);
-      } catch (error) {
-        console.error(`    ✗ Erreur facture ${i + 1}:`, error);
-      }
+      await this.factureService.addFacture(facture);
     }
-    
-    return nombreFactures;
   }
 
   private async generateDepenses(sortieId: string): Promise<void> {
-    const depensesData: Array<{
-      type: 'fuel' | 'ice' | 'oil_change' | 'crew_cnss' | 'crew_bonus' | 'food' | 'vms' | 'misc';
-      montantMin: number;
-      montantMax: number;
-      description: string;
-    }> = [
-      { type: 'fuel', montantMin: 1200, montantMax: 2500, description: 'Carburant diesel' },
-      { type: 'ice', montantMin: 200, montantMax: 450, description: 'Glace' },
-      { type: 'food', montantMin: 350, montantMax: 600, description: 'Provisions' },
-      { type: 'crew_cnss', montantMin: 500, montantMax: 800, description: 'CNSS équipage' },
-      { type: 'vms', montantMin: 50, montantMax: 100, description: 'VMS' },
-      { type: 'oil_change', montantMin: 300, montantMax: 500, description: 'Entretien moteur' }
-    ];
+    const typesDepenses: Array<'fuel' | 'ice' | 'oil_change' | 'crew_cnss' | 'crew_bonus' | 'food' | 'vms' | 'misc'> = 
+      ['fuel', 'ice', 'food', 'crew_cnss'];
     
-    for (const depenseData of depensesData) {
-      const montant = Math.floor(
-        Math.random() * (depenseData.montantMax - depenseData.montantMin) + depenseData.montantMin
-      );
+    for (const type of typesDepenses) {
+      let montant = 0;
+      let description = '';
+      
+      switch (type) {
+        case 'fuel':
+          montant = Math.floor(Math.random() * 1500) + 800;
+          description = 'Carburant diesel pour la sortie';
+          break;
+        case 'ice':
+          montant = Math.floor(Math.random() * 300) + 150;
+          description = 'Glace pour conservation du poisson';
+          break;
+        case 'food':
+          montant = Math.floor(Math.random() * 400) + 200;
+          description = 'Provisions pour l\'équipage';
+          break;
+        case 'crew_cnss':
+          montant = Math.floor(Math.random() * 600) + 400;
+          description = 'Cotisations CNSS équipage';
+          break;
+      }
 
       const depense: Omit<Depense, 'id'> = {
         sortieId,
-        type: depenseData.type,
+        type,
         montant,
         date: new Date(),
-        description: depenseData.description,
+        description,
         createdAt: new Date()
       };
       

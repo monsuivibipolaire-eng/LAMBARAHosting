@@ -1,26 +1,21 @@
-#!/bin/bash
-
-echo "🔧 Correction du problème des factures - Unification des collections..."
-
-# 1. Corriger le mock-data.service.ts pour utiliser la bonne collection
-cat > "src/app/services/mock-data.service.ts" << 'EOF'
 import { Injectable } from '@angular/core';
 import { 
   Firestore, 
   collection, 
+  addDoc, 
   getDocs, 
   deleteDoc,
-  doc,
-  addDoc
+  doc 
 } from '@angular/fire/firestore';
 import { BateauService } from './bateau.service';
 import { MarinService } from './marin.service';
 import { SortieService } from './sortie.service';
+import { FactureService } from './facture.service';
 import { DepenseService } from './depense.service';
 import { Bateau } from '../models/bateau.model';
 import { Marin } from '../models/marin.model';
 import { Sortie } from '../models/sortie.model';
-import { FactureVente } from '../models/facture-vente.model';
+import { Facture, DetailPoisson } from '../models/facture.model';
 import { Depense } from '../models/depense.model';
 
 @Injectable({
@@ -28,25 +23,27 @@ import { Depense } from '../models/depense.model';
 })
 export class MockDataService {
 
+  // Types de poissons tunisiens avec prix moyens (en DT/kg)
   private typesPoissons = [
-    { nom: 'Daurade royale', prixMin: 28, prixMax: 38 },
-    { nom: 'Loup de mer', prixMin: 32, prixMax: 48 },
-    { nom: 'Rouget barbet', prixMin: 22, prixMax: 32 },
-    { nom: 'Sardine fraîche', prixMin: 6, prixMax: 12 },
-    { nom: 'Thon rouge', prixMin: 55, prixMax: 85 },
-    { nom: 'Mérou brun', prixMin: 38, prixMax: 55 },
-    { nom: 'Saint-Pierre', prixMin: 30, prixMax: 45 },
-    { nom: 'Sole commune', prixMin: 35, prixMax: 52 },
-    { nom: 'Calamar', prixMin: 20, prixMax: 30 },
-    { nom: 'Poulpe', prixMin: 18, prixMax: 28 },
-    { nom: 'Crevettes roses', prixMin: 45, prixMax: 65 },
-    { nom: 'Langoustines', prixMin: 60, prixMax: 80 },
-    { nom: 'Pageot', prixMin: 25, prixMax: 35 },
-    { nom: 'Sar commun', prixMin: 20, prixMax: 30 },
-    { nom: 'Rascasse', prixMin: 28, prixMax: 40 },
-    { nom: 'Mulet', prixMin: 15, prixMax: 25 }
+    { nom: 'Daurade royale', prixMin: 28, prixMax: 38, unite: 'kg' },
+    { nom: 'Loup de mer', prixMin: 32, prixMax: 48, unite: 'kg' },
+    { nom: 'Rouget barbet', prixMin: 22, prixMax: 32, unite: 'kg' },
+    { nom: 'Sardine fraîche', prixMin: 6, prixMax: 12, unite: 'kg' },
+    { nom: 'Thon rouge', prixMin: 55, prixMax: 85, unite: 'kg' },
+    { nom: 'Mérou brun', prixMin: 38, prixMax: 55, unite: 'kg' },
+    { nom: 'Saint-Pierre', prixMin: 30, prixMax: 45, unite: 'kg' },
+    { nom: 'Sole commune', prixMin: 35, prixMax: 52, unite: 'kg' },
+    { nom: 'Calamar', prixMin: 20, prixMax: 30, unite: 'kg' },
+    { nom: 'Poulpe', prixMin: 18, prixMax: 28, unite: 'kg' },
+    { nom: 'Crevettes roses', prixMin: 45, prixMax: 65, unite: 'kg' },
+    { nom: 'Langoustines', prixMin: 60, prixMax: 80, unite: 'kg' },
+    { nom: 'Pageot', prixMin: 25, prixMax: 35, unite: 'kg' },
+    { nom: 'Sar commun', prixMin: 20, prixMax: 30, unite: 'kg' },
+    { nom: 'Rascasse', prixMin: 28, prixMax: 40, unite: 'kg' },
+    { nom: 'Mulet', prixMin: 15, prixMax: 25, unite: 'kg' }
   ];
 
+  // Noms de clients tunisiens
   private nomsClients = [
     'Restaurant La Goulette - Tunis',
     'Poissonnerie Ben Ahmed - Sfax',
@@ -75,47 +72,33 @@ export class MockDataService {
     private bateauService: BateauService,
     private marinService: MarinService,
     private sortieService: SortieService,
+    private factureService: FactureService,
     private depenseService: DepenseService
   ) {}
 
   async generateAllMockData(): Promise<void> {
     try {
-      console.log('🧹 Suppression des anciennes données...');
       await this.clearAllData();
 
-      console.log('🚢 Génération des bateaux...');
       const bateauxIds = await this.generateBateaux();
-      console.log(`✅ ${bateauxIds.length} bateaux créés`);
       
       for (const bateauId of bateauxIds) {
-        console.log(`\n👥 Génération des marins pour le bateau ${bateauId}...`);
-        await this.generateMarins(bateauId);
-        
-        console.log(`⛵ Génération des sorties pour le bateau ${bateauId}...`);
+        const marinsIds = await this.generateMarins(bateauId);
         const sortiesIds = await this.generateSorties(bateauId);
-        console.log(`✅ ${sortiesIds.length} sorties créées`);
         
-        for (let i = 0; i < sortiesIds.length; i++) {
-          const sortieId = sortiesIds[i];
-          console.log(`\n📄 Sortie ${i + 1}/${sortiesIds.length} (ID: ${sortieId})`);
-          
-          const nbFactures = await this.generateFacturesDetaillees(sortieId);
-          console.log(`  ✅ ${nbFactures} factures créées`);
-          
+        for (const sortieId of sortiesIds) {
+          await this.generateFacturesDetaillees(sortieId);
           await this.generateDepenses(sortieId);
-          console.log(`  ✅ 6 dépenses créées`);
         }
       }
-      
-      console.log('\n🎉 ✅ Génération terminée!');
     } catch (error) {
-      console.error('❌ Erreur:', error);
+      console.error('Erreur génération mock data:', error);
       throw error;
     }
   }
 
   private async clearAllData(): Promise<void> {
-    const collections = ['bateaux', 'marins', 'sorties', 'factures-vente', 'depenses'];
+    const collections = ['bateaux', 'marins', 'sorties', 'factures', 'depenses'];
     
     for (const collectionName of collections) {
       const querySnapshot = await getDocs(collection(this.firestore, collectionName));
@@ -123,7 +106,6 @@ export class MockDataService {
         deleteDoc(doc(this.firestore, collectionName, document.id))
       );
       await Promise.all(deletePromises);
-      console.log(`  ✓ ${collectionName}: ${querySnapshot.size} supprimés`);
     }
   }
 
@@ -202,13 +184,14 @@ export class MockDataService {
     const ids: string[] = [];
     const today = new Date();
     
+    // Générer seulement 3 sorties détaillées sur les 45 derniers jours
     for (let i = 0; i < 3; i++) {
-      const joursAvant = 15 + (i * 15);
+      const joursAvant = 15 + (i * 15); // Espacer les sorties
       const dateDepart = new Date(today);
       dateDepart.setDate(dateDepart.getDate() - joursAvant - 3);
       
       const dateRetour = new Date(dateDepart);
-      dateRetour.setDate(dateRetour.getDate() + (2 + i));
+      dateRetour.setDate(dateRetour.getDate() + (2 + i)); // 2-4 jours de sortie
 
       const sortie: Omit<Sortie, 'id'> = {
         bateauId,
@@ -217,7 +200,7 @@ export class MockDataService {
         destination: destinations[i],
         statut: 'terminee',
         salaireCalcule: false,
-        observations: `Sortie ${i + 1} - Excellentes conditions météo`,
+        observations: `Sortie ${i + 1} - Excellentes conditions météo, pêche fructueuse`,
         createdAt: new Date()
       };
       const sortieId = await this.sortieService.addSortie(sortie);
@@ -226,53 +209,56 @@ export class MockDataService {
     return ids;
   }
 
-  private async generateFacturesDetaillees(sortieId: string): Promise<number> {
+  private async generateFacturesDetaillees(sortieId: string): Promise<void> {
+    // Générer 5 à 8 factures détaillées par sortie
     const nombreFactures = Math.floor(Math.random() * 4) + 5;
-    console.log(`  📝 Génération de ${nombreFactures} factures...`);
     
     for (let i = 0; i < nombreFactures; i++) {
+      // Générer 3 à 6 types de poissons différents par facture
       const nombreTypesPoissons = Math.floor(Math.random() * 4) + 3;
+      const detailsPoissons: DetailPoisson[] = [];
+      
       const poissonsSelectionnes = this.shuffleArray([...this.typesPoissons])
         .slice(0, nombreTypesPoissons);
       
       let montantTotalFacture = 0;
-      let detailsTexte = '';
       
       for (const poisson of poissonsSelectionnes) {
-        const quantite = Math.floor(Math.random() * 120) + 30;
+        const quantite = Math.floor(Math.random() * 120) + 30; // 30 à 150 kg
         const prixUnitaire = Math.floor(
           (Math.random() * (poisson.prixMax - poisson.prixMin) + poisson.prixMin) * 100
-        ) / 100;
+        ) / 100; // Prix avec 2 décimales
         const montantTotal = Math.round(quantite * prixUnitaire * 100) / 100;
         
-        detailsTexte += `${poisson.nom}: ${quantite} kg × ${prixUnitaire} DT = ${montantTotal} DT\n`;
+        detailsPoissons.push({
+          typePoisson: poisson.nom,
+          quantite,
+          prixUnitaire,
+          montantTotal
+        });
+        
         montantTotalFacture += montantTotal;
       }
 
+      // Arrondir le montant total
       montantTotalFacture = Math.round(montantTotalFacture * 100) / 100;
 
       const numeroFacture = `FA-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000).padStart(4, '0')}`;
       const client = this.nomsClients[Math.floor(Math.random() * this.nomsClients.length)];
       
-      const facture: Omit<FactureVente, 'id'> = {
+      const facture: Omit<Facture, 'id'> = {
         sortieId,
         numeroFacture,
+        dateFacture: new Date(),
         client,
-        dateVente: new Date(),
         montantTotal: montantTotalFacture,
-        details: detailsTexte.trim(),
+        detailsPoissons,
+        paye: Math.random() > 0.2, // 80% de chances d'être payé
         createdAt: new Date()
       };
       
-      try {
-        await addDoc(collection(this.firestore, 'factures-vente'), facture);
-        console.log(`    ✓ ${numeroFacture} - ${client} - ${montantTotalFacture} DT`);
-      } catch (error) {
-        console.error(`    ✗ Erreur facture ${i + 1}:`, error);
-      }
+      await this.factureService.addFacture(facture);
     }
-    
-    return nombreFactures;
   }
 
   private async generateDepenses(sortieId: string): Promise<void> {
@@ -282,12 +268,12 @@ export class MockDataService {
       montantMax: number;
       description: string;
     }> = [
-      { type: 'fuel', montantMin: 1200, montantMax: 2500, description: 'Carburant diesel' },
-      { type: 'ice', montantMin: 200, montantMax: 450, description: 'Glace' },
-      { type: 'food', montantMin: 350, montantMax: 600, description: 'Provisions' },
-      { type: 'crew_cnss', montantMin: 500, montantMax: 800, description: 'CNSS équipage' },
-      { type: 'vms', montantMin: 50, montantMax: 100, description: 'VMS' },
-      { type: 'oil_change', montantMin: 300, montantMax: 500, description: 'Entretien moteur' }
+      { type: 'fuel', montantMin: 1200, montantMax: 2500, description: 'Carburant diesel pour la sortie en mer' },
+      { type: 'ice', montantMin: 200, montantMax: 450, description: 'Glace pour conservation du poisson' },
+      { type: 'food', montantMin: 350, montantMax: 600, description: 'Provisions et alimentation pour l\'équipage' },
+      { type: 'crew_cnss', montantMin: 500, montantMax: 800, description: 'Cotisations CNSS équipage' },
+      { type: 'vms', montantMin: 50, montantMax: 100, description: 'Système de surveillance VMS' },
+      { type: 'oil_change', montantMin: 300, montantMax: 500, description: 'Entretien et vidange moteur' }
     ];
     
     for (const depenseData of depensesData) {
@@ -317,16 +303,3 @@ export class MockDataService {
     return newArray;
   }
 }
-EOF
-
-echo "✅ mock-data.service.ts corrigé!"
-echo ""
-echo "🔑 CORRECTIONS APPLIQUÉES:"
-echo "  1. ✓ Utilisation de FactureVente au lieu de Facture"
-echo "  2. ✓ Collection 'factures-vente' au lieu de 'factures'"
-echo "  3. ✓ Champ 'details' (string) au lieu de 'detailsPoissons' (array)"
-echo "  4. ✓ Champ 'dateVente' au lieu de 'dateFacture'"
-echo "  5. ✓ Génération de 5-8 factures détaillées par sortie"
-echo ""
-echo "🎯 Recompilez et régénérez les mock data!"
-echo "   Les factures apparaîtront maintenant dans la page المبيعات"

@@ -1,6 +1,6 @@
 ====================================
   Projet Angular - Code Source
-  Date: Sun Oct 19 06:57:33 CET 2025
+  Date: Sun Oct 19 07:41:21 CET 2025
 ====================================
 
 Arborescence du projet:
@@ -122,6 +122,7 @@ Arborescence du projet:
 │   │   ├── partage.model.ts
 │   │   ├── pointage.model.ts
 │   │   ├── salaire.model.ts
+│   │   ├── salaire.model.ts.bak.typefix
 │   │   └── sortie.model.ts
 │   ├── salaires
 │   │   ├── salaires-list.component.html
@@ -133,7 +134,10 @@ Arborescence du projet:
 │   │   ├── salaires-list.component.ts.bak.final_fix
 │   │   ├── salaires-list.component.ts.bak.logicfinal
 │   │   ├── salaires-list.component.ts.bak.logicfix
-│   │   └── salaires-list.component.ts.bak.refactor
+│   │   ├── salaires-list.component.ts.bak.paymentfix
+│   │   ├── salaires-list.component.ts.bak.refactor
+│   │   ├── salaires-list.component.ts.bak.typefix
+│   │   └── salaires-list.component.ts.bak.upgrade
 │   ├── services
 │   │   ├── alert.service.ts
 │   │   ├── avance.service.ts
@@ -141,16 +145,19 @@ Arborescence du projet:
 │   │   ├── depense.service.ts
 │   │   ├── facture-vente.service.ts
 │   │   ├── facture.service.ts
+│   │   ├── facture.service.ts.bak.upgrade
 │   │   ├── language.service.ts
 │   │   ├── marin.service.ts
 │   │   ├── mock-data.service.ts
+│   │   ├── mock-data.service.ts.bak.mock_update
 │   │   ├── paiement.service.ts
 │   │   ├── partage.service.ts
 │   │   ├── pointage.service.ts
 │   │   ├── salaire.service.ts
 │   │   ├── salaire.service.ts.bak.refactor
 │   │   ├── selected-boat.service.ts
-│   │   └── sortie.service.ts
+│   │   ├── sortie.service.ts
+│   │   └── sortie.service.ts.bak.upgrade
 │   ├── sorties
 │   │   ├── depense-form
 │   │   │   ├── depense-form.component.html
@@ -241,7 +248,7 @@ Arborescence du projet:
 │   └── _btn-back.scss
 └── styles.scss
 
-29 directories, 206 files
+29 directories, 213 files
 
 ====================================
   FICHIERS SOURCE
@@ -2139,14 +2146,14 @@ Lignes:       39
 ====================================
 
 import { Depense } from "./depense.model";
-import { FactureVente } from "./facture-vente.model";
+import { Facture } from "./facture.model";
 
 // Modèle pour sauvegarder un calcul complet
 export interface CalculSalaire {
   id?: string;
   bateauId: string;
   sortiesIds: string[];
-  sortiesDestinations: string[]; // Pour un affichage facile
+  sortiesDestinations: string[];
   dateCalcul: Date;
   
   // Résumé financier
@@ -2161,8 +2168,8 @@ export interface CalculSalaire {
   // Détails par marin
   detailsMarins: DetailSalaireMarin[];
 
-  // ✅ Transactions utilisées pour le calcul
-  factures?: FactureVente[];
+  // Transactions utilisées pour le calcul
+  factures?: Facture[];
   depenses?: Depense[];
 }
 
@@ -2198,7 +2205,7 @@ export interface Sortie {
 
 ====================================
 FICHIER: ./src/app/salaires/salaires-list.component.ts
-Lignes:      236
+Lignes:      266
 ====================================
 
 import { Component, OnInit } from '@angular/core';
@@ -2217,10 +2224,8 @@ import { Marin } from '../models/marin.model';
 import { Bateau } from '../models/bateau.model';
 import { SalaireService } from '../services/salaire.service';
 import { CalculSalaire, DetailSalaireMarin } from '../models/salaire.model';
-import { FactureVente } from '../models/facture-vente.model';
+import { Facture } from '../models/facture.model';
 import { Depense } from '../models/depense.model';
-import { FactureVenteService } from '../services/facture-vente.service';
-import { DepenseService } from '../services/depense.service';
 
 @Component({
   selector: 'app-salaires-list',
@@ -2251,9 +2256,7 @@ export class SalairesListComponent implements OnInit {
     private salaireService: SalaireService,
     private selectedBoatService: SelectedBoatService,
     private alertService: AlertService,
-    private translate: TranslateService,
-    private factureService: FactureVenteService,
-    private depenseService: DepenseService
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
@@ -2350,7 +2353,7 @@ export class SalairesListComponent implements OnInit {
         sortiesDestinations: selectedSorties.map(s => s.destination),
         dateCalcul: new Date(),
         revenuTotal, totalDepenses, beneficeNet, partProprietaire, partEquipage, deductionNuits, montantAPartager, detailsMarins,
-        factures: allFactures as FactureVente[],
+        factures: allFactures as Facture[],
         depenses: allDepenses as Depense[]
       };
       
@@ -2400,7 +2403,7 @@ export class SalairesListComponent implements OnInit {
     if (!this.dernierCalcul) return;
     const factures = this.dernierCalcul.factures || [];
     const t = { title: this.translate.instant('SALAIRES.DETAILS_MODAL.REVENUE_TITLE'), invoiceNum: this.translate.instant('SALAIRES.DETAILS_MODAL.INVOICE_NUM'), client: this.translate.instant('SALAIRES.DETAILS_MODAL.CLIENT'), date: this.translate.instant('COMMON.DATE'), amount: this.translate.instant('COMMON.AMOUNT') };
-    const rows = factures.map(f =>`<tr><td>${f.numeroFacture}</td><td>${f.client}</td><td>${this.formatDate(f.dateVente)}</td><td class="amount">${f.montantTotal.toFixed(2)} DT</td></tr>`).join('');
+    const rows = factures.map(f =>`<tr><td>${f.numeroFacture}</td><td>${f.client}</td><td>${this.formatDate(f.dateFacture)}</td><td class="amount">${f.montantTotal.toFixed(2)} DT</td></tr>`).join('');
     const html = `<style>.details-modal-content{max-height:60vh;overflow-y:auto;padding:1rem 0}.details-table{width:100%;border-collapse:collapse;font-size:.9rem}.details-table th,.details-table td{padding:.75rem;text-align:left;border-bottom:1px solid #e5e7eb}.details-table th{background:#f9fafb;font-weight:600;color:#374151}.details-table .amount{text-align:right;font-weight:700;color:#10b981;white-space:nowrap}body.rtl .details-table th,body.rtl .details-table td{text-align:right}body.rtl .details-table .amount{text-align:left}</style><div class="details-modal-content"><table class="details-table"><thead><tr><th>${t.invoiceNum}</th><th>${t.client}</th><th>${t.date}</th><th class="amount">${t.amount}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
     Swal.fire({ title: t.title, html: html, width: '800px', showCloseButton: true, showConfirmButton: false });
   }
@@ -2415,7 +2418,41 @@ export class SalairesListComponent implements OnInit {
   }
 
   async enregistrerPaiement(detail: DetailSalaireMarin): Promise<void> {
-    // ... (Cette fonction reste inchangée)
+    const { value: montant } = await Swal.fire({
+      title: this.translate.instant('SALAIRES.PAYMENT_MODAL_TITLE', { name: detail.marinNom }),
+      input: 'number',
+      inputLabel: this.translate.instant('SALAIRES.PAYMENT_MODAL_LABEL', { amount: detail.resteAPayer.toFixed(2) }),
+      inputValue: detail.resteAPayer > 0 ? detail.resteAPayer.toFixed(2) : 0,
+      showCancelButton: true,
+      confirmButtonText: this.translate.instant('FORM.SAVE'),
+      cancelButtonText: this.translate.instant('FORM.CANCEL'),
+      confirmButtonColor: '#10b981',
+      inputValidator: (value) => {
+        if (!value) { return this.translate.instant('FORM.REQUIRED'); }
+        const amount = parseFloat(value);
+        if (amount <= 0) { return this.translate.instant('SALAIRES.PAYMENT_MODAL.ERROR_POSITIVE'); }
+        if (amount > detail.resteAPayer) { return this.translate.instant('SALAIRES.PAYMENT_MODAL.ERROR_EXCEED'); }
+        return null;
+      }
+    });
+    if (montant) {
+      try {
+        this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
+        const montantPaye = parseFloat(montant);
+        await this.paiementService.addPaiement({
+          marinId: detail.marinId,
+          montant: montantPaye,
+          datePaiement: new Date(),
+          sortiesIds: this.dernierCalcul!.sortiesIds
+        });
+        detail.totalPaiements += montantPaye;
+        detail.resteAPayer -= montantPaye;
+        this.alertService.success(this.translate.instant('SALAIRES.PAYMENT_SUCCESS'));
+      } catch (error) {
+        console.error('Erreur:', error);
+        this.alertService.error();
+      }
+    }
   }
 
   private calculerNombreNuits(sortie: SortieDetails): number {
@@ -2761,7 +2798,7 @@ export class FactureVenteService {
 
 ====================================
 FICHIER: ./src/app/services/facture.service.ts
-Lignes:       30
+Lignes:       38
 ====================================
 
 import { Injectable } from '@angular/core';
@@ -2771,26 +2808,34 @@ import { Facture } from '../models/facture.model';
 
 @Injectable({ providedIn: 'root' })
 export class FactureService {
+  private collectionName = 'factures';
+  private facturesCollection = collection(this.firestore, this.collectionName);
+
   constructor(private firestore: Firestore) {}
 
   getFacturesBySortie(sortieId: string): Observable<Facture[]> {
-    const facturesCollection = collection(this.firestore, 'factures');
-    const facturesQuery = query(facturesCollection, where('sortieId', '==', sortieId), orderBy('dateFacture', 'desc'));
+    const facturesQuery = query(this.facturesCollection, where('sortieId', '==', sortieId), orderBy('dateFacture', 'desc'));
     return collectionData(facturesQuery, { idField: 'id' }) as Observable<Facture[]>;
   }
 
-  async addFacture(facture: Facture): Promise<any> {
-    const facturesCollection = collection(this.firestore, 'factures');
-    return await addDoc(facturesCollection, { ...facture, createdAt: new Date(), updatedAt: new Date() });
+  async addFacture(facture: Omit<Facture, 'id'>): Promise<any> {
+    return await addDoc(this.facturesCollection, { 
+      ...facture, 
+      createdAt: new Date(),
+      updatedAt: new Date() 
+    });
   }
 
   async updateFacture(id: string, facture: Partial<Facture>): Promise<void> {
-    const factureDoc = doc(this.firestore, 'factures/' + id);
-    await updateDoc(factureDoc, { ...facture, updatedAt: new Date() });
+    const factureDoc = doc(this.firestore, `${this.collectionName}/${id}`);
+    await updateDoc(factureDoc, { 
+      ...facture, 
+      updatedAt: new Date() 
+    });
   }
 
   async deleteFacture(id: string): Promise<void> {
-    const factureDoc = doc(this.firestore, 'factures/' + id);
+    const factureDoc = doc(this.firestore, `${this.collectionName}/${id}`);
     await deleteDoc(factureDoc);
   }
 }
@@ -2906,7 +2951,7 @@ export class MarinService {
 
 ====================================
 FICHIER: ./src/app/services/mock-data.service.ts
-Lignes:      238
+Lignes:      215
 ====================================
 
 import { Injectable } from '@angular/core';
@@ -2915,10 +2960,11 @@ import { BateauService } from './bateau.service';
 import { MarinService } from './marin.service';
 import { SortieService } from './sortie.service';
 import { DepenseService } from './depense.service';
-import { FactureVenteService } from './facture-vente.service';
+import { FactureService } from './facture.service'; // ✅ Utilise le service unifié
 import { AvanceService } from './avance.service';
 import { PaiementService } from './paiement.service';
 import { Marin } from '../models/marin.model';
+import { DetailPoisson } from '../models/facture.model'; // ✅ Importe le nouveau modèle
 
 @Injectable({
   providedIn: 'root'
@@ -2931,14 +2977,15 @@ export class MockDataService {
     private marinService: MarinService,
     private sortieService: SortieService,
     private depenseService: DepenseService,
-    private factureService: FactureVenteService,
+    private factureService: FactureService, // ✅ Utilise le service unifié
     private avanceService: AvanceService,
     private paiementService: PaiementService
   ) {}
 
   async clearAllData(): Promise<void> {
     console.log('🗑️ Suppression de toutes les données...');
-    const collections = ['paiements', 'avances', 'factures_vente', 'depenses', 'sorties', 'marins', 'bateaux'];
+    // ✅ CORRECTION : Nettoie `factures` et non `factures_vente`, et ajoute `calculs_salaire`
+    const collections = ['paiements', 'avances', 'factures', 'depenses', 'sorties', 'marins', 'bateaux', 'calculs_salaire'];
     for (const collectionName of collections) {
       const collectionRef = collection(this.firestore, collectionName);
       const snapshot = await getDocs(collectionRef);
@@ -2946,7 +2993,7 @@ export class MockDataService {
         deleteDoc(doc(this.firestore, collectionName, document.id))
       );
       await Promise.all(deletePromises);
-      console.log(`✅ ${collectionName}: ${snapshot.size} supprimés`);
+      console.log(`✅ ${collectionName}: ${snapshot.size} document(s) supprimé(s)`);
     }
   }
 
@@ -2958,7 +3005,7 @@ export class MockDataService {
     const marinsData = await this.generateMarins(bateauIds);
     const sortieIds = await this.generateSorties(bateauIds);
     await this.generateDepenses(sortieIds);
-    await this.generateFactures(sortieIds);
+    await this.generateFactures(sortieIds); // ✅ Va appeler la nouvelle fonction
     await this.generateAvances(marinsData);
     await this.generatePaiements(marinsData);
 
@@ -2968,29 +3015,16 @@ export class MockDataService {
   private async generateBateaux(): Promise<string[]> {
     const bateaux = [
       {
-        nom: 'Le Poséidon',
-        immatriculation: 'TN-SF-001',
-        puissance: 350,
-        typeMoteur: 'Diesel Volvo Penta',
-        longueur: 18.5,
-        capaciteEquipage: 12,
-        dateConstruction: new Date('2015-06-15'),
-        portAttache: 'Port de Sfax',
-        statut: 'actif' as const
+        nom: 'Le Poséidon', immatriculation: 'TN-SF-001', puissance: 350,
+        typeMoteur: 'Diesel Volvo Penta', longueur: 18.5, capaciteEquipage: 12,
+        dateConstruction: new Date('2015-06-15'), portAttache: 'Port de Sfax', statut: 'actif' as const
       },
       {
-        nom: 'Neptune III',
-        immatriculation: 'TN-SF-002',
-        puissance: 420,
-        typeMoteur: 'Diesel Caterpillar',
-        longueur: 22.0,
-        capaciteEquipage: 15,
-        dateConstruction: new Date('2018-03-20'),
-        portAttache: 'Port de Sfax',
-        statut: 'actif' as const
+        nom: 'Neptune III', immatriculation: 'TN-SF-002', puissance: 420,
+        typeMoteur: 'Diesel Caterpillar', longueur: 22.0, capaciteEquipage: 15,
+        dateConstruction: new Date('2018-03-20'), portAttache: 'Port de Sfax', statut: 'actif' as const
       }
     ];
-
     const ids: string[] = [];
     for (const bateau of bateaux) {
       const id = await this.bateauService.addBateau(bateau as any);
@@ -3002,47 +3036,35 @@ export class MockDataService {
 
   private async generateMarins(bateauIds: string[]): Promise<{ bateauId: string, marinIds: string[] }[]> {
     const marinsParBateau = [
-      // ✅ Équipage du Poséidon (4 membres)
       [
         { prenom: 'Mohamed', nom: 'Ben Ali', fonction: 'capitaine' as const, part: 3 },
         { prenom: 'Ali', nom: 'Gannouchi', fonction: 'second' as const, part: 2 },
         { prenom: 'Ahmed', nom: 'Trabelsi', fonction: 'mecanicien' as const, part: 1.5 },
         { prenom: 'Karim', nom: 'Hamdi', fonction: 'matelot' as const, part: 1 }
       ],
-      // ✅ Équipage du Neptune III (3 membres avec des parts différentes)
       [
         { prenom: 'Hichem', nom: 'Jebali', fonction: 'capitaine' as const, part: 2.5 },
         { prenom: 'Nabil', nom: 'Bouazizi', fonction: 'mecanicien' as const, part: 1.5 },
         { prenom: 'Fethi', nom: 'Mzali', fonction: 'matelot' as const, part: 1.2 }
       ]
     ];
-
     const result: { bateauId: string, marinIds: string[] }[] = [];
     for (let i = 0; i < bateauIds.length; i++) {
       const bateauId = bateauIds[i];
       const marins = marinsParBateau[i];
       const marinIds: string[] = [];
-
       for (const marin of marins) {
         const newMarin: Omit<Marin, 'id'> = {
-          prenom: marin.prenom,
-          nom: marin.nom,
-          fonction: marin.fonction,
-          part: marin.part,
-          bateauId: bateauId,
+          prenom: marin.prenom, nom: marin.nom, fonction: marin.fonction, part: marin.part, bateauId: bateauId,
           telephone: `+216 98 ${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}`,
           email: `${marin.prenom.toLowerCase()}.${marin.nom.toLowerCase()}@example.com`,
-          adresse: 'Avenue Habib Bourguiba, Sfax',
-          dateNaissance: new Date(1980 + i, 5, 15),
-          dateEmbauche: new Date(2018 + i, 0, 1),
-          numeroPermis: `PM-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+          adresse: 'Avenue Habib Bourguiba, Sfax', dateNaissance: new Date(1980 + i, 5, 15),
+          dateEmbauche: new Date(2018 + i, 0, 1), numeroPermis: `PM-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
           statut: 'actif' as const
         };
         const id = await this.marinService.addMarin(newMarin);
         marinIds.push(id as string);
-        console.log(`✅ Marin: ${marin.prenom} ${marin.nom} (Part: ${marin.part}) pour bateau ${bateauId}`);
       }
-      
       result.push({ bateauId, marinIds });
     }
     return result;
@@ -3058,58 +3080,64 @@ export class MockDataService {
         const dateDepart = new Date(now.getTime() - (daysAgo * 24 * 60 * 60 * 1000));
         const dureeJours = 3 + Math.floor(Math.random() * 3); // 3 à 5 jours
         const dateRetour = new Date(dateDepart.getTime() + (dureeJours * 24 * 60 * 60 * 1000));
-        
         let statut: 'en-cours' | 'terminee' | 'annulee' = (i === 0) ? 'en-cours' : 'terminee';
-
         const id = await this.sortieService.addSortie({
-          bateauId: bateauId,
-          destination: destinations[i],
-          dateDepart,
-          dateRetour,
-          statut
+          bateauId: bateauId, destination: destinations[i], dateDepart, dateRetour, statut
         });
         sortieIds.push(id);
-        console.log(`✅ Sortie: ${destinations[i]} pour bateau ${bateauId} (ID: ${id})`);
       }
     }
     return sortieIds;
   }
 
   private async generateDepenses(sortieIds: string[]): Promise<void> {
-    const types: Array<'fuel' | 'ice' | 'food' | 'oil_change' | 'crew_cnss' | 'crew_bonus' | 'vms' | 'misc'> = ['fuel', 'ice', 'food', 'oil_change', 'crew_cnss'];
+    const types: Array<'fuel' | 'ice' | 'food' | 'misc'> = ['fuel', 'ice', 'food', 'misc'];
     for (const sortieId of sortieIds) {
-      for (let i = 0; i < 3; i++) { // 3 dépenses par sortie
+      for (let i = 0; i < 3; i++) {
         const type = types[Math.floor(Math.random() * types.length)];
         const montant = 150 + Math.random() * 500;
         const date = new Date(Date.now() - (Math.floor(Math.random() * 10) * 24 * 60 * 60 * 1000));
         await this.depenseService.addDepense({
-          sortieId: sortieId,
-          type,
-          montant: Math.round(montant * 100) / 100,
-          date,
-          description: `Dépense de ${type.replace('_', ' ')}`
-        });
+          sortieId: sortieId, type, montant: Math.round(montant * 100) / 100, date,
+          description: `Dépense de ${type}`
+        } as Depense);
       }
     }
     console.log('✅ Dépenses créées');
   }
 
+  // ✅ CORRECTION : La fonction est entièrement réécrite pour créer des factures détaillées
   private async generateFactures(sortieIds: string[]): Promise<void> {
+    const fishTypes = ['Dorade', 'Loup de mer', 'Rouget', 'Crevettes', 'Soles', 'Calmar'];
+
     for (const sortieId of sortieIds) {
        for (let i = 0; i < 2; i++) { // 2 factures par sortie
-        const montant = 2500 + Math.random() * 4000;
-        const date = new Date(Date.now() - (Math.floor(Math.random() * 10) * 24 * 60 * 60 * 1000));
+        
+        const detailsPoissons: DetailPoisson[] = [];
+        const itemCount = 2 + Math.floor(Math.random() * 3); // 2 à 4 types de poissons
+
+        for (let j = 0; j < itemCount; j++) {
+            const typePoisson = fishTypes[Math.floor(Math.random() * fishTypes.length)];
+            const quantite = Math.round(5 + Math.random() * 45); // 5 à 50 kg
+            const prixUnitaire = Math.round(15 + Math.random() * 25); // 15 à 40 DT
+            const montantTotal = quantite * prixUnitaire;
+            detailsPoissons.push({ typePoisson, quantite, prixUnitaire, montantTotal });
+        }
+
+        const montantTotalFacture = detailsPoissons.reduce((sum, item) => sum + item.montantTotal, 0);
+
         await this.factureService.addFacture({
           sortieId: sortieId,
           numeroFacture: `F-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
           client: 'Marché Central Sfax',
-          dateVente: date,
-          montantTotal: Math.round(montant * 100) / 100,
-          details: 'Vente de poissons variés'
+          dateFacture: new Date(Date.now() - (Math.floor(Math.random() * 10) * 24 * 60 * 60 * 1000)),
+          montantTotal: Math.round(montantTotalFacture * 100) / 100,
+          detailsPoissons: detailsPoissons,
+          paye: Math.random() > 0.3 // 70% de chance d'être payée
         });
       }
     }
-    console.log('✅ Factures créées');
+    console.log('✅ Factures détaillées créées');
   }
 
   private async generateAvances(marinsData: { bateauId: string, marinIds: string[] }[]): Promise<void> {
@@ -3119,11 +3147,8 @@ export class MockDataService {
           const montant = 150 + i * 100;
           const date = new Date(Date.now() - ((i + 1) * 15 * 24 * 60 * 60 * 1000));
           await this.avanceService.addAvance({
-            bateauId: bateauId,
-            marinId: marinId,
-            montant,
-            dateAvance: date,
-            description: `Avance mois précédent`
+            bateauId: bateauId, marinId: marinId, montant,
+            dateAvance: date, description: `Avance mois précédent`
           });
         }
       }
@@ -3137,10 +3162,7 @@ export class MockDataService {
         const montant = 600;
         const date = new Date(Date.now() - (35 * 24 * 60 * 60 * 1000));
         await this.paiementService.addPaiement({
-          marinId,
-          montant,
-          datePaiement: date,
-          sortiesIds: []
+          marinId, montant, datePaiement: date, sortiesIds: []
         });
       }
     }
@@ -3349,25 +3371,22 @@ export class SelectedBoatService {
 
 ====================================
 FICHIER: ./src/app/services/sortie.service.ts
-Lignes:      113
+Lignes:       86
 ====================================
 
 import { Injectable } from '@angular/core';
 import { Firestore, collection, query, where, collectionData, addDoc, updateDoc, deleteDoc, doc, docData } from '@angular/fire/firestore';
 import { Observable, of, combineLatest } from 'rxjs';
-// ✅ CORRECTION : Ajout de l'opérateur `tap` pour les logs
 import { switchMap, map, tap } from 'rxjs/operators';
-
 import { Sortie } from '../models/sortie.model';
 import { Depense } from '../models/depense.model';
-import { FactureVente } from '../models/facture-vente.model';
-
+import { Facture } from '../models/facture.model';
 import { DepenseService } from './depense.service';
-import { FactureVenteService } from './facture-vente.service';
+import { FactureService } from './facture.service';
 
 export interface SortieDetails extends Sortie {
   depenses: Depense[];
-  factures: FactureVente[];
+  factures: Facture[];
   totalDepenses: number;
   totalFactures: number;
 }
@@ -3381,7 +3400,7 @@ export class SortieService {
   constructor(
     private firestore: Firestore,
     private depenseService: DepenseService,
-    private factureVenteService: FactureVenteService
+    private factureService: FactureService
   ) {}
 
   getSorties(): Observable<Sortie[]> {
@@ -3393,60 +3412,35 @@ export class SortieService {
     return docData(sortieDoc, { idField: 'id' }) as Observable<Sortie>;
   }
 
-  // ✅ CORRECTION : La fonction contient maintenant des logs détaillés
   getSortiesByBateau(bateauId: string): Observable<SortieDetails[]> {
-    console.log('🔍 getSortiesByBateau (version enrichie) appelée avec bateauId:', bateauId);
-    
-    const q = query(
-      this.sortiesCollection,
-      where('bateauId', '==', bateauId)
-    );
-    
+    const q = query(this.sortiesCollection, where('bateauId', '==', bateauId));
     const sorties$ = collectionData(q, { idField: 'id' }) as Observable<Sortie[]>;
     
     return sorties$.pipe(
-      tap(sorties => {
-        // ✅ LOG : Affiche les sorties initiales trouvées
-        console.log(`- ${sorties.length} sortie(s) trouvée(s) pour le bateau ${bateauId}.`, sorties);
-        if (sorties.length > 0) {
-            console.log("- Lancement de la récupération des détails (dépenses et factures) pour chaque sortie...");
-        }
-      }),
       switchMap(sorties => {
         if (sorties.length === 0) {
           return of([]);
         }
-
         const sortieDetailsObservables = sorties.map(sortie => {
           const depenses$ = this.depenseService.getDepensesBySortie(sortie.id!);
-          const factures$ = this.factureVenteService.getFacturesBySortie(sortie.id!);
+          const factures$ = this.factureService.getFacturesBySortie(sortie.id!);
 
           return combineLatest([depenses$, factures$]).pipe(
             map(([depenses, factures]) => {
               const totalDepenses = depenses.reduce((sum, item) => sum + item.montant, 0);
               const totalFactures = factures.reduce((sum, item) => sum + item.montantTotal, 0);
               
-              const sortieDetails: SortieDetails = {
+              return {
                 ...sortie,
                 depenses,
                 factures,
                 totalDepenses,
                 totalFactures
-              };
-
-              // ✅ LOG : Affiche l'objet complet pour chaque sortie
-              console.log(`📦 Détails combinés pour la sortie "${sortie.destination}":`, sortieDetails);
-
-              return sortieDetails;
+              } as SortieDetails;
             })
           );
         });
-
         return combineLatest(sortieDetailsObservables);
-      }),
-      tap(finalResult => {
-        // ✅ LOG : Affiche le tableau final qui sera envoyé au composant
-        console.log('✅✅✅ Tableau final de SortieDetails retourné:', finalResult);
       })
     );
   }
@@ -3466,6 +3460,7 @@ export class SortieService {
     await deleteDoc(sortieDoc);
   }
 }
+
 ====================================
 FICHIER: ./src/app/sorties/depense-form/depense-form.component.ts
 Lignes:      105
@@ -6444,7 +6439,7 @@ Lignes:       67
 
 ====================================
 FICHIER: ./src/app/salaires/salaires-list.component.html
-Lignes:       70
+Lignes:      185
 ====================================
 
 <div class="salaires-container">
@@ -6470,7 +6465,122 @@ Lignes:       70
     </div>
 
     <div *ngIf="dernierCalcul" class="results-container">
+  <div class="results-header">
+    <h2>{{ 'SALAIRES.RESULTS.TITLE' | translate }}</h2>
+    <button class="btn-close-results" (click)="dernierCalcul = null" [title]="'SALAIRES.RESULTS.CLOSE' | translate">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+
+  <div class="accordion">
+    <div class="accordion-item">
+      <button class="accordion-header" (click)="toggleAccordion('summary')">
+        <span>{{ 'SALAIRES.RESULTS.FINANCIAL_SUMMARY' | translate }}</span>
+        <svg class="chevron" [class.rotate]="accordionState['summary']" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div class="accordion-content" [class.open]="accordionState['summary']">
+        <div class="summary-grid">
+          <div class="summary-item">
+            <span>{{ 'SALAIRES.REVENU_TOTAL' | translate }}</span>
+            <strong class="revenue">
+              {{ dernierCalcul.revenuTotal | number:'1.2-2' }} DT
+              <button (click)="showRevenueDetails()" class="details-link">({{ 'COMMON.VIEW_DETAILS' | translate }})</button>
+            </strong>
+          </div>
+          <div class="summary-item">
+            <span>{{ 'SALAIRES.TOTAL_DEPENSES' | translate }}</span>
+            <strong class="expenses">
+              {{ dernierCalcul.totalDepenses | number:'1.2-2' }} DT
+              <button (click)="showExpenseDetails()" class="details-link">({{ 'COMMON.VIEW_DETAILS' | translate }})</button>
+            </strong>
+          </div>
+          <div class="summary-item">
+            <span>{{ 'SALAIRES.BENEFICE_NET' | translate }}</span>
+            <strong class="benefit">{{ dernierCalcul.beneficeNet | number:'1.2-2' }} DT</strong>
+          </div>
         </div>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <button class="accordion-header" (click)="toggleAccordion('sharing')">
+        <span>{{ 'SALAIRES.RESULTS.PROFIT_SHARING' | translate }}</span>
+        <svg class="chevron" [class.rotate]="accordionState['sharing']" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div class="accordion-content" [class.open]="accordionState['sharing']">
+        <div class="summary-grid">
+          <div class="summary-item">
+            <span>{{ 'SALAIRES.PART_PROPRIETAIRE' | translate }}</span>
+            <strong>{{ dernierCalcul.partProprietaire | number:'1.2-2' }} DT</strong>
+          </div>
+          <div class="summary-item">
+            <span>{{ 'SALAIRES.PART_EQUIPAGE' | translate }}</span>
+            <strong>{{ dernierCalcul.partEquipage | number:'1.2-2' }} DT</strong>
+          </div>
+          <div class="summary-item">
+            <span>- {{ 'SALAIRES.DEDUCTIONS' | translate }} ({{ 'SALAIRES.NUITS' | translate }})</span>
+            <strong class="expenses">{{ dernierCalcul.deductionNuits | number:'1.2-2' }} DT</strong>
+          </div>
+          <div class="summary-item net-share">
+            <span>{{ 'SALAIRES.MONTANT_A_PARTAGER' | translate }}</span>
+            <strong>{{ dernierCalcul.montantAPartager | number:'1.2-2' }} DT</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <button class="accordion-header" (click)="toggleAccordion('details')">
+        <span>{{ 'SALAIRES.DETAILS_PAR_MARIN' | translate }}</span>
+        <svg class="chevron" [class.rotate]="accordionState['details']" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div class="accordion-content open" [class.open]="accordionState['details']">
+        <div class="table-container">
+          <table class="salaires-table">
+            <thead>
+              <tr>
+                <th>{{ 'SAILORS.TITLE' | translate }}</th>
+                <th>{{ 'SAILORS.PART' | translate }}</th>
+                <th>{{ 'SALAIRES.SALAIRE_BASE' | translate }}</th>
+                <th>{{ 'SALAIRES.PRIME_NUITS' | translate }}</th>
+                <th>{{ 'AVANCES.TITLE' | translate }}</th>
+                <th>{{ 'SALAIRES.DEJA_PAYE' | translate }}</th>
+                <th class="reste">{{ 'SALAIRES.RESTE_A_PAYER' | translate }}</th>
+                <th>{{ 'BOATS.ACTIONS' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let detail of dernierCalcul.detailsMarins">
+                <td class="marin-name">{{ detail.marinNom }}</td>
+                <td>{{ detail.part }}</td>
+                <td>{{ detail.salaireBrut | number:'1.2-2' }}</td>
+                <td>{{ detail.primeNuits | number:'1.2-2' }}</td>
+                <td class="avances">-{{ detail.totalAvances | number:'1.2-2' }}</td>
+                <td class="paiements">-{{ detail.totalPaiements | number:'1.2-2' }}</td>
+                <td class="reste" [class.paid]="detail.resteAPayer <= 0">
+                  <strong>{{ detail.resteAPayer | number:'1.2-2' }} DT</strong>
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-pay" (click)="enregistrerPaiement(detail)" [disabled]="detail.resteAPayer <= 0">
+                    {{ detail.resteAPayer <= 0 ? ('SALAIRES.PAYE' | translate) : ('SALAIRES.PAYER' | translate) }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
     
     <div *ngIf="!dernierCalcul">
       <div *ngIf="activeTab === 'ouvertes'" class="tab-content">
@@ -12575,6 +12685,6 @@ Lignes:       23
   RÉSUMÉ
 ====================================
 Total fichiers: 118
-Total lignes: 11614
-Date: Sun Oct 19 06:57:34 CET 2025
+Total lignes: 11717
+Date: Sun Oct 19 07:41:22 CET 2025
 ====================================

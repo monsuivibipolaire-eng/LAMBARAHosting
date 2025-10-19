@@ -1,12 +1,12 @@
 import { Depense } from "./depense.model";
-import { Facture } from "./facture.model";
+import { FactureVente } from "./facture-vente.model";
 
 // Modèle pour sauvegarder un calcul complet
 export interface CalculSalaire {
   id?: string;
   bateauId: string;
   sortiesIds: string[];
-  sortiesDestinations: string[];
+  sortiesDestinations: string[]; // Pour un affichage facile
   dateCalcul: Date;
   
   // Résumé financier
@@ -21,8 +21,8 @@ export interface CalculSalaire {
   // Détails par marin
   detailsMarins: DetailSalaireMarin[];
 
-  // Transactions utilisées pour le calcul
-  factures?: Facture[];
+  // ✅ Transactions utilisées pour le calcul
+  factures?: FactureVente[];
   depenses?: Depense[];
 }
 

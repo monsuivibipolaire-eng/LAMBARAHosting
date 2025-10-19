@@ -46,7 +46,7 @@ export class SalairesListComponent implements OnInit {
     private salaireService: SalaireService,
     private selectedBoatService: SelectedBoatService,
     private alertService: AlertService,
-    private translate: TranslateService
+    private translate: TranslateService,
   ) {}
 
   ngOnInit(): void {

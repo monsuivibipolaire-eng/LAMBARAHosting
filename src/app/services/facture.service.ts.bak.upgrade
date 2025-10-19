@@ -5,34 +5,26 @@ import { Facture } from '../models/facture.model';
 
 @Injectable({ providedIn: 'root' })
 export class FactureService {
-  private collectionName = 'factures';
-  private facturesCollection = collection(this.firestore, this.collectionName);
-
   constructor(private firestore: Firestore) {}
 
   getFacturesBySortie(sortieId: string): Observable<Facture[]> {
-    const facturesQuery = query(this.facturesCollection, where('sortieId', '==', sortieId), orderBy('dateFacture', 'desc'));
+    const facturesCollection = collection(this.firestore, 'factures');
+    const facturesQuery = query(facturesCollection, where('sortieId', '==', sortieId), orderBy('dateFacture', 'desc'));
     return collectionData(facturesQuery, { idField: 'id' }) as Observable<Facture[]>;
   }
 
-  async addFacture(facture: Omit<Facture, 'id'>): Promise<any> {
-    return await addDoc(this.facturesCollection, { 
-      ...facture, 
-      createdAt: new Date(),
-      updatedAt: new Date() 
-    });
+  async addFacture(facture: Facture): Promise<any> {
+    const facturesCollection = collection(this.firestore, 'factures');
+    return await addDoc(facturesCollection, { ...facture, createdAt: new Date(), updatedAt: new Date() });
   }
 
   async updateFacture(id: string, facture: Partial<Facture>): Promise<void> {
-    const factureDoc = doc(this.firestore, `${this.collectionName}/${id}`);
-    await updateDoc(factureDoc, { 
-      ...facture, 
-      updatedAt: new Date() 
-    });
+    const factureDoc = doc(this.firestore, 'factures/' + id);
+    await updateDoc(factureDoc, { ...facture, updatedAt: new Date() });
   }
 
   async deleteFacture(id: string): Promise<void> {
-    const factureDoc = doc(this.firestore, `${this.collectionName}/${id}`);
+    const factureDoc = doc(this.firestore, 'factures/' + id);
     await deleteDoc(factureDoc);
   }
 }
