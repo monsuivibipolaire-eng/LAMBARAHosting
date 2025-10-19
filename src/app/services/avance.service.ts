@@ -1,76 +1,49 @@
 import { Injectable } from '@angular/core';
-import { Firestore, collection, addDoc, updateDoc, deleteDoc, doc, collectionData, query, where } from '@angular/fire/firestore';
+import { Firestore, collection, addDoc, updateDoc, deleteDoc, doc, query, where, collectionData, docData } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 import { Avance } from '../models/avance.model';
+import { FinancialEventsService } from './financial-events.service';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class AvanceService {
   private collectionName = 'avances';
 
-  constructor(private firestore: Firestore) {}
+  constructor(
+    private firestore: Firestore,
+    private finEvents: FinancialEventsService
+  ) {}
 
   getAvancesByMarin(marinId: string): Observable<Avance[]> {
-    const avancesCollection = collection(this.firestore, this.collectionName);
-    const q = query(avancesCollection, where('marinId', '==', marinId));
+    const col = collection(this.firestore, this.collectionName);
+    const q = query(col, where('marinId','==', marinId));
     return collectionData(q, { idField: 'id' }) as Observable<Avance[]>;
   }
 
-  getAvancesByBateau(bateauId: string): Observable<Avance[]> {
-    const avancesCollection = collection(this.firestore, this.collectionName);
-    const q = query(avancesCollection, where('bateauId', '==', bateauId));
-    return collectionData(q, { idField: 'id' }) as Observable<Avance[]>;
+  getAvancesByBateau(bateauId: string) {
+    return this.getAvancesByMarin(bateauId as any);
   }
 
-  async addAvance(avance: Omit<Avance, 'id'>): Promise<any> {
-    const avancesCollection = collection(this.firestore, this.collectionName);
-    
-    // ✅ FILTRER LES VALEURS UNDEFINED
-    const dataToSave: any = {
-      marinId: avance.marinId,
-      bateauId: avance.bateauId,
-      montant: avance.montant,
-      dateAvance: avance.dateAvance,
-      createdAt: new Date()
-    };
+  getAvance(id: string): Observable<Avance | undefined> {
+    const d = doc(this.firestore, this.collectionName, id);
+    return docData(d, { idField: 'id' }) as Observable<Avance | undefined>;
+  }
 
-    // Ajouter description seulement si elle existe
-    if (avance.description && avance.description.trim() !== '') {
-      dataToSave.description = avance.description;
-    }
-
-    return await addDoc(avancesCollection, dataToSave);
+  async addAvance(avance: Omit<Avance,'id'>): Promise<string> {
+    const col = collection(this.firestore, this.collectionName);
+    const ref = await addDoc(col, avance);
+    this.finEvents.notifyFinancialChange();
+    return ref.id;
   }
 
   async updateAvance(id: string, avance: Partial<Avance>): Promise<void> {
-    const avanceDoc = doc(this.firestore, `${this.collectionName}/${id}`);
-    
-    // ✅ FILTRER LES VALEURS UNDEFINED
-    const dataToUpdate: any = {};
-    
-    if (avance.montant !== undefined) {
-      dataToUpdate.montant = avance.montant;
-    }
-    
-    if (avance.dateAvance !== undefined) {
-      dataToUpdate.dateAvance = avance.dateAvance;
-    }
-    
-    if (avance.description !== undefined) {
-      if (avance.description && avance.description.trim() !== '') {
-        dataToUpdate.description = avance.description;
-      } else {
-        // Si description est vide, la supprimer du document
-        dataToUpdate.description = '';
-      }
-    }
-
-    return await updateDoc(avanceDoc, dataToUpdate);
+    const d = doc(this.firestore, this.collectionName, id);
+    await updateDoc(d, avance);
+    this.finEvents.notifyFinancialChange();
   }
 
   async deleteAvance(id: string): Promise<void> {
-    const avanceDoc = doc(this.firestore, `${this.collectionName}/${id}`);
-    return await deleteDoc(avanceDoc);
+    const d = doc(this.firestore, this.collectionName, id);
+    await deleteDoc(d);
+    this.finEvents.notifyFinancialChange();
   }
 }

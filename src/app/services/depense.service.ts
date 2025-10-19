@@ -1,58 +1,45 @@
 import { Injectable } from '@angular/core';
-import {
-  Firestore,
-  collection,
-  collectionData,
-  doc,
-  docData,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  where,
-  orderBy,
-  CollectionReference,
-} from '@angular/fire/firestore';
+import { Firestore, collection, addDoc, updateDoc, deleteDoc, doc, query, where, collectionData, docData } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 import { Depense } from '../models/depense.model';
+import { FinancialEventsService } from './financial-events.service';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class DepenseService {
-  private depensesCollection: CollectionReference;
+  private collectionName = 'depenses';
 
-  constructor(private firestore: Firestore) {
-    this.depensesCollection = collection(this.firestore, 'depenses');
-  }
+  constructor(
+    private firestore: Firestore,
+    private finEvents: FinancialEventsService
+  ) {}
 
   getDepensesBySortie(sortieId: string): Observable<Depense[]> {
-    const q = query(
-      this.depensesCollection,
-      where('sortieId', '==', sortieId),
-      orderBy('date', 'desc')
-    );
+    const col = collection(this.firestore, this.collectionName);
+    const q = query(col, where('sortieId','==', sortieId));
     return collectionData(q, { idField: 'id' }) as Observable<Depense[]>;
   }
 
   getDepense(id: string): Observable<Depense | undefined> {
-    const depenseDoc = doc(this.firestore, `depenses/${id}`);
-    return docData(depenseDoc, { idField: 'id' }) as Observable<Depense | undefined>;
+    const d = doc(this.firestore, this.collectionName, id);
+    return docData(d, { idField: 'id' }) as Observable<Depense | undefined>;
   }
 
-  async addDepense(depense: Depense): Promise<any> {
-    const newDepense = { ...depense, createdAt: new Date(), updatedAt: new Date() };
-    return await addDoc(this.depensesCollection, newDepense);
+  async addDepense(depense: Omit<Depense,'id'>): Promise<string> {
+    const col = collection(this.firestore, this.collectionName);
+    const ref = await addDoc(col, depense);
+    this.finEvents.notifyFinancialChange();
+    return ref.id;
   }
 
   async updateDepense(id: string, depense: Partial<Depense>): Promise<void> {
-    const depenseDoc = doc(this.firestore, `depenses/${id}`);
-    const updateData = { ...depense, updatedAt: new Date() };
-    return await updateDoc(depenseDoc, updateData);
+    const d = doc(this.firestore, this.collectionName, id);
+    await updateDoc(d, depense);
+    this.finEvents.notifyFinancialChange();
   }
 
   async deleteDepense(id: string): Promise<void> {
-    const depenseDoc = doc(this.firestore, `depenses/${id}`);
-    return await deleteDoc(depenseDoc);
+    const d = doc(this.firestore, this.collectionName, id);
+    await deleteDoc(d);
+    this.finEvents.notifyFinancialChange();
   }
 }
