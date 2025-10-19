@@ -23,6 +23,7 @@
     color: #1f2937;
     margin: 0;
     text-align: center;
+    margin-right: -120px;
   }
 }
 
@@ -36,10 +37,6 @@
 .form-group {
   display: flex;
   flex-direction: column;
-
-  &.full-width {
-    grid-column: 1 / -1;
-  }
 }
 
 .form-label {
@@ -56,6 +53,7 @@
   font-size: 1rem;
   transition: all 0.2s;
   width: 100%;
+
   &:focus {
     outline: none;
     border-color: #3b82f6;
@@ -65,11 +63,6 @@
   &.error {
     border-color: #ef4444;
   }
-}
-
-textarea.form-input {
-  resize: vertical;
-  min-height: 80px;
 }
 
 .error-message {
@@ -131,30 +124,4 @@ textarea.form-input {
   .form-grid { grid-template-columns: 1fr; gap: 1rem; }
   .form-actions { flex-direction: column-reverse; gap: 0.75rem; }
   .btn { width: 100%; justify-content: center; }
-}
-
-.selected-boat-info {
-  margin-bottom: 2rem;
-  
-  .boat-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
-    background: #d1fae5;
-    color: #065f46;
-    padding: 1rem 1.5rem;
-    border-radius: 0.75rem;
-    border: 2px solid #10b981;
-    font-size: 1rem;
-    svg {
-      width: 24px;
-      height: 24px;
-      flex-shrink: 0;
-    }
-
-    strong {
-      font-weight: 700;
-      color: #047857;
-    }
-  }
 }
