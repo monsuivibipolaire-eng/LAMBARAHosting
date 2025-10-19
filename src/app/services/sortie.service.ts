@@ -1,7 +1,22 @@
 import { Injectable } from '@angular/core';
 import { Firestore, collection, query, where, collectionData, addDoc, updateDoc, deleteDoc, doc, docData } from '@angular/fire/firestore';
-import { Observable } from 'rxjs';
+import { Observable, of, combineLatest } from 'rxjs';
+// ✅ CORRECTION : Ajout de l'opérateur `tap` pour les logs
+import { switchMap, map, tap } from 'rxjs/operators';
+
 import { Sortie } from '../models/sortie.model';
+import { Depense } from '../models/depense.model';
+import { FactureVente } from '../models/facture-vente.model';
+
+import { DepenseService } from './depense.service';
+import { FactureVenteService } from './facture-vente.service';
+
+export interface SortieDetails extends Sortie {
+  depenses: Depense[];
+  factures: FactureVente[];
+  totalDepenses: number;
+  totalFactures: number;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -9,7 +24,11 @@ import { Sortie } from '../models/sortie.model';
 export class SortieService {
   private sortiesCollection = collection(this.firestore, 'sorties');
 
-  constructor(private firestore: Firestore) {}
+  constructor(
+    private firestore: Firestore,
+    private depenseService: DepenseService,
+    private factureVenteService: FactureVenteService
+  ) {}
 
   getSorties(): Observable<Sortie[]> {
     return collectionData(this.sortiesCollection, { idField: 'id' }) as Observable<Sortie[]>;
@@ -20,30 +39,66 @@ export class SortieService {
     return docData(sortieDoc, { idField: 'id' }) as Observable<Sortie>;
   }
 
-  getSortiesByBateau(bateauId: string): Observable<Sortie[]> {
-    console.log('🔍 getSortiesByBateau appelé avec bateauId:', bateauId);
+  // ✅ CORRECTION : La fonction contient maintenant des logs détaillés
+  getSortiesByBateau(bateauId: string): Observable<SortieDetails[]> {
+    console.log('🔍 getSortiesByBateau (version enrichie) appelée avec bateauId:', bateauId);
     
     const q = query(
       this.sortiesCollection,
       where('bateauId', '==', bateauId)
     );
     
-    const result$ = collectionData(q, { idField: 'id' }) as Observable<Sortie[]>;
+    const sorties$ = collectionData(q, { idField: 'id' }) as Observable<Sortie[]>;
     
-    result$.subscribe(sorties => {
-      console.log(`📊 Sorties trouvées pour bateau ${bateauId}:`, sorties.length);
-      if (sorties.length > 0) {
-        console.log('📦 Première sortie:', sorties[0]);
-      }
-    });
-    
-    return result$;
+    return sorties$.pipe(
+      tap(sorties => {
+        // ✅ LOG : Affiche les sorties initiales trouvées
+        console.log(`- ${sorties.length} sortie(s) trouvée(s) pour le bateau ${bateauId}.`, sorties);
+        if (sorties.length > 0) {
+            console.log("- Lancement de la récupération des détails (dépenses et factures) pour chaque sortie...");
+        }
+      }),
+      switchMap(sorties => {
+        if (sorties.length === 0) {
+          return of([]);
+        }
+
+        const sortieDetailsObservables = sorties.map(sortie => {
+          const depenses$ = this.depenseService.getDepensesBySortie(sortie.id!);
+          const factures$ = this.factureVenteService.getFacturesBySortie(sortie.id!);
+
+          return combineLatest([depenses$, factures$]).pipe(
+            map(([depenses, factures]) => {
+              const totalDepenses = depenses.reduce((sum, item) => sum + item.montant, 0);
+              const totalFactures = factures.reduce((sum, item) => sum + item.montantTotal, 0);
+              
+              const sortieDetails: SortieDetails = {
+                ...sortie,
+                depenses,
+                factures,
+                totalDepenses,
+                totalFactures
+              };
+
+              // ✅ LOG : Affiche l'objet complet pour chaque sortie
+              console.log(`📦 Détails combinés pour la sortie "${sortie.destination}":`, sortieDetails);
+
+              return sortieDetails;
+            })
+          );
+        });
+
+        return combineLatest(sortieDetailsObservables);
+      }),
+      tap(finalResult => {
+        // ✅ LOG : Affiche le tableau final qui sera envoyé au composant
+        console.log('✅✅✅ Tableau final de SortieDetails retourné:', finalResult);
+      })
+    );
   }
 
   async addSortie(sortie: Omit<Sortie, 'id'>): Promise<string> {
-    console.log('➕ Ajout sortie:', sortie);
     const docRef = await addDoc(this.sortiesCollection, sortie);
-    console.log('✅ Sortie ajoutée avec ID:', docRef.id);
     return docRef.id;
   }
 
