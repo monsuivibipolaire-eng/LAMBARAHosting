@@ -1,34 +1,32 @@
 #!/bin/bash
 
-echo "🔧 Correction des erreurs TS2304 et TS2339 dans salaires-list.component.ts..."
+# Script pour supprimer tous les fichiers inutilisés (backups, temporaires, fixes) dans src/
 
-FILE="src/app/salaires/salaires-list.component.ts"
+BASE_DIR="src/app"
 
-# 1. Sauvegarde
-cp "$FILE" "${FILE}.bak_$(date +%Y%m%d_%H%M%S)"
-echo "📝 Sauvegarde créée"
+echo "🔍 Suppression des fichiers inutiles dans $BASE_DIR..."
 
-# 2. Remplacer Facture par FactureVente
-perl -i -pe 's/\bFacture\b/FactureVente/g' "$FILE"
-echo "✅ Remplacement de 'Facture' par 'FactureVente'"
+# Extensions et motifs à supprimer
+PATTERNS=(
+  "*.bak"
+  "*.bak_*"
+  "*.bak.*"
+  "*.tmp"
+  "*.fix*"
+  "*.backup"
+  "*.backup_*"
+  "*~"
+)
 
-# 3. Corriger le cast allFactures as Facture[] → as FactureVente[]
-perl -i -pe 's/allFactures as Facture\[\]/allFactures as FactureVente[]/' "$FILE"
-echo "✅ Correction du cast allFactures"
+# Supprimer les fichiers correspondants aux motifs
+for pattern in "${PATTERNS[@]}"; do
+  echo "🗑️  Suppression des fichiers $pattern"
+  find "$BASE_DIR" -type f -name "$pattern" -print -exec rm -f {} +
+done
 
-# 4. Remplacer dateFacture par dateVente
-perl -i -pe 's/f\.dateFacture/f.dateVente/g' "$FILE"
-echo "✅ Remplacement de 'dateFacture' par 'dateVente'"
-
-# 5. Retirer l'import de Facture (ancien modèle)
-sed -i.bak "/import { Facture } from '..\/models\/facture.model';/d" "$FILE"
-echo "✅ Suppression de l'import de Facture"
-
-# 6. Ajouter import de FactureVente s'il manque
-grep -q "import { FactureVente } from '../models/facture-vente.model';" "$FILE" || \
-perl -i -pe "s|(import .*facture-vente.service.*;)|\1\nimport { FactureVente } from '../models/facture-vente.model';|" "$FILE"
-echo "✅ Ajout de l'import de FactureVente si nécessaire"
+# Supprimer également les dossiers vides résultants
+echo "🧹 Suppression des dossiers vides"
+find "$BASE_DIR" -type d -empty -print -delete
 
 echo ""
-echo "🎉 Corrections appliquées avec succès !"
-echo "➡️ Recompilez votre application."
+echo "✅ Tous les fichiers inutiles ont été supprimés."
