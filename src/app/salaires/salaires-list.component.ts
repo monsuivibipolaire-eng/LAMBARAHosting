@@ -4,8 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import Swal from 'sweetalert2';
 import { take } from 'rxjs/operators';
+import { combineLatest } from 'rxjs';
 
-import { SortieService } from '../services/sortie.service';
+import { SortieService, SortieDetails } from '../services/sortie.service';
 import { MarinService } from '../services/marin.service';
 import { DepenseService } from '../services/depense.service';
 import { AvanceService } from '../services/avance.service';
@@ -35,8 +36,11 @@ export class SalairesListComponent implements OnInit {
   
   activeTab: 'ouvertes' | 'historique' = 'ouvertes';
   sortiesOuvertes: Sortie[] = [];
-  sortiesCalculees: Sortie[] = [];
+  historiqueCalculs: CalculSalaire[] = [];
   
+  // ✅ NOUVEAU: Stocke la liste complète de toutes les sorties pour le bateau
+  private allBoatSorties: SortieDetails[] = [];
+
   dernierCalcul: CalculSalaire | null = null;
   accordionState: { [key: string]: boolean } = { summary: true, sharing: true, details: true };
   loading = true;
@@ -63,19 +67,24 @@ export class SalairesListComponent implements OnInit {
     if (!this.selectedBoat?.id) return;
     this.loading = true;
     const boatId = this.selectedBoat.id;
-    this.sortieService.getSortiesByBateau(boatId).subscribe((sorties: Sortie[]) => {
-      this.sortiesOuvertes = sorties.filter(s => s.statut === 'terminee' && !s.salaireCalcule);
-      this.sortiesCalculees = sorties.filter(s => s.salaireCalcule === true)
-        .sort((a, b) => {
-          const dateA = (a.dateRetour as any).toDate ? (a.dateRetour as any).toDate().getTime() : new Date(a.dateRetour).getTime();
-          const dateB = (b.dateRetour as any).toDate ? (b.dateRetour as any).toDate().getTime() : new Date(b.dateRetour).getTime();
-          return dateB - dateA;
-        });
+
+    combineLatest([
+      this.sortieService.getSortiesByBateau(boatId),
+      this.marinService.getMarinsByBateau(boatId),
+      this.salaireService.getCalculsByBateau(boatId)
+    ]).subscribe(([sorties, marins, calculs]) => {
+      // ✅ NOUVEAU: On stocke toutes les sorties ici
+      this.allBoatSorties = sorties;
       
-      this.marinService.getMarinsByBateau(boatId).subscribe((marins: Marin[]) => {
-        this.marins = marins;
-        this.loading = false;
-      });
+      this.sortiesOuvertes = sorties.filter(s => s.statut === 'terminee' && !s.salaireCalcule);
+      this.marins = marins;
+      
+      this.historiqueCalculs = calculs.sort((a, b) =>  
+        ((b.dateCalcul as any).toDate ? (b.dateCalcul as any).toDate() : new Date(b.dateCalcul)).getTime() - 
+        ((a.dateCalcul as any).toDate ? (a.dateCalcul as any).toDate() : new Date(a.dateCalcul)).getTime()
+      );
+
+      this.loading = false;
     });
   }
 
@@ -107,8 +116,9 @@ export class SalairesListComponent implements OnInit {
 
     try {
       this.alertService.loading(this.translate.instant('MESSAGES.CALCULATING'));
-      const allSorties = [...this.sortiesOuvertes, ...this.sortiesCalculees];
-      const selectedSorties = allSorties.filter(s => this.selectedSortiesIds.includes(s.id!));
+      
+      // ✅ CORRIGÉ: On filtre la liste complète et typée des sorties
+      const selectedSorties = this.allBoatSorties.filter(s => this.selectedSortiesIds.includes(s.id!));
 
       const facturesPromises = this.selectedSortiesIds.map(id => this.factureService.getFacturesBySortie(id).pipe(take(1)).toPromise());
       const allFactures = await Promise.all(facturesPromises);
@@ -120,21 +130,22 @@ export class SalairesListComponent implements OnInit {
       const beneficeNet = revenuTotal - totalDepenses;
       const partProprietaire = beneficeNet * 0.5;
       const partEquipage = beneficeNet * 0.5;
-      const totalNuits = selectedSorties.reduce((total, s) => total + this.calculerNombreNuits(s), 0);
+      
+      // ✅ CORRIGÉ: Le reduce fonctionne car selectedSorties est maintenant de type Sortie[]
+      const totalNuits = selectedSorties.reduce((total: number, s: Sortie) => total + this.calculerNombreNuits(s), 0);
       const deductionNuits = totalNuits * this.marins.length * 5;
       const montantAPartager = partEquipage - deductionNuits;
 
-      // ✅ NOUVEAU: Récupérer tous les calculs précédents une seule fois
       const allPreviousCalculs = await this.salaireService.getCalculsByBateau(this.selectedBoat!.id!).pipe(take(1)).toPromise();
 
       let detailsMarins: DetailSalaireMarin[] = [];
       for (const marin of this.marins) {
         const part = marin.part || 0;
         const salaireBrut = totalParts > 0 ? (montantAPartager * part) / totalParts : 0;
+        // ✅ CORRIGÉ: L'opération fonctionne car totalNuits est bien un 'number'
         const primeNuits = totalNuits * 5;
         
-        // ✅ NOUVEAU: Trouver la date du dernier calcul pour ce marin
-        let lastCalculDate = new Date(0); // Date de début (epoch)
+        let lastCalculDate = new Date(0);
         if (allPreviousCalculs) {
           const marinsPreviousCalculs = allPreviousCalculs.filter(c => 
             c.detailsMarins.some(d => d.marinId === marin.id!)
@@ -148,7 +159,6 @@ export class SalairesListComponent implements OnInit {
           }
         }
         
-        // ✅ NOUVEAU: Filtrer les avances pour ne garder que celles prises après le dernier calcul
         const allAvances = await this.avanceService.getAvancesByMarin(marin.id!).pipe(take(1)).toPromise();
         const unsettledAvances = allAvances?.filter(avance => {
           const avanceDate = (avance.dateAvance as any).toDate ? (avance.dateAvance as any).toDate() : new Date(avance.dateAvance);
@@ -165,7 +175,8 @@ export class SalairesListComponent implements OnInit {
       const calculData: Omit<CalculSalaire, 'id'> = {
         bateauId: this.selectedBoat!.id!,
         sortiesIds: this.selectedSortiesIds,
-        sortiesDestinations: selectedSorties.map(s => s.destination),
+        // ✅ CORRIGÉ: Le map fonctionne car selectedSorties est bien de type Sortie[]
+        sortiesDestinations: selectedSorties.map((s: Sortie) => s.destination),
         dateCalcul: new Date(),
         revenuTotal, totalDepenses, beneficeNet, partProprietaire, partEquipage, deductionNuits, montantAPartager, detailsMarins,
         factures: allFactures.flat() as FactureVente[],
@@ -190,26 +201,6 @@ export class SalairesListComponent implements OnInit {
       this.alertService.error();
     }
   }
-
-  async viewCalculDetails(sortie: Sortie): Promise<void> {
-    this.alertService.loading(this.translate.instant('MESSAGES.LOADING_DETAILS'));
-    this.salaireService.getCalculsBySortieId(sortie.id!).pipe(take(1)).subscribe({
-        next: async (calculs) => {
-            if (calculs && calculs.length > 0) {
-                await this.displayCorrectedCalcul(calculs[0]);
-            } else {
-                this.alertService.close();
-                const res = await Swal.fire({
-                    title: this.translate.instant('SALAIRES.HISTORY.NO_DATA_FOUND_TITLE'), text: this.translate.instant('SALAIRES.HISTORY.NO_DATA_FOUND_TEXT'),
-                    icon: 'info', showCancelButton: true, confirmButtonText: this.translate.instant('SALAIRES.HISTORY.RECALCULATE_BTN'),
-                    cancelButtonText: this.translate.instant('FORM.CANCEL'), confirmButtonColor: '#10b981'
-                });
-                if (res.isConfirmed) { await this.reopenSortieForRecalculation(sortie); }
-            }
-        },
-        error: (err) => { console.error(err); this.alertService.error(); }
-    });
-  }
   
   async reopenSortieForRecalculation(sortie: Sortie): Promise<void> {
     try {
@@ -221,7 +212,8 @@ export class SalairesListComponent implements OnInit {
     } catch (error) { console.error(error); this.alertService.error(); }
   }
 
-  private async displayCorrectedCalcul(calcul: CalculSalaire): Promise<void> {
+  public async displayCorrectedCalcul(calcul: CalculSalaire): Promise<void> {
+    this.alertService.loading(this.translate.instant('MESSAGES.LOADING_DETAILS'));
     const correctedCalcul = JSON.parse(JSON.stringify(calcul));
     const calculSortiesIds = correctedCalcul.sortiesIds || [];
 

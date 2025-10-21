@@ -16,7 +16,7 @@
       </button>
       <button class="tab-button" [class.active]="activeTab === 'historique'" (click)="selectTab('historique')">
         {{ 'SALAIRES.TABS.HISTORY' | translate }}
-        <span class="badge">{{ sortiesCalculees.length }}</span>
+        <span class="badge">{{ historiqueCalculs.length }}</span>
       </button>
     </div>
 
@@ -120,7 +120,7 @@
           <div *ngIf="sortiesOuvertes.length > 0; else noOpenTrips" class="sorties-list">
             <div *ngFor="let sortie of sortiesOuvertes" 
                  class="sortie-item" [class.selected]="isSortieSelected(sortie.id!)" (click)="toggleSortie(sortie.id!)">
-              <input type="checkbox" disabled [checked]="isSortieSelected(sortie.id!)" (click)="$event.stopPropagation()">
+              <input type="checkbox" [checked]="isSortieSelected(sortie.id!)" (change)="toggleSortie(sortie.id!)">
               <div class="sortie-info">
                 <strong>{{ sortie.destination }}</strong>
                 <span>{{ formatDate(sortie.dateDepart) }} - {{ formatDate(sortie.dateRetour) }}</span>
@@ -139,13 +139,13 @@
       <div *ngIf="activeTab === 'historique'" class="tab-content">
         <div class="section-card">
           <h2>{{ 'SALAIRES.TABS.CALCULATED_TRIPS' | translate }}</h2>
-          <div *ngIf="sortiesCalculees.length > 0; else noCalculatedTrips" class="sorties-list-history">
-            <div *ngFor="let sortie of sortiesCalculees" class="sortie-item-history">
+          <div *ngIf="historiqueCalculs.length > 0; else noCalculatedTrips" class="sorties-list-history">
+            <div *ngFor="let calcul of historiqueCalculs" class="sortie-item-history">
               <div class="sortie-info">
-                <strong>{{ sortie.destination }}</strong>
-                <span>{{ formatDate(sortie.dateDepart) }} - {{ formatDate(sortie.dateRetour) }}</span>
+                <strong>{{ calcul.sortiesDestinations.join(' + ') }}</strong>
+                <span>{{ 'SALAIRES_HISTORY.CALCULATED_ON' | translate }} {{ formatDate(calcul.dateCalcul) }}</span>
               </div>
-              <button class="btn btn-secondary btn-sm" (click)="viewCalculDetails(sortie)">{{ 'COMMON.VIEW_DETAILS' | translate }}</button>
+              <button class="btn btn-secondary btn-sm" (click)="displayCorrectedCalcul(calcul)">{{ 'COMMON.VIEW_DETAILS' | translate }}</button>
             </div>
           </div>
           <ng-template #noCalculatedTrips><div class="no-data-small"><p>{{ 'SALAIRES.NO_CALCULATED_TRIPS' | translate }}</p></div></ng-template>
