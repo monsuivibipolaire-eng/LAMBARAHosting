@@ -150,14 +150,14 @@ export class SalairesListComponent implements OnInit {
         factures: allFactures.flat() as FactureVente[],
         depenses: allDepenses.flat() as Depense[]
       };
-      await this.salaireService.saveCalculSalaire(calculData);
+      const docRef = await this.salaireService.saveCalculSalaire(calculData);
 
       for (const sortieId of this.selectedSortiesIds) {
         await this.sortieService.updateSortie(sortieId, { salaireCalcule: true });
       }
 
       this.alertService.close();
-      this.dernierCalcul = calculData as CalculSalaire;
+      this.dernierCalcul = { ...calculData, id: docRef.id } as CalculSalaire;
       this.accordionState = { summary: true, sharing: true, details: true };
       this.selectedSortiesIds = [];
       this.loadData();
