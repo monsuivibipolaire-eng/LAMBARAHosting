@@ -36,9 +36,11 @@ export class SalairesListComponent implements OnInit {
   activeTab: 'ouvertes' | 'historique' = 'ouvertes';
   sortiesOuvertes: Sortie[] = [];
   sortiesCalculees: Sortie[] = [];
-  
+  historiqueCalculs: { [sortieId: string]: CalculSalaire[] } = {};
+
   dernierCalcul: CalculSalaire | null = null;
   accordionState: { [key: string]: boolean } = { summary: true, sharing: true, details: true };
+
   loading = true;
 
   constructor(
@@ -63,6 +65,7 @@ export class SalairesListComponent implements OnInit {
     if (!this.selectedBoat?.id) return;
     this.loading = true;
     const boatId = this.selectedBoat.id;
+
     this.sortieService.getSortiesByBateau(boatId).subscribe((sorties: Sortie[]) => {
       this.sortiesOuvertes = sorties.filter(s => s.statut === 'terminee' && !s.salaireCalcule);
       this.sortiesCalculees = sorties.filter(s => s.salaireCalcule === true)
@@ -117,6 +120,7 @@ export class SalairesListComponent implements OnInit {
       const depensesPromises = this.selectedSortiesIds.map(id => this.depenseService.getDepensesBySortie(id).pipe(take(1)).toPromise());
       const allDepenses = await Promise.all(depensesPromises);
       const totalDepenses = allDepenses.flat().reduce((sum, d: any) => sum + (d?.montant || 0), 0);
+      
       const beneficeNet = revenuTotal - totalDepenses;
       const partProprietaire = beneficeNet * 0.5;
       const partEquipage = beneficeNet * 0.5;
@@ -129,16 +133,11 @@ export class SalairesListComponent implements OnInit {
         const part = marin.part || 0;
         const salaireBrut = totalParts > 0 ? (montantAPartager * part) / totalParts : 0;
         const primeNuits = totalNuits * 5;
-        
         const avances = await this.avanceService.getAvancesByMarin(marin.id!).pipe(take(1)).toPromise();
         const totalAvances = avances?.reduce((sum, a) => sum + a.montant, 0) || 0;
-        
-        // Ne pas inclure les paiements historiques dans un nouveau calcul
-        const totalPaiements = 0; 
-        
-        // Le calcul ne soustrait que les avances
-        const resteAPayer = salaireBrut + primeNuits - totalAvances; 
-
+        const paiements = await this.paiementService.getPaiementsByMarin(marin.id!).pipe(take(1)).toPromise();
+        const totalPaiements = paiements?.reduce((sum, p) => sum + p.montant, 0) || 0;
+        const resteAPayer = salaireBrut + primeNuits - totalAvances - totalPaiements;
         detailsMarins.push({ marinId: marin.id!, marinNom: `${marin.prenom} ${marin.nom}`, part, salaireBrut, primeNuits, totalAvances, totalPaiements, resteAPayer });
       }
 
@@ -151,7 +150,6 @@ export class SalairesListComponent implements OnInit {
         factures: allFactures.flat() as FactureVente[],
         depenses: allDepenses.flat() as Depense[]
       };
-      
       const docRef = await this.salaireService.saveCalculSalaire(calculData);
 
       for (const sortieId of this.selectedSortiesIds) {
@@ -171,14 +169,17 @@ export class SalairesListComponent implements OnInit {
     }
   }
 
-  // ✅ MODIFIÉ: Logique déplacée vers displayCorrectedCalcul
   async viewCalculDetails(sortie: Sortie): Promise<void> {
     this.alertService.loading(this.translate.instant('MESSAGES.LOADING_DETAILS'));
+    if (this.historiqueCalculs[sortie.id!]) {
+      this.displayCalculInView(this.historiqueCalculs[sortie.id!][0]);
+      return;
+    }
     this.salaireService.getCalculsBySortieId(sortie.id!).pipe(take(1)).subscribe({
         next: async (calculs) => {
             if (calculs && calculs.length > 0) {
-                // On passe le calcul à la nouvelle fonction pour corriger les totaux affichés
-                await this.displayCorrectedCalcul(calculs[0]);
+                this.historiqueCalculs[sortie.id!] = calculs;
+                this.displayCalculInView(calculs[0]);
             } else {
                 this.alertService.close();
                 const res = await Swal.fire({
@@ -203,32 +204,8 @@ export class SalairesListComponent implements OnInit {
     } catch (error) { console.error(error); this.alertService.error(); }
   }
 
-  // ✅ NOUVELLE FONCTION: Corrige les données pour l'affichage de l'historique
-  private async displayCorrectedCalcul(calcul: CalculSalaire): Promise<void> {
-    // Crée une copie pour éviter de modifier l'objet original
-    const correctedCalcul = JSON.parse(JSON.stringify(calcul));
-    const calculSortiesIds = correctedCalcul.sortiesIds || [];
-
-    // Pour chaque marin, on recalcule les paiements liés à cette période précise
-    for (const detail of correctedCalcul.detailsMarins) {
-        const allPaiements = await this.paiementService.getPaiementsByMarin(detail.marinId).pipe(take(1)).toPromise() || [];
-        
-        // On filtre les paiements pour ne garder que ceux liés aux sorties de ce calcul
-        const paiementsPourCettePeriode = allPaiements.filter(p =>
-            p.sortiesIds && p.sortiesIds.some(id => calculSortiesIds.includes(id))
-        );
-
-        const totalPaiementsPourCettePeriode = paiementsPourCettePeriode.reduce((sum, p) => sum + p.montant, 0);
-
-        // On met à jour l'objet qui sera affiché
-        detail.totalPaiements = totalPaiementsPourCettePeriode;
-
-        // On recalcule le "reste à payer" pour l'affichage, en se basant sur les valeurs enregistrées lors du calcul
-        const salaireTotal = detail.salaireBrut + detail.primeNuits;
-        detail.resteAPayer = salaireTotal - detail.totalAvances - detail.totalPaiements;
-    }
-
-    this.dernierCalcul = correctedCalcul;
+  private displayCalculInView(calcul: CalculSalaire): void {
+    this.dernierCalcul = calcul;
     this.accordionState = { summary: true, sharing: true, details: true };
     this.activeTab = 'historique';
     this.alertService.close();
@@ -251,6 +228,7 @@ export class SalairesListComponent implements OnInit {
       Swal.fire({ title: t.title, html: html, width: '800px', showCloseButton: true, showConfirmButton: false });
   }
 
+  // ✅ NOUVELLE MÉTHODE POUR ENREGISTRER UN PAIEMENT
  async enregistrerPaiement(detail: DetailSalaireMarin): Promise<void> {
   const { value: montant } = await Swal.fire({
     title: this.translate.instant('SALAIRES.PAYMENT_MODAL_TITLE', { name: detail.marinNom }),
@@ -265,7 +243,7 @@ export class SalairesListComponent implements OnInit {
       if (!value) return this.translate.instant('FORM.REQUIRED');
       const amount = parseFloat(value);
       if (amount <= 0) return this.translate.instant('SALAIRES.PAYMENTMODAL.ERRORPOSITIVE');
-      // Tolérance pour les arrondis (0.01 DT)
+      // ✅ Tolérance pour les arrondis (0.01 DT)
       if (amount > detail.resteAPayer + 0.01) return this.translate.instant('SALAIRES.PAYMENTMODAL.ERROREXCEED');
       return null;
     }
@@ -276,22 +254,27 @@ export class SalairesListComponent implements OnInit {
       this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
       const montantPaye = parseFloat(montant);
 
+      // 1. Enregistrer le paiement dans la collection "paiements"
       await this.paiementService.addPaiement({
         marinId: detail.marinId,
         montant: montantPaye,
         datePaiement: new Date(),
         sortiesIds: this.dernierCalcul!.sortiesIds
       });
-      
+
+      // 2. ✅ Mettre à jour l'état local UNE SEULE FOIS
       detail.totalPaiements += montantPaye;
       
+      // 3. ✅ Recalculer le reste à payer basé sur le salaire total
       const salaireTotal = detail.salaireBrut + detail.primeNuits;
       detail.resteAPayer = salaireTotal - detail.totalAvances - detail.totalPaiements;
       
+      // 4. ✅ Arrondir pour éviter les problèmes de précision
       if (Math.abs(detail.resteAPayer) < 0.01) {
         detail.resteAPayer = 0;
       }
 
+      // 5. ✅ Sauvegarder dans Firestore (calculs_salaire)
       if (this.dernierCalcul && this.dernierCalcul.id) {
         await this.salaireService.updateCalculSalaire(this.dernierCalcul.id, {
           detailsMarins: this.dernierCalcul.detailsMarins
@@ -305,6 +288,7 @@ export class SalairesListComponent implements OnInit {
     }
   }
 }
+
 
   private calculerNombreNuits(sortie: Sortie): number {
     if (!sortie?.dateDepart || !sortie?.dateRetour) return 0;

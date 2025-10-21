@@ -1,12 +1,14 @@
 #!/bin/bash
 
 # ==============================================================================
-#  Script de correction pour le bug d'enregistrement des paiements
-#  Projet: Angular - Lambara
+#  Script pour corriger l'affichage de l'historique des calculs de salaire.
+#  - Modifie la logique pour afficher uniquement les paiements pertinents
+#    à la période de calcul consultée.
 # ==============================================================================
 
-# Définir le chemin du fichier à corriger
+# Chemin du fichier à remplacer
 FILE_PATH="src/app/salaires/salaires-list.component.ts"
+BACKUP_PATH="${FILE_PATH}.bak_before_history_fix"
 
 # Vérifier si le fichier cible existe
 if [ ! -f "$FILE_PATH" ]; then
@@ -15,41 +17,349 @@ if [ ! -f "$FILE_PATH" ]; then
   exit 1
 fi
 
-echo "🔧 Application du correctif pour le bug de paiement dans $FILE_PATH..."
+echo "💾 Création d'une sauvegarde de votre fichier original sous : $BACKUP_PATH"
+cp "$FILE_PATH" "$BACKUP_PATH"
 
-# --- Étape 1: Capturer la référence du document retournée par Firestore ---
-# On modifie la ligne qui sauvegarde le calcul pour stocker la référence (docRef)
-# qui contient l'ID du nouveau document.
-#
-# Ligne originale : await this.salaireService.saveCalculSalaire(calculData);
-# Ligne corrigée : const docRef = await this.salaireService.saveCalculSalaire(calculData);
-#
-sed -i.bak 's/await this.salaireService.saveCalculSalaire(calculData);/const docRef = await this.salaireService.saveCalculSalaire(calculData);/' "$FILE_PATH"
+echo "🔧 Remplacement du contenu de $FILE_PATH avec la logique corrigée..."
 
-# --- Étape 2: Assigner le nouvel objet avec l'ID à la variable 'dernierCalcul' ---
-# On modifie la ligne qui affecte l'objet à la variable locale pour y inclure
-# l'ID que nous venons de récupérer.
-#
-# Ligne originale : this.dernierCalcul = calculData as CalculSalaire;
-# Ligne corrigée : this.dernierCalcul = { ...calculData, id: docRef.id } as CalculSalaire;
-#
-sed -i.bak2 's/this.dernierCalcul = calculData as CalculSalaire;/this.dernierCalcul = { ...calculData, id: docRef.id } as CalculSalaire;/' "$FILE_PATH"
+# Utilisation de 'cat' et d'un 'here document' (EOF) pour remplacer tout le fichier.
+# C'est la méthode la plus sûre pour des modifications complexes.
+cat > "$FILE_PATH" << 'EOF'
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import Swal from 'sweetalert2';
+import { take } from 'rxjs/operators';
 
-# Vérifier si les modifications ont réussi (vérification simple)
-if grep -q "const docRef = await" "$FILE_PATH" && grep -q "id: docRef.id" "$FILE_PATH"; then
-  echo "✅ Correction appliquée avec succès !"
-  echo "Le composant va maintenant correctement sauvegarder l'ID du calcul,"
-  echo "ce qui permettra aux paiements d'être enregistrés correctement."
+import { SortieService } from '../services/sortie.service';
+import { MarinService } from '../services/marin.service';
+import { DepenseService } from '../services/depense.service';
+import { AvanceService } from '../services/avance.service';
+import { PaiementService } from '../services/paiement.service';
+import { FactureVenteService } from '../services/facture-vente.service';
+import { SelectedBoatService } from '../services/selected-boat.service';
+import { AlertService } from '../services/alert.service';
+import { Sortie } from '../models/sortie.model';
+import { Marin } from '../models/marin.model';
+import { Bateau } from '../models/bateau.model';
+import { SalaireService } from '../services/salaire.service';
+import { CalculSalaire, DetailSalaireMarin } from '../models/salaire.model';
+import { FactureVente } from '../models/facture-vente.model';
+import { Depense } from '../models/depense.model';
+
+@Component({
+  selector: 'app-salaires-list',
+  standalone: true,
+  imports: [CommonModule, FormsModule, TranslateModule],
+  templateUrl: './salaires-list.component.html',
+  styleUrls: ['./salaires-list.component.scss']
+})
+export class SalairesListComponent implements OnInit {
+  selectedBoat: Bateau | null = null;
+  marins: Marin[] = [];
+  selectedSortiesIds: string[] = [];
+  
+  activeTab: 'ouvertes' | 'historique' = 'ouvertes';
+  sortiesOuvertes: Sortie[] = [];
+  sortiesCalculees: Sortie[] = [];
+  
+  dernierCalcul: CalculSalaire | null = null;
+  accordionState: { [key: string]: boolean } = { summary: true, sharing: true, details: true };
+  loading = true;
+
+  constructor(
+    private sortieService: SortieService,
+    private marinService: MarinService,
+    private depenseService: DepenseService,
+    private avanceService: AvanceService,
+    private paiementService: PaiementService,
+    private factureService: FactureVenteService,
+    private salaireService: SalaireService,
+    private selectedBoatService: SelectedBoatService,
+    private alertService: AlertService,
+    private translate: TranslateService
+  ) {}
+
+  ngOnInit(): void {
+    this.selectedBoat = this.selectedBoatService.getSelectedBoat();
+    if (this.selectedBoat) { this.loadData(); } else { this.loading = false; }
+  }
+
+  loadData(): void {
+    if (!this.selectedBoat?.id) return;
+    this.loading = true;
+    const boatId = this.selectedBoat.id;
+    this.sortieService.getSortiesByBateau(boatId).subscribe((sorties: Sortie[]) => {
+      this.sortiesOuvertes = sorties.filter(s => s.statut === 'terminee' && !s.salaireCalcule);
+      this.sortiesCalculees = sorties.filter(s => s.salaireCalcule === true)
+        .sort((a, b) => {
+          const dateA = (a.dateRetour as any).toDate ? (a.dateRetour as any).toDate().getTime() : new Date(a.dateRetour).getTime();
+          const dateB = (b.dateRetour as any).toDate ? (b.dateRetour as any).toDate().getTime() : new Date(b.dateRetour).getTime();
+          return dateB - dateA;
+        });
+      
+      this.marinService.getMarinsByBateau(boatId).subscribe((marins: Marin[]) => {
+        this.marins = marins;
+        this.loading = false;
+      });
+    });
+  }
+
+  selectTab(tabName: 'ouvertes' | 'historique'): void {
+    this.activeTab = tabName;
+    this.dernierCalcul = null;
+  }
+
+  toggleSortie(sortieId: string): void {
+    this.dernierCalcul = null;
+    const index = this.selectedSortiesIds.indexOf(sortieId);
+    if (index > -1) { this.selectedSortiesIds.splice(index, 1); } else { this.selectedSortiesIds.push(sortieId); }
+  }
+
+  isSortieSelected(sortieId: string): boolean {
+    return this.selectedSortiesIds.includes(sortieId);
+  }
+
+  async calculerSalaires(): Promise<void> {
+    if (this.selectedSortiesIds.length === 0) {
+      this.alertService.error(this.translate.instant('SALAIRES.ERROR_NO_SORTIE'));
+      return;
+    }
+    const totalParts = this.marins.reduce((sum, marin) => sum + (marin.part || 0), 0);
+    if (totalParts <= 0) {
+      this.alertService.error(this.translate.instant('SALAIRES.ERROR_NO_PARTS'));
+      return;
+    }
+
+    try {
+      this.alertService.loading(this.translate.instant('MESSAGES.CALCULATING'));
+      const allSorties = [...this.sortiesOuvertes, ...this.sortiesCalculees];
+      const selectedSorties = allSorties.filter(s => this.selectedSortiesIds.includes(s.id!));
+
+      const facturesPromises = this.selectedSortiesIds.map(id => this.factureService.getFacturesBySortie(id).pipe(take(1)).toPromise());
+      const allFactures = await Promise.all(facturesPromises);
+      const revenuTotal = allFactures.flat().reduce((sum, f) => sum + (f?.montant || 0), 0);
+      
+      const depensesPromises = this.selectedSortiesIds.map(id => this.depenseService.getDepensesBySortie(id).pipe(take(1)).toPromise());
+      const allDepenses = await Promise.all(depensesPromises);
+      const totalDepenses = allDepenses.flat().reduce((sum, d: any) => sum + (d?.montant || 0), 0);
+      const beneficeNet = revenuTotal - totalDepenses;
+      const partProprietaire = beneficeNet * 0.5;
+      const partEquipage = beneficeNet * 0.5;
+      const totalNuits = selectedSorties.reduce((total, s) => total + this.calculerNombreNuits(s), 0);
+      const deductionNuits = totalNuits * this.marins.length * 5;
+      const montantAPartager = partEquipage - deductionNuits;
+
+      let detailsMarins: DetailSalaireMarin[] = [];
+      for (const marin of this.marins) {
+        const part = marin.part || 0;
+        const salaireBrut = totalParts > 0 ? (montantAPartager * part) / totalParts : 0;
+        const primeNuits = totalNuits * 5;
+        
+        const avances = await this.avanceService.getAvancesByMarin(marin.id!).pipe(take(1)).toPromise();
+        const totalAvances = avances?.reduce((sum, a) => sum + a.montant, 0) || 0;
+        
+        // Ne pas inclure les paiements historiques dans un nouveau calcul
+        const totalPaiements = 0; 
+        
+        // Le calcul ne soustrait que les avances
+        const resteAPayer = salaireBrut + primeNuits - totalAvances; 
+
+        detailsMarins.push({ marinId: marin.id!, marinNom: `${marin.prenom} ${marin.nom}`, part, salaireBrut, primeNuits, totalAvances, totalPaiements, resteAPayer });
+      }
+
+      const calculData: Omit<CalculSalaire, 'id'> = {
+        bateauId: this.selectedBoat!.id!,
+        sortiesIds: this.selectedSortiesIds,
+        sortiesDestinations: selectedSorties.map(s => s.destination),
+        dateCalcul: new Date(),
+        revenuTotal, totalDepenses, beneficeNet, partProprietaire, partEquipage, deductionNuits, montantAPartager, detailsMarins,
+        factures: allFactures.flat() as FactureVente[],
+        depenses: allDepenses.flat() as Depense[]
+      };
+      
+      const docRef = await this.salaireService.saveCalculSalaire(calculData);
+
+      for (const sortieId of this.selectedSortiesIds) {
+        await this.sortieService.updateSortie(sortieId, { salaireCalcule: true });
+      }
+
+      this.alertService.close();
+      this.dernierCalcul = { ...calculData, id: docRef.id } as CalculSalaire;
+      this.accordionState = { summary: true, sharing: true, details: true };
+      this.selectedSortiesIds = [];
+      this.loadData();
+      this.alertService.toast(this.translate.instant('SALAIRES.CALCUL_SUCCESS_TITLE'), 'success');
+    } catch (error) {
+      console.error('Erreur:', error);
+      this.alertService.close();
+      this.alertService.error();
+    }
+  }
+
+  // ✅ MODIFIÉ: Logique déplacée vers displayCorrectedCalcul
+  async viewCalculDetails(sortie: Sortie): Promise<void> {
+    this.alertService.loading(this.translate.instant('MESSAGES.LOADING_DETAILS'));
+    this.salaireService.getCalculsBySortieId(sortie.id!).pipe(take(1)).subscribe({
+        next: async (calculs) => {
+            if (calculs && calculs.length > 0) {
+                // On passe le calcul à la nouvelle fonction pour corriger les totaux affichés
+                await this.displayCorrectedCalcul(calculs[0]);
+            } else {
+                this.alertService.close();
+                const res = await Swal.fire({
+                    title: this.translate.instant('SALAIRES.HISTORY.NO_DATA_FOUND_TITLE'), text: this.translate.instant('SALAIRES.HISTORY.NO_DATA_FOUND_TEXT'),
+                    icon: 'info', showCancelButton: true, confirmButtonText: this.translate.instant('SALAIRES.HISTORY.RECALCULATE_BTN'),
+                    cancelButtonText: this.translate.instant('FORM.CANCEL'), confirmButtonColor: '#10b981'
+                });
+                if (res.isConfirmed) { await this.reopenSortieForRecalculation(sortie); }
+            }
+        },
+        error: (err) => { console.error(err); this.alertService.error(); }
+    });
+  }
+  
+  async reopenSortieForRecalculation(sortie: Sortie): Promise<void> {
+    try {
+        this.alertService.loading(this.translate.instant('MESSAGES.UPDATING'));
+        await this.sortieService.updateSortie(sortie.id!, { salaireCalcule: false });
+        this.loadData();
+        this.activeTab = 'ouvertes';
+        this.alertService.success(this.translate.instant('SALAIRES.HISTORY.MOVED_FOR_RECALC'));
+    } catch (error) { console.error(error); this.alertService.error(); }
+  }
+
+  // ✅ NOUVELLE FONCTION: Corrige les données pour l'affichage de l'historique
+  private async displayCorrectedCalcul(calcul: CalculSalaire): Promise<void> {
+    // Crée une copie pour éviter de modifier l'objet original
+    const correctedCalcul = JSON.parse(JSON.stringify(calcul));
+    const calculSortiesIds = correctedCalcul.sortiesIds || [];
+
+    // Pour chaque marin, on recalcule les paiements liés à cette période précise
+    for (const detail of correctedCalcul.detailsMarins) {
+        const allPaiements = await this.paiementService.getPaiementsByMarin(detail.marinId).pipe(take(1)).toPromise() || [];
+        
+        // On filtre les paiements pour ne garder que ceux liés aux sorties de ce calcul
+        const paiementsPourCettePeriode = allPaiements.filter(p =>
+            p.sortiesIds && p.sortiesIds.some(id => calculSortiesIds.includes(id))
+        );
+
+        const totalPaiementsPourCettePeriode = paiementsPourCettePeriode.reduce((sum, p) => sum + p.montant, 0);
+
+        // On met à jour l'objet qui sera affiché
+        detail.totalPaiements = totalPaiementsPourCettePeriode;
+
+        // On recalcule le "reste à payer" pour l'affichage, en se basant sur les valeurs enregistrées lors du calcul
+        const salaireTotal = detail.salaireBrut + detail.primeNuits;
+        detail.resteAPayer = salaireTotal - detail.totalAvances - detail.totalPaiements;
+    }
+
+    this.dernierCalcul = correctedCalcul;
+    this.accordionState = { summary: true, sharing: true, details: true };
+    this.activeTab = 'historique';
+    this.alertService.close();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  showRevenueDetails(): void {
+      if (!this.dernierCalcul || !this.dernierCalcul.factures) return;
+      const t = { title: this.translate.instant('SALAIRES.DETAILS_MODAL.REVENUE_TITLE'), invoiceNum: this.translate.instant('SALAIRES.DETAILS_MODAL.INVOICE_NUM'), client: this.translate.instant('SALAIRES.DETAILS_MODAL.CLIENT'), date: this.translate.instant('COMMON.DATE'), amount: this.translate.instant('COMMON.AMOUNT') };
+      const rows = this.dernierCalcul.factures.map(f => `<tr><td>${f.numeroFacture}</td><td>${f.client}</td><td>${this.formatDate(f.dateVente)}</td><td class="amount">${f.montant.toFixed(2)} DT</td></tr>`).join('');
+      const html = `<div class="details-modal-content"><table class="details-table"><thead><tr><th>${t.invoiceNum}</th><th>${t.client}</th><th>${t.date}</th><th class="amount">${t.amount}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      Swal.fire({ title: t.title, html: html, width: '800px', showCloseButton: true, showConfirmButton: false });
+  }
+
+  showExpenseDetails(): void {
+      if (!this.dernierCalcul || !this.dernierCalcul.depenses) return;
+      const t = { title: this.translate.instant('SALAIRES.DETAILS_MODAL.EXPENSE_TITLE'), type: this.translate.instant('EXPENSES.TYPE'), date: this.translate.instant('COMMON.DATE'), description: this.translate.instant('COMMON.DESCRIPTION'), amount: this.translate.instant('COMMON.AMOUNT') };
+      const rows = this.dernierCalcul.depenses.map(d => `<tr><td>${this.translate.instant('EXPENSES.TYPES.' + d.type.toUpperCase())}</td><td>${this.formatDate(d.date)}</td><td>${d.description || '-'}</td><td class="amount">${d.montant.toFixed(2)} DT</td></tr>`).join('');
+      const html = `<div class="details-modal-content"><table class="details-table"><thead><tr><th>${t.type}</th><th>${t.date}</th><th>${t.description}</th><th class="amount">${t.amount}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      Swal.fire({ title: t.title, html: html, width: '800px', showCloseButton: true, showConfirmButton: false });
+  }
+
+ async enregistrerPaiement(detail: DetailSalaireMarin): Promise<void> {
+  const { value: montant } = await Swal.fire({
+    title: this.translate.instant('SALAIRES.PAYMENT_MODAL_TITLE', { name: detail.marinNom }),
+    input: 'number',
+    inputLabel: this.translate.instant('SALAIRES.PAYMENT_MODAL_LABEL', { amount: detail.resteAPayer.toFixed(2) }),
+    inputValue: detail.resteAPayer > 0 ? detail.resteAPayer.toFixed(2) : 0,
+    showCancelButton: true,
+    confirmButtonText: this.translate.instant('FORM.SAVE'),
+    cancelButtonText: this.translate.instant('FORM.CANCEL'),
+    confirmButtonColor: '#10b981',
+    inputValidator: (value) => {
+      if (!value) return this.translate.instant('FORM.REQUIRED');
+      const amount = parseFloat(value);
+      if (amount <= 0) return this.translate.instant('SALAIRES.PAYMENTMODAL.ERRORPOSITIVE');
+      // Tolérance pour les arrondis (0.01 DT)
+      if (amount > detail.resteAPayer + 0.01) return this.translate.instant('SALAIRES.PAYMENTMODAL.ERROREXCEED');
+      return null;
+    }
+  });
+
+  if (montant) {
+    try {
+      this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
+      const montantPaye = parseFloat(montant);
+
+      await this.paiementService.addPaiement({
+        marinId: detail.marinId,
+        montant: montantPaye,
+        datePaiement: new Date(),
+        sortiesIds: this.dernierCalcul!.sortiesIds
+      });
+      
+      detail.totalPaiements += montantPaye;
+      
+      const salaireTotal = detail.salaireBrut + detail.primeNuits;
+      detail.resteAPayer = salaireTotal - detail.totalAvances - detail.totalPaiements;
+      
+      if (Math.abs(detail.resteAPayer) < 0.01) {
+        detail.resteAPayer = 0;
+      }
+
+      if (this.dernierCalcul && this.dernierCalcul.id) {
+        await this.salaireService.updateCalculSalaire(this.dernierCalcul.id, {
+          detailsMarins: this.dernierCalcul.detailsMarins
+        });
+      }
+
+      this.alertService.success(this.translate.instant('SALAIRES.PAYMENT_SUCCESS'));
+    } catch (error) {
+      console.error('Erreur:', error);
+      this.alertService.error();
+    }
+  }
+}
+
+  private calculerNombreNuits(sortie: Sortie): number {
+    if (!sortie?.dateDepart || !sortie?.dateRetour) return 0;
+    const depart = (sortie.dateDepart as any).toDate ? (sortie.dateDepart as any).toDate() : new Date(sortie.dateDepart);
+    const retour = (sortie.dateRetour as any).toDate ? (sortie.dateRetour as any).toDate() : new Date(sortie.dateRetour);
+    const diffTime = Math.abs(retour.getTime() - depart.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+
+  formatDate(date: any): string {
+    if (date?.toDate) return date.toDate().toLocaleDateString('fr-FR');
+    if (date instanceof Date) return date.toLocaleDateString('fr-FR');
+    return '';
+  }
+
+  toggleAccordion(panel: string): void {
+    this.accordionState[panel] = !this.accordionState[panel];
+  }
+}
+EOF
+
+# Vérification finale
+if [ $? -eq 0 ]; then
+    echo "✅ Remplacement terminé avec succès."
+    echo "L'affichage de l'historique des salaires est maintenant corrigé pour isoler les paiements par période."
 else
-  echo "❌ Échec de l'application du correctif. Veuillez vérifier le fichier manuellement."
-  # Restaurer les backups en cas d'échec partiel
-  mv "${FILE_PATH}.bak" "$FILE_PATH"
-  rm -f "${FILE_PATH}.bak2"
-  exit 1
+    echo "❌ Une erreur est survenue lors du remplacement du fichier."
+    echo "Restauration du fichier original depuis le backup : $BACKUP_PATH"
+    mv "$BACKUP_PATH" "$FILE_PATH"
+    exit 1
 fi
-
-# Nettoyer les fichiers de sauvegarde créés par sed
-rm -f "${FILE_PATH}.bak"
-rm -f "${FILE_PATH}.bak2"
-
-echo "👍 Terminé."
