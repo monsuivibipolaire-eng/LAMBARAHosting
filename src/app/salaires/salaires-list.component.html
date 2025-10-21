@@ -120,7 +120,7 @@
           <div *ngIf="sortiesOuvertes.length > 0; else noOpenTrips" class="sorties-list">
             <div *ngFor="let sortie of sortiesOuvertes" 
                  class="sortie-item" [class.selected]="isSortieSelected(sortie.id!)" (click)="toggleSortie(sortie.id!)">
-              <input type="checkbox" [checked]="isSortieSelected(sortie.id!)" (click)="$event.stopPropagation()">
+              <input type="checkbox" disabled [checked]="isSortieSelected(sortie.id!)" (click)="$event.stopPropagation()">
               <div class="sortie-info">
                 <strong>{{ sortie.destination }}</strong>
                 <span>{{ formatDate(sortie.dateDepart) }} - {{ formatDate(sortie.dateRetour) }}</span>
