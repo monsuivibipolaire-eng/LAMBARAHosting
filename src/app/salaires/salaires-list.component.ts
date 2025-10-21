@@ -124,19 +124,39 @@ export class SalairesListComponent implements OnInit {
       const deductionNuits = totalNuits * this.marins.length * 5;
       const montantAPartager = partEquipage - deductionNuits;
 
+      // ✅ NOUVEAU: Récupérer tous les calculs précédents une seule fois
+      const allPreviousCalculs = await this.salaireService.getCalculsByBateau(this.selectedBoat!.id!).pipe(take(1)).toPromise();
+
       let detailsMarins: DetailSalaireMarin[] = [];
       for (const marin of this.marins) {
         const part = marin.part || 0;
         const salaireBrut = totalParts > 0 ? (montantAPartager * part) / totalParts : 0;
         const primeNuits = totalNuits * 5;
         
-        const avances = await this.avanceService.getAvancesByMarin(marin.id!).pipe(take(1)).toPromise();
-        const totalAvances = avances?.reduce((sum, a) => sum + a.montant, 0) || 0;
+        // ✅ NOUVEAU: Trouver la date du dernier calcul pour ce marin
+        let lastCalculDate = new Date(0); // Date de début (epoch)
+        if (allPreviousCalculs) {
+          const marinsPreviousCalculs = allPreviousCalculs.filter(c => 
+            c.detailsMarins.some(d => d.marinId === marin.id!)
+          );
+          if (marinsPreviousCalculs.length > 0) {
+            marinsPreviousCalculs.sort((a, b) => 
+              ((b.dateCalcul as any).toDate ? (b.dateCalcul as any).toDate() : new Date(b.dateCalcul)).getTime() - 
+              ((a.dateCalcul as any).toDate ? (a.dateCalcul as any).toDate() : new Date(a.dateCalcul)).getTime()
+            );
+            lastCalculDate = (marinsPreviousCalculs[0].dateCalcul as any).toDate ? (marinsPreviousCalculs[0].dateCalcul as any).toDate() : new Date(marinsPreviousCalculs[0].dateCalcul);
+          }
+        }
         
-        // Ne pas inclure les paiements historiques dans un nouveau calcul
+        // ✅ NOUVEAU: Filtrer les avances pour ne garder que celles prises après le dernier calcul
+        const allAvances = await this.avanceService.getAvancesByMarin(marin.id!).pipe(take(1)).toPromise();
+        const unsettledAvances = allAvances?.filter(avance => {
+          const avanceDate = (avance.dateAvance as any).toDate ? (avance.dateAvance as any).toDate() : new Date(avance.dateAvance);
+          return avanceDate > lastCalculDate;
+        }) || [];
+
+        const totalAvances = unsettledAvances.reduce((sum, a) => sum + a.montant, 0) || 0;
         const totalPaiements = 0; 
-        
-        // Le calcul ne soustrait que les avances
         const resteAPayer = salaireBrut + primeNuits - totalAvances; 
 
         detailsMarins.push({ marinId: marin.id!, marinNom: `${marin.prenom} ${marin.nom}`, part, salaireBrut, primeNuits, totalAvances, totalPaiements, resteAPayer });
@@ -171,13 +191,11 @@ export class SalairesListComponent implements OnInit {
     }
   }
 
-  // ✅ MODIFIÉ: Logique déplacée vers displayCorrectedCalcul
   async viewCalculDetails(sortie: Sortie): Promise<void> {
     this.alertService.loading(this.translate.instant('MESSAGES.LOADING_DETAILS'));
     this.salaireService.getCalculsBySortieId(sortie.id!).pipe(take(1)).subscribe({
         next: async (calculs) => {
             if (calculs && calculs.length > 0) {
-                // On passe le calcul à la nouvelle fonction pour corriger les totaux affichés
                 await this.displayCorrectedCalcul(calculs[0]);
             } else {
                 this.alertService.close();
@@ -203,27 +221,21 @@ export class SalairesListComponent implements OnInit {
     } catch (error) { console.error(error); this.alertService.error(); }
   }
 
-  // ✅ NOUVELLE FONCTION: Corrige les données pour l'affichage de l'historique
   private async displayCorrectedCalcul(calcul: CalculSalaire): Promise<void> {
-    // Crée une copie pour éviter de modifier l'objet original
     const correctedCalcul = JSON.parse(JSON.stringify(calcul));
     const calculSortiesIds = correctedCalcul.sortiesIds || [];
 
-    // Pour chaque marin, on recalcule les paiements liés à cette période précise
     for (const detail of correctedCalcul.detailsMarins) {
         const allPaiements = await this.paiementService.getPaiementsByMarin(detail.marinId).pipe(take(1)).toPromise() || [];
         
-        // On filtre les paiements pour ne garder que ceux liés aux sorties de ce calcul
         const paiementsPourCettePeriode = allPaiements.filter(p =>
             p.sortiesIds && p.sortiesIds.some(id => calculSortiesIds.includes(id))
         );
 
         const totalPaiementsPourCettePeriode = paiementsPourCettePeriode.reduce((sum, p) => sum + p.montant, 0);
 
-        // On met à jour l'objet qui sera affiché
         detail.totalPaiements = totalPaiementsPourCettePeriode;
 
-        // On recalcule le "reste à payer" pour l'affichage, en se basant sur les valeurs enregistrées lors du calcul
         const salaireTotal = detail.salaireBrut + detail.primeNuits;
         detail.resteAPayer = salaireTotal - detail.totalAvances - detail.totalPaiements;
     }
@@ -265,7 +277,6 @@ export class SalairesListComponent implements OnInit {
       if (!value) return this.translate.instant('FORM.REQUIRED');
       const amount = parseFloat(value);
       if (amount <= 0) return this.translate.instant('SALAIRES.PAYMENTMODAL.ERRORPOSITIVE');
-      // Tolérance pour les arrondis (0.01 DT)
       if (amount > detail.resteAPayer + 0.01) return this.translate.instant('SALAIRES.PAYMENTMODAL.ERROREXCEED');
       return null;
     }
