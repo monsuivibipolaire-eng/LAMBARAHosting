@@ -13,6 +13,13 @@ export class AvanceService {
     private finEvents: FinancialEventsService
   ) {}
 
+  // ✅ NOUVELLE FONCTION: Ne retourne que les avances non encore incluses dans un calcul de salaire
+  getUnsettledAvancesByBateau(bateauId: string): Observable<Avance[]> {
+    const col = collection(this.firestore, this.collectionName);
+    const q = query(col, where('bateauId', '==', bateauId), where('calculSalaireId', '==', null));
+    return collectionData(q, { idField: 'id' }) as Observable<Avance[]>;
+  }
+
   getAvancesByMarin(marinId: string): Observable<Avance[]> {
     const col = collection(this.firestore, this.collectionName);
     const q = query(col, where('marinId','==', marinId));
@@ -32,7 +39,9 @@ export class AvanceService {
 
   async addAvance(avance: Omit<Avance,'id'>): Promise<string> {
     const col = collection(this.firestore, this.collectionName);
-    const ref = await addDoc(col, avance);
+    // On s'assure que les nouvelles avances sont bien "non réglées"
+    const newAvance = { ...avance, calculSalaireId: null };
+    const ref = await addDoc(col, newAvance);
     this.finEvents.notifyFinancialChange();
     return ref.id;
   }

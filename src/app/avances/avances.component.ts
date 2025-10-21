@@ -47,7 +47,7 @@ export class AvancesComponent implements OnInit {
     if (!this.selectedBoat) return;
     combineLatest([
       this.marinService.getMarinsByBateau(this.selectedBoat.id!),
-      this.avanceService.getAvancesByBateau(this.selectedBoat.id!)
+      this.avanceService.getUnsettledAvancesByBateau(this.selectedBoat.id!)
     ]).subscribe(([marins, avances]) => {
       this.marins = marins;
       this.avances = avances;

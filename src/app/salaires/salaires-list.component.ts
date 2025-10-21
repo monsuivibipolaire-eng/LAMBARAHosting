@@ -21,6 +21,7 @@ import { SalaireService } from '../services/salaire.service';
 import { CalculSalaire, DetailSalaireMarin } from '../models/salaire.model';
 import { FactureVente } from '../models/facture-vente.model';
 import { Depense } from '../models/depense.model';
+import { Avance } from '../models/avance.model';
 
 @Component({
   selector: 'app-salaires-list',
@@ -38,7 +39,6 @@ export class SalairesListComponent implements OnInit {
   sortiesOuvertes: Sortie[] = [];
   historiqueCalculs: CalculSalaire[] = [];
   
-  // ✅ NOUVEAU: Stocke la liste complète de toutes les sorties pour le bateau
   private allBoatSorties: SortieDetails[] = [];
 
   dernierCalcul: CalculSalaire | null = null;
@@ -73,17 +73,13 @@ export class SalairesListComponent implements OnInit {
       this.marinService.getMarinsByBateau(boatId),
       this.salaireService.getCalculsByBateau(boatId)
     ]).subscribe(([sorties, marins, calculs]) => {
-      // ✅ NOUVEAU: On stocke toutes les sorties ici
       this.allBoatSorties = sorties;
-      
       this.sortiesOuvertes = sorties.filter(s => s.statut === 'terminee' && !s.salaireCalcule);
       this.marins = marins;
-      
       this.historiqueCalculs = calculs.sort((a, b) =>  
         ((b.dateCalcul as any).toDate ? (b.dateCalcul as any).toDate() : new Date(b.dateCalcul)).getTime() - 
         ((a.dateCalcul as any).toDate ? (a.dateCalcul as any).toDate() : new Date(a.dateCalcul)).getTime()
       );
-
       this.loading = false;
     });
   }
@@ -116,8 +112,6 @@ export class SalairesListComponent implements OnInit {
 
     try {
       this.alertService.loading(this.translate.instant('MESSAGES.CALCULATING'));
-      
-      // ✅ CORRIGÉ: On filtre la liste complète et typée des sorties
       const selectedSorties = this.allBoatSorties.filter(s => this.selectedSortiesIds.includes(s.id!));
 
       const facturesPromises = this.selectedSortiesIds.map(id => this.factureService.getFacturesBySortie(id).pipe(take(1)).toPromise());
@@ -130,19 +124,18 @@ export class SalairesListComponent implements OnInit {
       const beneficeNet = revenuTotal - totalDepenses;
       const partProprietaire = beneficeNet * 0.5;
       const partEquipage = beneficeNet * 0.5;
-      
-      // ✅ CORRIGÉ: Le reduce fonctionne car selectedSorties est maintenant de type Sortie[]
       const totalNuits = selectedSorties.reduce((total: number, s: Sortie) => total + this.calculerNombreNuits(s), 0);
       const deductionNuits = totalNuits * this.marins.length * 5;
       const montantAPartager = partEquipage - deductionNuits;
 
       const allPreviousCalculs = await this.salaireService.getCalculsByBateau(this.selectedBoat!.id!).pipe(take(1)).toPromise();
-
+      
       let detailsMarins: DetailSalaireMarin[] = [];
+      const avancesToUpdate: {avanceId: string, calculId: string}[] = [];
+
       for (const marin of this.marins) {
         const part = marin.part || 0;
         const salaireBrut = totalParts > 0 ? (montantAPartager * part) / totalParts : 0;
-        // ✅ CORRIGÉ: L'opération fonctionne car totalNuits est bien un 'number'
         const primeNuits = totalNuits * 5;
         
         let lastCalculDate = new Date(0);
@@ -160,22 +153,21 @@ export class SalairesListComponent implements OnInit {
         }
         
         const allAvances = await this.avanceService.getAvancesByMarin(marin.id!).pipe(take(1)).toPromise();
-        const unsettledAvances = allAvances?.filter(avance => {
-          const avanceDate = (avance.dateAvance as any).toDate ? (avance.dateAvance as any).toDate() : new Date(avance.dateAvance);
-          return avanceDate > lastCalculDate;
-        }) || [];
-
+        const unsettledAvances = allAvances?.filter(avance => !avance.calculSalaireId) || [];
+        
         const totalAvances = unsettledAvances.reduce((sum, a) => sum + a.montant, 0) || 0;
         const totalPaiements = 0; 
         const resteAPayer = salaireBrut + primeNuits - totalAvances; 
 
         detailsMarins.push({ marinId: marin.id!, marinNom: `${marin.prenom} ${marin.nom}`, part, salaireBrut, primeNuits, totalAvances, totalPaiements, resteAPayer });
+        
+        // On garde une trace des avances à mettre à jour
+        unsettledAvances.forEach(avance => avancesToUpdate.push({avanceId: avance.id!, calculId: ''}));
       }
 
       const calculData: Omit<CalculSalaire, 'id'> = {
         bateauId: this.selectedBoat!.id!,
         sortiesIds: this.selectedSortiesIds,
-        // ✅ CORRIGÉ: Le map fonctionne car selectedSorties est bien de type Sortie[]
         sortiesDestinations: selectedSorties.map((s: Sortie) => s.destination),
         dateCalcul: new Date(),
         revenuTotal, totalDepenses, beneficeNet, partProprietaire, partEquipage, deductionNuits, montantAPartager, detailsMarins,
@@ -184,6 +176,11 @@ export class SalairesListComponent implements OnInit {
       };
       
       const docRef = await this.salaireService.saveCalculSalaire(calculData);
+
+      // ✅ NOUVEAU: Mettre à jour les avances pour les marquer comme "réglées"
+      for(const item of avancesToUpdate) {
+        await this.avanceService.updateAvance(item.avanceId, { calculSalaireId: docRef.id });
+      }
 
       for (const sortieId of this.selectedSortiesIds) {
         await this.sortieService.updateSortie(sortieId, { salaireCalcule: true });
