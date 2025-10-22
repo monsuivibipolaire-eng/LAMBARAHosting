@@ -1,8 +1,7 @@
 <div class="avances-container">
   <div class="header">
     <h1 class="title">{{ 'AVANCES.TITLE' | translate }}</h1>
-    <!-- Modifié: Bouton navigue vers la nouvelle page formulaire -->
-    <button *ngIf="!loading && marins.length > 0" class="btn btn-primary" (click)="navigateToAddAvance()">
+    <button *ngIf="!loading && marins.length > 0" class="btn btn-primary" (click)="addAvance()">
       <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
       </svg>
@@ -39,7 +38,7 @@
         <div class="marin-info">
           <h3 class="marin-name">{{ marin.prenom }} {{ marin.nom }}</h3>
           <span class="fonction-badge" [ngClass]="'fonction-' + marin.fonction">
-            {{ 'SAILORS.FUNCTION_TYPE.' + marin.fonction.toUpperCase() | translate }}
+            {{ 'SAILORS.' + marin.fonction.toUpperCase() | translate }}
           </span>
         </div>
         <div class="marin-total">
@@ -52,6 +51,7 @@
       <div class="avances-list" *ngIf="getAvancesByMarin(marin.id!).length > 0">
         <div *ngFor="let avance of getAvancesByMarin(marin.id!)" class="avance-item">
           <div class="avance-main">
+            <!-- ✅ DATE ET DESCRIPTION BIEN AFFICHÉES -->
             <div class="avance-details">
               <div class="avance-date-row">
                 <svg class="date-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -66,11 +66,10 @@
                 <span>{{ avance.description }}</span>
               </div>
             </div>
-
+            
             <div class="avance-actions">
               <span class="avance-amount">{{ avance.montant | number:'1.2-2' }} DT</span>
-              <!-- Modifié: Bouton navigue vers la page de modification -->
-              <button (click)="navigateToEditAvance(avance.id!)" class="btn-icon btn-warning" [title]="'BOATS.EDIT' | translate">
+              <button (click)="editAvance(avance)" class="btn-icon btn-warning" [title]="'BOATS.EDIT' | translate">
                 <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                 </svg>

@@ -8,10 +8,6 @@ import { DashboardHomeComponent } from './dashboard-home/dashboard-home.componen
 import { BoatSelectionGuard } from '../guards/boat-selection.guard';
 import { MockDataComponent } from '../mock-data/mock-data.component';
 
-// Importer le nouveau composant de formulaire
-import { AvanceFormComponent } from '../avances/avance-form.component';
-import { AvancesComponent } from '../avances/avances.component'; // Importer aussi le composant liste
-
 const routes: Routes = [
   {
     path: '',
@@ -32,15 +28,10 @@ const routes: Routes = [
         loadComponent: () => import('../ventes/ventes-list.component').then(m => m.VentesListComponent),
         canActivate: [BoatSelectionGuard]
       },
-      // Routes pour les avances (utilisant maintenant le composant formulaire standalone)
       {
         path: 'avances',
-        canActivate: [BoatSelectionGuard],
-        children: [
-           { path: '', component: AvancesComponent }, // La liste reste standalone
-           { path: 'add', component: AvanceFormComponent }, // Formulaire ajout (standalone)
-           { path: 'edit/:id', component: AvanceFormComponent } // Formulaire modif (standalone)
-        ]
+        loadComponent: () => import('../avances/avances.component').then(m => m.AvancesComponent),
+        canActivate: [BoatSelectionGuard]
       },
       {
         path: 'salaires',
@@ -58,10 +49,7 @@ const routes: Routes = [
   imports: [
     CommonModule,
     RouterModule.forChild(routes),
-    TranslateModule,
-    // Les composants Standalone chargés via loadComponent ou utilisés directement dans le routing
-    // sont automatiquement importés par Angular si nécessaire, pas besoin de les déclarer ici.
-    // AvancesComponent et AvanceFormComponent sont standalone.
+    TranslateModule
   ],
   exports: [RouterModule]
 })

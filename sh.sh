@@ -1,22 +1,23 @@
 #!/bin/bash
 
-# Ce script applique les modifications au composant Avances.
-# Version 8 : Rétablit l'utilisation de CSS dédié via :host::ng-deep
-#             avec des styles améliorés pour ressembler davantage
-#             à un formulaire standard (labels au-dessus, espacement, etc.).
-# Supprime l'approche Tailwind inline.
-# Utilise 'cat' pour remplacer le contenu.
-# CORRIGÉ à nouveau : Utilise 'undefined' au lieu de 'null' pour calculSalaireId.
+# Ce script crée le composant AvanceFormComponent, met à jour AvancesComponent
+# et ajuste le routage pour utiliser un formulaire pleine page au lieu de SweetAlert.
+# Il crée des sauvegardes des fichiers modifiés.
 
 # Variables
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 SRC_DIR="src"
+AVANCES_DIR="$SRC_DIR/app/avances"
+DASHBOARD_DIR="$SRC_DIR/app/dashboard"
 
-# Fonction pour sauvegarder et remplacer un fichier
+# Fonction pour sauvegarder et remplacer/créer un fichier
 replace_file() {
   local file_path="$1"
   local new_content_file="$2"
   local backup_path="${file_path}.bak_${TIMESTAMP}"
+
+  # Créer le dossier parent si nécessaire
+  mkdir -p "$(dirname "$file_path")"
 
   if [ -f "$file_path" ]; then
     echo "Sauvegarde de '$file_path' vers '$backup_path'..."
@@ -37,8 +38,7 @@ replace_file() {
     fi
     echo "  -> '$file_path' mis à jour."
   else
-    echo "Attention : Le fichier '$file_path' n'existe pas. Création du fichier..."
-    mkdir -p "$(dirname "$file_path")" # Crée le dossier parent si nécessaire
+    echo "Création du fichier '$file_path'..."
     cat "$new_content_file" > "$file_path"
      if [ $? -ne 0 ]; then
       echo "Erreur : Échec de la création de '$file_path'."
@@ -50,11 +50,456 @@ replace_file() {
 
 # --- Définition du nouveau contenu ---
 
-# 1. src/app/avances/avances.component.ts
+# 1. Nouveau: src/app/avances/avance-form.component.ts
+cat > /tmp/avance-form.component.ts << 'EOF'
+import { Component, OnInit } from '@angular/core';
+import { CommonModule, Location } from '@angular/common';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { AvanceService } from '../services/avance.service';
+import { AlertService } from '../services/alert.service';
+import { MarinService } from '../services/marin.service';
+import { SelectedBoatService } from '../services/selected-boat.service';
+import { Avance } from '../models/avance.model';
+import { Marin } from '../models/marin.model';
+import { Bateau } from '../models/bateau.model';
+import { Observable } from 'rxjs';
+import { take } from 'rxjs/operators';
+
+@Component({
+  selector: 'app-avance-form',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, TranslateModule],
+  templateUrl: './avance-form.component.html',
+  styleUrls: ['./avance-form.component.scss']
+})
+export class AvanceFormComponent implements OnInit {
+  form!: FormGroup;
+  isEditMode = false;
+  avanceId?: string;
+  selectedBoat: Bateau | null = null;
+  marins$: Observable<Marin[]> | undefined;
+  loading = false;
+  pageTitle = '';
+
+  constructor(
+    private fb: FormBuilder,
+    private route: ActivatedRoute,
+    private router: Router,
+    private avanceService: AvanceService,
+    private alertService: AlertService,
+    private marinService: MarinService,
+    private selectedBoatService: SelectedBoatService,
+    private location: Location,
+    private translate: TranslateService
+  ) {}
+
+  ngOnInit(): void {
+    this.selectedBoat = this.selectedBoatService.getSelectedBoat();
+    if (!this.selectedBoat) {
+      this.alertService.error(this.translate.instant('BOATS.NO_BOAT_SELECTED_DETAILS'));
+      this.router.navigate(['/dashboard/bateaux']);
+      return;
+    }
+
+    this.avanceId = this.route.snapshot.paramMap.get('id') ?? undefined;
+    this.isEditMode = !!this.avanceId;
+    this.pageTitle = this.isEditMode ? 'AVANCES.EDIT' : 'AVANCES.ADD';
+
+    this.initForm();
+    this.loadMarins();
+
+    if (this.isEditMode && this.avanceId) {
+      this.loadAvanceData();
+    }
+  }
+
+  private initForm(): void {
+    this.form = this.fb.group({
+      marinId: ['', Validators.required],
+      montant: [null, [Validators.required, Validators.min(0.01)]],
+      dateAvance: [this.getTodayDate(), Validators.required],
+      description: ['']
+    });
+  }
+
+  private loadMarins(): void {
+    if (this.selectedBoat?.id) {
+      this.marins$ = this.marinService.getMarinsByBateau(this.selectedBoat.id);
+    }
+  }
+
+  private loadAvanceData(): void {
+    this.loading = true;
+    this.avanceService.getAvance(this.avanceId!).pipe(take(1)).subscribe(avance => {
+      if (avance) {
+        this.form.patchValue({
+          ...avance,
+          dateAvance: this.formatDate(avance.dateAvance) // Format date for input
+        });
+      } else {
+        this.alertService.error(this.translate.instant('MESSAGES.ERROR_GENERIC')); // Or a specific not found message
+        this.goBack();
+      }
+      this.loading = false;
+    }, error => {
+      console.error('Error loading avance:', error);
+      this.alertService.error();
+      this.loading = false;
+      this.goBack();
+    });
+  }
+
+  getTodayDate(): string {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  formatDate(date: any): string {
+    if (!date) return this.getTodayDate();
+    const d = date.toDate ? date.toDate() : new Date(date);
+    return d.toISOString().split('T')[0];
+  }
+
+  async onSubmit(): Promise<void> {
+    if (this.form.invalid) {
+        this.markFormGroupTouched(this.form);
+        this.alertService.warning(this.translate.instant('FORM.REQUIRED_FIELDS'));
+        return;
+    }
+
+    if (!this.selectedBoat) {
+        this.alertService.error('Erreur: Bateau non sélectionné.'); // Should not happen normally
+        return;
+    }
+
+    this.loading = true;
+    this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
+    const formValue = this.form.value;
+
+    const avanceData: Omit<Avance, 'id'> = {
+      bateauId: this.selectedBoat.id!,
+      marinId: formValue.marinId,
+      montant: formValue.montant,
+      dateAvance: new Date(formValue.dateAvance),
+      description: formValue.description?.trim() || undefined, // Set undefined if empty
+      calculSalaireId: undefined // Ensure it's not set when adding/editing manually
+    };
+
+    try {
+      if (this.isEditMode && this.avanceId) {
+        await this.avanceService.updateAvance(this.avanceId, avanceData);
+        this.alertService.success(this.translate.instant('AVANCES.SUCCESS_UPDATE'));
+      } else {
+        await this.avanceService.addAvance(avanceData);
+        this.alertService.success(this.translate.instant('AVANCES.SUCCESS_ADD'));
+      }
+      this.goBack(); // Navigate back to the list
+    } catch (error) {
+      console.error('Erreur sauvegarde avance:', error);
+      this.alertService.error();
+    } finally {
+      this.loading = false;
+      this.alertService.close(); // Close loading indicator
+    }
+  }
+
+   markFormGroupTouched(formGroup: FormGroup): void {
+    Object.keys(formGroup.controls).forEach(key => {
+      formGroup.get(key)?.markAsTouched();
+    });
+  }
+
+
+  goBack(): void {
+    this.location.back();
+  }
+}
+EOF
+
+# 2. Nouveau: src/app/avances/avance-form.component.html
+cat > /tmp/avance-form.component.html << 'EOF'
+<div class="form-container">
+  <div class="form-header">
+    <button class="btn-back" (click)="goBack()">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      {{ 'SAILORS.BACK' | translate }}
+    </button>
+    <h1 class="form-title">{{ pageTitle | translate }}</h1>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form">
+    <div class="form-grid">
+
+      <!-- Champ Marin -->
+      <div class="form-group">
+        <label class="form-label" for="marinId">{{ 'SAILORS.TITLE' | translate }} *</label>
+        <select id="marinId" formControlName="marinId" class="form-input"
+                [class.error]="form.get('marinId')?.invalid && form.get('marinId')?.touched">
+          <option value="" disabled>{{ 'SAILORS.SELECT_SAILOR' | translate }}</option>
+          <option *ngFor="let marin of marins$ | async" [value]="marin.id">
+            {{ marin.prenom }} {{ marin.nom }} - {{ 'SAILORS.FUNCTION_TYPE.' + marin.fonction.toUpperCase() | translate }}
+          </option>
+        </select>
+        <span class="error-message" *ngIf="form.get('marinId')?.hasError('required') && form.get('marinId')?.touched">
+          {{ 'FORM.REQUIRED' | translate }}
+        </span>
+      </div>
+
+      <!-- Champ Montant -->
+      <div class="form-group">
+        <label class="form-label" for="montant">{{ 'COMMON.AMOUNT_D_T' | translate }} *</label>
+        <input id="montant" type="number" formControlName="montant" class="form-input"
+               placeholder="0.00" step="0.01" min="0" autocomplete="off"
+               [class.error]="form.get('montant')?.invalid && form.get('montant')?.touched"/>
+        <span class="error-message" *ngIf="form.get('montant')?.hasError('required') && form.get('montant')?.touched">
+            {{ 'FORM.REQUIRED' | translate }}
+        </span>
+         <span class="error-message" *ngIf="form.get('montant')?.hasError('min') && form.get('montant')?.touched">
+             {{ 'AVANCES.AMOUNT_POSITIVE' | translate }}
+        </span>
+        <div class="input-helper">{{ 'COMMON.AMOUNT_IN_TND' | translate }}</div>
+      </div>
+
+      <!-- Champ Date -->
+      <div class="form-group">
+        <label class="form-label" for="dateAvance">{{ 'COMMON.DATE' | translate }} *</label>
+        <input id="dateAvance" type="date" formControlName="dateAvance" class="form-input"
+               [class.error]="form.get('dateAvance')?.invalid && form.get('dateAvance')?.touched"/>
+         <span class="error-message" *ngIf="form.get('dateAvance')?.hasError('required') && form.get('dateAvance')?.touched">
+             {{ 'FORM.REQUIRED' | translate }}
+        </span>
+      </div>
+
+       <!-- Champ Description -->
+      <div class="form-group full-width">
+        <label class="form-label" for="description">{{ 'COMMON.DESCRIPTION' | translate }}</label>
+        <textarea id="description" formControlName="description" class="form-input" rows="3"
+                  [placeholder]="'COMMON.DESCRIPTION_OPTIONAL' | translate"></textarea>
+      </div>
+
+    </div>
+
+    <div class="form-actions">
+      <button type="button" (click)="goBack()" class="btn btn-secondary" [disabled]="loading">
+        {{ 'FORM.CANCEL' | translate }}
+      </button>
+      <button type="submit" class="btn btn-primary" [disabled]="form.invalid || loading">
+        {{ loading ? ('MESSAGES.SAVING' | translate) : ((isEditMode ? 'FORM.EDIT' : 'FORM.ADD') | translate) }}
+      </button>
+    </div>
+  </form>
+</div>
+EOF
+
+# 3. Nouveau: src/app/avances/avance-form.component.scss
+cat > /tmp/avance-form.component.scss << 'EOF'
+// Utiliser les mêmes styles que marin-form pour la cohérence
+// (Copier le contenu de marin-form.component.scss ici)
+
+.form-container {
+  max-width: 900px;
+  width: 100%;
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  margin: 0 auto;
+}
+
+.form-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 1rem;
+
+  .form-title {
+    flex-grow: 1;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+    text-align: center;
+  }
+}
+
+.form-grid {
+  display: grid;
+  // Ajuster pour moins de champs que le formulaire marin
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+   &.full-width {
+    grid-column: 1 / -1; // Permet au textarea de prendre toute la largeur
+  }
+}
+
+.form-label {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.form-input, select.form-input, textarea.form-input {
+  padding: 0.75rem 1rem; // Padding unifié
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: all 0.2s;
+  width: 100%;
+  background-color: #f9fafb; // Léger fond gris
+  color: #1f2937;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6; // Bleu au focus
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  &.error {
+    border-color: #ef4444; // Rouge si erreur
+     &:focus {
+         box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1); // Halo rouge léger au focus si erreur
+         border-color: #ef4444;
+     }
+  }
+
+   // Placeholder style
+  &::placeholder {
+      color: #9ca3af;
+      opacity: 1;
+  }
+}
+
+// Styles spécifiques pour select
+select.form-input {
+    background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>');
+    background-position: right 0.75rem center; // LTR par défaut
+    background-repeat: no-repeat;
+    background-size: 1.25em 1.25em;
+    padding-right: 2.5rem; // Espace pour la flèche
+    appearance: none; // Masquer la flèche par défaut
+}
+// Flèche select en RTL
+:host-context(.rtl) select.form-input {
+    background-position: left 0.75rem center;
+    padding-right: 1rem; // Reset padding droit
+    padding-left: 2.5rem; // Padding gauche pour la flèche
+}
+
+// Styles spécifiques pour textarea
+textarea.form-input {
+  resize: vertical;
+  min-height: 90px;
+}
+
+
+.input-helper {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.error-message {
+  color: #ef4444;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 0.75rem 2rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-primary {
+  background-color: #10b981; // Vert (pour correspondre à Ajouter de Swal)
+  color: white;
+
+  &:hover:not(:disabled) {
+    background-color: #059669; // Vert plus foncé
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+  }
+}
+// Ajustement pour le bouton "Modifier" si besoin (basé sur isEditMode?)
+// .btn-primary.edit-mode { ... }
+
+.btn-secondary {
+  background-color: #6b7280; // Gris (pour Annuler/Retour)
+  color: white;
+
+  &:hover:not(:disabled) {
+    background-color: #4b5563;
+  }
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .form-header .form-title {
+    font-size: 1.5rem;
+    margin-right: 0;
+  }
+  .form-container { padding: 1.5rem; }
+  .form-grid { grid-template-columns: 1fr; gap: 1rem; }
+  .form-actions { flex-direction: column-reverse; gap: 0.75rem; }
+  .btn { width: 100%; justify-content: center; }
+}
+
+/* RTL Support */
+:host-context(.rtl) {
+    .form-label {
+        // text-align: right; // Est hérité, normalement pas nécessaire
+    }
+    .form-input, select.form-input, textarea.form-input {
+        // text-align: right; // Est hérité, normalement pas nécessaire
+    }
+     .error-message, .input-helper {
+         // text-align: right; // Est hérité
+     }
+    .form-actions {
+        justify-content: flex-start; // Aligner les boutons à gauche en RTL
+    }
+    .btn-back svg {
+        transform: scaleX(-1); // Inverser la flèche
+    }
+}
+EOF
+
+# 4. Modifié: src/app/avances/avances.component.ts
 cat > /tmp/avances.component.ts << 'EOF'
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router'; // Import Router
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import Swal from 'sweetalert2';
 import { AvanceService } from '../services/avance.service';
@@ -71,7 +516,7 @@ import { combineLatest } from 'rxjs';
   standalone: true,
   imports: [CommonModule, TranslateModule, RouterModule],
   templateUrl: './avances.component.html',
-  styleUrls: ['./avances.component.scss'] // Garder le lien SCSS
+  styleUrls: ['./avances.component.scss']
 })
 export class AvancesComponent implements OnInit {
   selectedBoat: Bateau | null = null;
@@ -84,7 +529,8 @@ export class AvancesComponent implements OnInit {
     private marinService: MarinService,
     private selectedBoatService: SelectedBoatService,
     private alertService: AlertService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private router: Router // Inject Router for navigation
   ) {}
 
   ngOnInit(): void {
@@ -146,7 +592,7 @@ export class AvancesComponent implements OnInit {
     return '';
   }
 
-  formatDisplayDate(date: any): string {
+   formatDisplayDate(date: any): string {
     let dateObj: Date;
     if (date?.toDate) {
       dateObj = date.toDate();
@@ -167,842 +613,250 @@ export class AvancesComponent implements OnInit {
     return `${day}/${month}/${year}`;
   }
 
-  async addAvance(): Promise<void> {
-    if (!this.selectedBoat) return;
-
-    const marinsOptions = this.marins.reduce((acc, marin) => {
-      const fonction = this.translate.instant('SAILORS.FUNCTION_TYPE.' + marin.fonction.toUpperCase());
-      acc[marin.id!] = `${marin.prenom} ${marin.nom} - ${fonction}`;
-      return acc;
-    }, {} as { [key: string]: string });
-
-    const t = {
-      title: this.translate.instant('AVANCES.ADD_MODAL.TITLE'),
-      sailor: this.translate.instant('SAILORS.TITLE'),
-      selectSailor: this.translate.instant('SAILORS.SELECT_SAILOR'),
-      amount: this.translate.instant('COMMON.AMOUNT_D_T'),
-      amountPlaceholder: this.translate.instant('COMMON.AMOUNT_IN_TND'),
-      date: this.translate.instant('COMMON.DATE'),
-      description: this.translate.instant('COMMON.DESCRIPTION'),
-      descriptionPlaceholder: this.translate.instant('COMMON.DESCRIPTION_OPTIONAL'),
-      add: this.translate.instant('FORM.ADD'),
-      cancel: this.translate.instant('FORM.CANCEL'),
-      requiredFields: this.translate.instant('FORM.REQUIRED_FIELDS'),
-      amountPositive: this.translate.instant('AVANCES.AMOUNT_POSITIVE')
-    };
-
-    const textDirection = document.body.classList.contains('rtl') ? 'rtl' : 'ltr';
-
-    const { value: formValues } = await Swal.fire({
-      title: `<div class="swal-custom-title">${t.title}</div>`,
-      html: `
-        <div class="swal-custom-form" dir="${textDirection}">
-          <div class="swal-form-group">
-            <label class="swal-form-label" for="swal-marin">${t.sailor} <span class="required-star">*</span></label>
-            <select id="swal-marin" class="swal-custom-select">
-              <option value="">${t.selectSailor}</option>
-              ${Object.keys(marinsOptions).map(id => `<option value="${id}">${marinsOptions[id]}</option>`).join('')}
-            </select>
-          </div>
-          <div class="swal-form-group">
-            <label class="swal-form-label" for="swal-montant">${t.amount} <span class="required-star">*</span></label>
-            <input id="swal-montant" type="number" class="swal-custom-input" placeholder="0.00" step="0.01" min="0" autocomplete="off" />
-            <div class="swal-input-helper">${t.amountPlaceholder}</div>
-          </div>
-          <div class="swal-form-group">
-            <label class="swal-form-label" for="swal-date">${t.date} <span class="required-star">*</span></label>
-            <input id="swal-date" type="date" class="swal-custom-input" value="${this.getTodayDate()}" />
-          </div>
-          <div class="swal-form-group">
-            <label class="swal-form-label" for="swal-description">${t.description}</label>
-            <textarea id="swal-description" class="swal-custom-textarea" placeholder="${t.descriptionPlaceholder}"></textarea>
-          </div>
-        </div>
-      `,
-      focusConfirm: false,
-      showCancelButton: true,
-      confirmButtonText: t.add,
-      cancelButtonText: t.cancel,
-      confirmButtonColor: '#10b981',
-      cancelButtonColor: '#6b7280',
-      width: '600px', // Largeur fixe
-      customClass: {
-        popup: 'swal-custom-styles', // Classe principale pour CSS
-        title: 'swal-ignore-styles',
-        htmlContainer: 'swal-ignore-styles',
-        confirmButton: 'swal-custom-button swal-custom-confirm-button', // Boutons stylisés par CSS
-        cancelButton: 'swal-custom-button swal-custom-cancel-button'
-      },
-       didOpen: () => {
-         const form = document.querySelector('.swal-custom-form') as HTMLElement;
-         if (form) {
-            form.dir = textDirection; // Appliquer dir dynamiquement
-         }
-       },
-      preConfirm: () => {
-        // Validation reste la même
-        const marinId = (document.getElementById('swal-marin') as HTMLSelectElement).value;
-        const montantStr = (document.getElementById('swal-montant') as HTMLInputElement).value;
-        const date = (document.getElementById('swal-date') as HTMLInputElement).value;
-        const montant = parseFloat(montantStr);
-
-        if (!marinId || !montantStr || !date) {
-          Swal.showValidationMessage(t.requiredFields);
-          return false;
-        }
-        if (isNaN(montant) || montant <= 0) {
-          Swal.showValidationMessage(t.amountPositive);
-          return false;
-        }
-        return { marinId, montant, date, description: (document.getElementById('swal-description') as HTMLTextAreaElement).value };
-      }
-    });
-
-    if (formValues) {
-      // Logique d'ajout reste la même
-      try {
-        this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
-        const newAvance: Omit<Avance, 'id'> = {
-          marinId: formValues.marinId,
-          bateauId: this.selectedBoat!.id!,
-          montant: formValues.montant,
-          dateAvance: new Date(formValues.date),
-          createdAt: new Date(),
-          calculSalaireId: undefined // CORRECTION : undefined au lieu de null
-        };
-        if (formValues.description && formValues.description.trim() !== '') {
-          newAvance.description = formValues.description.trim();
-        }
-        await this.avanceService.addAvance(newAvance);
-        this.alertService.success(this.translate.instant('AVANCES.SUCCESS_ADD'));
-      } catch (error) {
-        console.error("Erreur ajout avance:", error);
-        this.alertService.error();
-      }
-    }
+  // Navigate to Add Form
+  navigateToAddAvance(): void {
+    this.router.navigate(['/dashboard/avances/add']);
   }
 
-
-  async editAvance(avance: Avance): Promise<void> {
-    const t = {
-      title: this.translate.instant('AVANCES.EDIT_MODAL.TITLE'),
-      amount: this.translate.instant('COMMON.AMOUNT_D_T'),
-      date: this.translate.instant('COMMON.DATE'),
-      description: this.translate.instant('COMMON.DESCRIPTION'),
-      descriptionPlaceholder: this.translate.instant('COMMON.DESCRIPTION_OPTIONAL'),
-      edit: this.translate.instant('FORM.EDIT'),
-      cancel: this.translate.instant('FORM.CANCEL'),
-      amountPositive: this.translate.instant('AVANCES.AMOUNT_POSITIVE'),
-      requiredFields: this.translate.instant('FORM.REQUIRED_FIELDS')
-    };
-
-    const textDirection = document.body.classList.contains('rtl') ? 'rtl' : 'ltr';
-
-    const { value: formValues } = await Swal.fire({
-      title: `<div class="swal-custom-title">${t.title}</div>`,
-      html: `
-        <div class="swal-custom-form" dir="${textDirection}">
-           <div class="swal-form-group">
-            <label class="swal-form-label" for="swal-montant">${t.amount} <span class="required-star">*</span></label>
-            <input id="swal-montant" type="number" class="swal-custom-input" value="${avance.montant}" step="0.01" min="0">
-          </div>
-          <div class="swal-form-group">
-            <label class="swal-form-label" for="swal-date">${t.date} <span class="required-star">*</span></label>
-            <input id="swal-date" type="date" class="swal-custom-input" value="${this.formatDate(avance.dateAvance)}">
-          </div>
-          <div class="swal-form-group">
-            <label class="swal-form-label" for="swal-description">${t.description}</label>
-            <textarea id="swal-description" class="swal-custom-textarea" placeholder="${t.descriptionPlaceholder}">${avance.description || ''}</textarea>
-          </div>
-        </div>`,
-      focusConfirm: false,
-      showCancelButton: true,
-      confirmButtonText: t.edit,
-      cancelButtonText: t.cancel,
-      confirmButtonColor: '#f59e0b', // Couleur orange
-      cancelButtonColor: '#6b7280',
-      width: '600px',
-      customClass: {
-        popup: 'swal-custom-styles',
-        title: 'swal-ignore-styles',
-        htmlContainer: 'swal-ignore-styles',
-        confirmButton: 'swal-custom-button swal-custom-confirm-button', // Utilise les styles CSS
-        cancelButton: 'swal-custom-button swal-custom-cancel-button'
-      },
-       didOpen: () => {
-         const form = document.querySelector('.swal-custom-form') as HTMLElement;
-         if (form) {
-            form.dir = textDirection;
-         }
-       },
-      preConfirm: () => {
-        // Validation reste la même
-        const montantStr = (document.getElementById('swal-montant') as HTMLInputElement).value;
-        const date = (document.getElementById('swal-date') as HTMLInputElement).value;
-        const montant = parseFloat(montantStr);
-
-        if (!montantStr || !date) {
-            Swal.showValidationMessage(t.requiredFields);
-            return false;
-        }
-        if (isNaN(montant) || montant <= 0) {
-            Swal.showValidationMessage(t.amountPositive);
-            return false;
-        }
-        return { montant, date, description: (document.getElementById('swal-description') as HTMLTextAreaElement).value };
-      }
-    });
-
-    if (formValues) {
-      // Logique de modification reste la même
-      try {
-        this.alertService.loading(this.translate.instant('MESSAGES.UPDATING'));
-        const updateData: Partial<Avance> = {
-          montant: formValues.montant,
-          dateAvance: new Date(formValues.date)
-        };
-        updateData.description = (formValues.description && formValues.description.trim() !== '') ? formValues.description.trim() : '';
-
-        await this.avanceService.updateAvance(avance.id!, updateData);
-        this.alertService.success(this.translate.instant('AVANCES.SUCCESS_UPDATE'));
-      } catch (error) {
-        console.error('Erreur modif avance:', error);
-        this.alertService.error();
-      }
-    }
+  // Navigate to Edit Form
+  navigateToEditAvance(avanceId: string): void {
+     if (!avanceId) return;
+    this.router.navigate(['/dashboard/avances/edit', avanceId]);
   }
 
+  // Delete Avance (Confirmation handled by alertService)
   async deleteAvance(avance: Avance): Promise<void> {
-    // Logique de suppression reste la même
+    if (!avance || !avance.id) return; // Guard clause
+
     const marinName = this.getMarinName(avance.marinId);
     const itemName = this.translate.instant('AVANCES.DELETE_CONFIRM_ITEM', { amount: avance.montant, name: marinName });
     const confirmed = await this.alertService.confirmDelete(itemName);
+
     if (confirmed) {
       try {
         this.alertService.loading(this.translate.instant('MESSAGES.DELETING'));
-        await this.avanceService.deleteAvance(avance.id!);
+        await this.avanceService.deleteAvance(avance.id);
+        // Data reloads automatically via Firestore listener, no need to manually remove
         this.alertService.toast(this.translate.instant('AVANCES.SUCCESS_DELETE'));
       } catch (error) {
-        console.error('Erreur suppression avance:', error);
-        this.alertService.error();
+        console.error('Erreur lors de la suppression:', error);
+        this.alertService.error(); // Show generic error message
+      } finally {
+         this.alertService.close(); // Ensure loading indicator closes
       }
     }
   }
 }
 EOF
 
-# 2. src/app/avances/avances.component.scss
-# Styles CSS dédiés améliorés
-cat > /tmp/avances.component.scss << 'EOF'
-// Styles globaux améliorés pour les popups Swal customisées via :host::ng-deep
-:host::ng-deep {
+# 5. Modifié: src/app/avances/avances.component.html
+cat > /tmp/avances.component.html << 'EOF'
+<div class="avances-container">
+  <div class="header">
+    <h1 class="title">{{ 'AVANCES.TITLE' | translate }}</h1>
+    <!-- Modifié: Bouton navigue vers la nouvelle page formulaire -->
+    <button *ngIf="!loading && marins.length > 0" class="btn btn-primary" (click)="navigateToAddAvance()">
+      <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+      </svg>
+      {{ 'AVANCES.ADD' | translate }}
+    </button>
+  </div>
 
-  // Classe principale appliquée au popup
-  .swal-custom-styles {
-    width: 600px !important; // Largeur du popup
-    font-family: inherit !important; // Police par défaut de l'application
-    border-radius: 0.75rem !important; // Coins arrondis pour le popup
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-spinner">
+    <div class="spinner"></div>
+    <p>{{ 'MESSAGES.LOADING' | translate }}</p>
+  </div>
 
-    // Style pour le titre (si la classe swal-custom-title est utilisée)
-    .swal-custom-title {
-      font-size: 1.75rem !important; // Taille du titre
-      font-weight: 700 !important;
-      color: #1f2937 !important; // Couleur du titre
-      margin-bottom: 1.5rem !important; // Espace sous le titre
-      padding-top: 1rem; // Un peu d'espace au-dessus
-      text-align: center;
-    }
+  <!-- Pas de bateau sélectionné -->
+  <div *ngIf="!loading && !selectedBoat" class="no-data">
+    <svg class="no-data-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <p>{{ 'BOATS.NO_BOAT_SELECTED' | translate }}</p>
+  </div>
 
-     // Conteneur HTML (pour notre formulaire)
-    .swal2-html-container {
-       margin: 0 !important; // Reset marge
-       padding: 0 1.5rem !important; // Padding latéral pour le formulaire
-       overflow: visible !important;
-     }
+  <!-- Pas de marins -->
+  <div *ngIf="!loading && selectedBoat && marins.length === 0" class="no-data">
+    <svg class="no-data-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+    </svg>
+    <p>{{ 'POINTAGE.NOCREW' | translate }}</p>
+  </div>
 
-    // Formulaire à l'intérieur du popup
-    .swal-custom-form {
-      padding: 0; // Pas de padding supplémentaire ici
-      text-align: left; // Défaut LTR
+  <!-- Liste des avances par marin -->
+  <div *ngIf="!loading && selectedBoat && marins.length > 0" class="marins-list">
+    <div *ngFor="let marin of marins" class="marin-card">
+      <div class="marin-header">
+        <div class="marin-info">
+          <h3 class="marin-name">{{ marin.prenom }} {{ marin.nom }}</h3>
+          <span class="fonction-badge" [ngClass]="'fonction-' + marin.fonction">
+            {{ 'SAILORS.FUNCTION_TYPE.' + marin.fonction.toUpperCase() | translate }}
+          </span>
+        </div>
+        <div class="marin-total">
+          <span class="total-label">{{ 'AVANCES.TOTAL' | translate }}</span>
+          <span class="total-amount">{{ getTotalByMarin(marin.id!) | number:'1.2-2' }} DT</span>
+        </div>
+      </div>
 
-      // Alignement spécifique RTL
-      &[dir="rtl"] {
-         text-align: right;
-      }
-    }
+      <!-- Avances du marin -->
+      <div class="avances-list" *ngIf="getAvancesByMarin(marin.id!).length > 0">
+        <div *ngFor="let avance of getAvancesByMarin(marin.id!)" class="avance-item">
+          <div class="avance-main">
+            <div class="avance-details">
+              <div class="avance-date-row">
+                <svg class="date-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <span class="avance-date">{{ formatDisplayDate(avance.dateAvance) }}</span>
+              </div>
+              <div class="avance-description" *ngIf="avance.description">
+                <svg class="desc-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+                </svg>
+                <span>{{ avance.description }}</span>
+              </div>
+            </div>
 
-    // Groupe de formulaire (label + input)
-    .swal-form-group {
-      margin-bottom: 1.25rem; // Espacement vertical entre les champs
-      &:last-child {
-         margin-bottom: 0; // Pas de marge pour le dernier groupe avant les boutons
-      }
-    }
+            <div class="avance-actions">
+              <span class="avance-amount">{{ avance.montant | number:'1.2-2' }} DT</span>
+              <!-- Modifié: Bouton navigue vers la page de modification -->
+              <button (click)="navigateToEditAvance(avance.id!)" class="btn-icon btn-warning" [title]="'BOATS.EDIT' | translate">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+              </button>
+              <button (click)="deleteAvance(avance)" class="btn-icon btn-danger" [title]="'BOATS.DELETE' | translate">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    // Label du champ
-    .swal-form-label {
-      display: block; // Assure que le label est sur sa propre ligne
-      margin-bottom: 0.5rem; // Espace sous le label
-      font-weight: 600;
-      color: #374151; // Couleur du label (gris foncé)
-      font-size: 0.9rem; // Taille du label
-    }
+      <!-- Pas d'avances -->
+      <div class="no-avances" *ngIf="getAvancesByMarin(marin.id!).length === 0">
+        <svg class="no-avances-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+        </svg>
+        <p>{{ 'AVANCES.NO_AVANCES' | translate }}</p>
+      </div>
+    </div>
+  </div>
 
-    // Étoile pour champ requis
-    .required-star {
-      color: #ef4444; // Rouge
-      font-weight: 700;
-      font-size: 1rem;
-      line-height: 1;
-      display: inline-block; // Pour que la marge fonctionne bien
-      // Marge ajoutée dynamiquement en fonction de dir
-      margin-left: 0.25rem;
-    }
-    // Ajustement étoile pour RTL
-    .swal-custom-form[dir="rtl"] .required-star {
-        margin-left: 0;
-        margin-right: 0.25rem;
-    }
-
-    // Styles communs pour input, textarea, select
-    .swal-custom-input, .swal-custom-textarea, .swal-custom-select {
-      display: block; // S'assurer qu'ils prennent toute la largeur
-      width: 100%;
-      padding: 0.75rem 1rem; // Padding interne
-      border: 1px solid #d1d5db; // Bordure grise standard
-      border-radius: 0.5rem; // Coins arrondis
-      font-size: 0.95rem;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      font-family: inherit;
-      background-color: #f9fafb; // Fond légèrement grisé
-      color: #1f2937; // Couleur de texte foncée
-      box-sizing: border-box;
-
-      // Placeholder style
-      &::placeholder {
-          color: #9ca3af; // Placeholder gris clair
-          opacity: 1;
-      }
-
-      &:focus {
-        outline: none;
-        border-color: #10b981; // Bordure verte au focus (Ajouter)
-        background-color: #ffffff; // Fond blanc au focus
-        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); // Halo vert léger
-      }
-       // Style pour select
-       &.swal-custom-select {
-            background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>');
-            background-position: right 0.75rem center; // LTR par défaut
-            background-repeat: no-repeat;
-            background-size: 1.25em 1.25em;
-            padding-right: 2.5rem; // Espace pour la flèche
-            appearance: none; // Masquer la flèche par défaut
-       }
-       // Flèche select en RTL
-       .swal-custom-form[dir="rtl"] &.swal-custom-select {
-            background-position: left 0.75rem center;
-            padding-right: 1rem; // Reset padding droit
-            padding-left: 2.5rem; // Padding gauche pour la flèche
-       }
-    }
-
-    // Style spécifique textarea
-    .swal-custom-textarea {
-      resize: vertical; // Permettre redimensionnement vertical
-      min-height: 90px; // Hauteur minimale un peu plus grande
-    }
-
-    // Texte d'aide sous l'input
-    .swal-input-helper {
-      margin-top: 0.5rem; // Plus d'espace
-      font-size: 0.8rem;
-      color: #6b7280; // Gris moyen
-    }
-
-    // Message de validation d'erreur
-    .swal2-validation-message {
-      background-color: #fee2e2 !important; // Fond rouge clair
-      color: #b91c1c !important; // Texte rouge foncé
-      font-weight: 500;
-      border-left: 4px solid #ef4444 !important; // Bordure gauche rouge par défaut
-      border-right: none !important;
-      margin: 0.75em 0 0 !important; // Un peu moins d'espace au-dessus
-      padding: 0.75em 1em !important; // Padding ajusté
-      font-size: 0.9em !important;
-      text-align: left !important; // Alignement gauche par défaut
-      border-radius: 0.375rem !important; // Coins arrondis
-      display: block !important; // Assure l'affichage correct
-    }
-    // Message validation en RTL
-     .swal-custom-form[dir="rtl"] + .swal2-validation-message {
-        border-left: none !important;
-        border-right: 4px solid #ef4444 !important; // Bordure droite en RTL
-        text-align: right !important; // Alignement droit en RTL
-    }
-
-    // Conteneur des boutons d'action
-    .swal2-actions {
-        margin-top: 1.5rem !important; // Espace au-dessus des boutons
-        gap: 0.75rem; // Espace entre les boutons
-    }
-
-    // Styles des boutons (classes ajoutées dans le .ts)
-    .swal-custom-button {
-        padding: 0.75rem 1.5rem !important;
-        font-weight: 600 !important;
-        border-radius: 0.5rem !important;
-        font-size: 0.95rem !important;
-        border: none !important;
-        cursor: pointer;
-        transition: background-color 0.2s, transform 0.1s;
-
-        &:focus {
-            outline: none !important;
-             box-shadow: 0 0 0 3px rgba(var(--focus-ring-color, 16, 185, 129), 0.4) !important; // Halo focus générique
-        }
-
-        &:hover {
-            transform: translateY(-1px); // Léger effet au survol
-        }
-        &:active {
-            transform: translateY(0px); // Annuler l'effet au clic
-        }
-    }
-    // Bouton Confirmer (vert)
-    .swal-custom-confirm-button {
-        background-color: #10b981 !important;
-        color: white !important;
-         --focus-ring-color: 16, 185, 129; // Vert pour focus
-
-        &:hover {
-            background-color: #059669 !important; // Vert plus foncé
-        }
-    }
-     // Bouton Annuler (gris)
-    .swal-custom-cancel-button {
-        background-color: #6b7280 !important;
-        color: white !important;
-         --focus-ring-color: 107, 114, 128; // Gris pour focus
-
-        &:hover {
-            background-color: #4b5563 !important; // Gris plus foncé
-        }
-    }
-    // Bouton Confirmer (orange pour edit)
-    .swal-custom-styles .swal2-confirm.swal-custom-confirm-button[style*="rgb(245, 158, 11)"] { // Cibler la couleur inline orange
-        background-color: #f59e0b !important;
-         --focus-ring-color: 245, 158, 11; // Orange pour focus
-         &:hover {
-             background-color: #d97706 !important; // Orange plus foncé
-         }
-    }
-
-  } // Fin de .swal-custom-styles
-
-} // Fin de :host::ng-deep
-
-// Styles spécifiques au composant Avances (inchangés)
-.avances-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-
-  .icon {
-    width: 20px;
-    height: 20px;
-  }
-}
-
-.btn-primary {
-  background-color: #3b82f6;
-  color: white;
-
-  &:hover {
-    background-color: #2563eb;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
-  }
-}
-
-.loading-spinner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem;
-
-  .spinner {
-    width: 40px;
-    height: 40px;
-    margin-bottom: 1rem;
-    border: 4px solid #f3f4f6;
-    border-top-color: #3b82f6;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.no-data {
-  text-align: center;
-  padding: 3rem;
-  color: #9ca3af;
-
-  .no-data-icon {
-    width: 64px;
-    height: 64px;
-    margin: 0 auto 1rem;
-    opacity: 0.5;
-  }
-
-  p {
-    font-size: 1.1rem;
-  }
-}
-
-.marins-list {
-  display: grid;
-  gap: 1.5rem;
-}
-
-.marin-card {
-  background: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
-.marin-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-  border-bottom: 2px solid #e5e7eb;
-}
-
-.marin-info {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.marin-name {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0;
-}
-
-.fonction-badge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-transform: capitalize;
-}
-
-.fonction-capitaine { background-color: #fef3c7; color: #92400e; }
-.fonction-second { background-color: #e0e7ff; color: #3730a3; }
-.fonction-mecanicien { background-color: #ccfbf1; color: #115e59; }
-.fonction-matelot { background-color: #f3e8ff; color: #6b21a8; }
-
-.marin-total {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  .total-label { font-size: 0.875rem; color: #6b7280; font-weight: 500; }
-  .total-amount { font-size: 1.5rem; font-weight: 700; color: #059669; }
-}
-
-.avances-list {
-  padding: 0;
-}
-
-.avance-item {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #f3f4f6;
-  transition: background-color 0.2s;
-
-  &:hover { background-color: #f9fafb; }
-  &:last-child { border-bottom: none; }
-}
-
-.avance-main {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-}
-
-.avance-details {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-
-  .avance-date-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 600;
-    color: #1f2937;
-    font-size: 0.95rem;
-
-    .date-icon { width: 18px; height: 18px; color: #3b82f6; flex-shrink: 0; }
-  }
-
-  .avance-description {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    color: #6b7280;
-    line-height: 1.5;
-    padding-left: 1.625rem;
-    .desc-icon { width: 16px; height: 16px; color: #9ca3af; flex-shrink: 0; margin-top: 0.125rem; }
-    span { flex: 1; }
-  }
-}
-
-.avance-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
-
-  .avance-amount {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: #059669;
-    margin-right: 0.5rem;
-    white-space: nowrap;
-  }
-}
-
-.btn-icon {
-  padding: 0.5rem;
-  border: none;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  svg { width: 18px; height: 18px; }
-}
-
-.btn-warning {
-  background-color: #fef3c7;
-  color: #92400e;
-  &:hover { background-color: #fde68a; }
-}
-
-.btn-danger {
-  background-color: #fee2e2;
-  color: #991b1b;
-  &:hover { background-color: #fecaca; }
-}
-
-.no-avances {
-  padding: 2rem;
-  text-align: center;
-  color: #9ca3af;
-  .no-avances-icon { width: 48px; height: 48px; margin: 0 auto 0.5rem; opacity: 0.5; }
-  p { margin: 0; }
-}
-
-.total-card {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  padding: 1.5rem 2rem;
-  border-radius: 0.75rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 2rem;
-  box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
-
-  .total-label-main { font-size: 1.25rem; font-weight: 600; }
-  .total-amount-main { font-size: 2rem; font-weight: 700; }
-}
-
-// Responsive
-@media (max-width: 768px) {
-  .avances-container { padding: 1rem; }
-  .title { font-size: 1.5rem; }
-  .marin-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
-  .avance-main { flex-direction: column; align-items: flex-start; }
-  .avance-actions { width: 100%; justify-content: space-between; }
-  .total-card { flex-direction: column; gap: 0.5rem; text-align: center; }
-
-  :host::ng-deep .swal-custom-styles { // Ajustement popup sur mobile
-    width: 90% !important;
-  }
-}
-
-// Support RTL général pour ce composant
-:host-context(.rtl) {
-    .marin-total {
-        align-items: flex-start; // Aligner à gauche en RTL
-    }
-     .avance-details .avance-description {
-        padding-left: 0;
-        padding-right: 1.625rem; // Padding à droite pour RTL
-        .desc-icon {
-            margin-left: 0.5rem; // Marge gauche pour l'icône en RTL
-            margin-right: 0;
-        }
-    }
-    .avance-actions {
-        .avance-amount {
-            margin-right: 0;
-            margin-left: 0.5rem; // Marge gauche pour le montant en RTL
-        }
-    }
-}
+  <!-- Total général -->
+  <div *ngIf="!loading && avances.length > 0" class="total-card">
+    <span class="total-label-main">{{ 'AVANCES.TOTAL_GENERAL' | translate }}</span>
+    <span class="total-amount-main">{{ getTotalAvances() | number:'1.2-2' }} DT</span>
+  </div>
+</div>
 EOF
 
-# 3. src/assets/i18n/ar.json
-# Le contenu JSON reste le même
-cat > /tmp/ar.json << 'EOF'
-{
-  "FACTURES": {
-    "TITLE": "الفواتير",
-    "NOFACTURE": "لا توجد فواتير مسجلة لهذه الرحلة.",
-    "ADD": "إضافة فاتورة"
-  },
-  "AUTH": { "WELCOME": "مرحباً بك", "SIGN_IN": "الرجاء تسجيل الدخول إلى حسابك", "SIGNUP": "املأ المعلومات للتسجيل", "CREATE_ACCOUNT": "إنشاء حساب جديد", "EMAIL": "البريد الإلكتروني", "PASSWORD": "كلمة المرور", "LOGIN": "تسجيل الدخول", "NO_ACCOUNT": "ليس لديك حساب؟ سجل الآن", "HAVE_ACCOUNT": "هل لديك حساب بالفعل؟ تسجيل الدخول" },
-  "DASHBOARD": { "TITLE": "لوحة التحكم", "WELCOME": "مرحباً بك في لوحة التحكم", "ACTIVITIES": "الأنشطة", "RECENT_ACTIVITIES": "النشاطات الأخيرة", "NO_ACTIVITIES": "لا توجد أنشطة حديثة لعرضها", "TOTAL_BOATS": "إجمالي المراكب", "TOTAL_SAILORS": "إجمالي البحارة", "ACTIVE_BOATS": "المراكب النشطة", "MAINTENANCE": "تحت الصيانة", "BOAT_ADDED": "تمت إضافة المركب", "BOAT_UPDATED": "تم تحديث المركب", "SAILOR_ADDED": "تمت إضافة البحار", "SAILOR_UPDATED": "تم تحديث البحار", "TIME_AGO": { "NOW": "الآن", "MINUTES": "قبل {{minutes}} د", "HOURS": "قبل {{hours}} س", "DAYS": "قبل {{days}} ي" } },
-  "MENU": { "HOME": "الرئيسية", "BOATS": "المراكب", "SORTIES": "الرحلات البحرية", "AVANCES": "السلف", "SALAIRES": "الرواتب", "VENTES": "المبيعات", "MOCK_DATA": "بيانات تجريبية", "SELECT_BOAT_FIRST": "اختر مركبًا أولاً للوصول" },
-  "BOATS": { "TITLE": "إدارة المراكب", "BOAT": "مركب", "ADD_BOAT": "إضافة مركب", "EDIT_BOAT": "تعديل المركب", "DELETE": "حذف", "NAME": "اسم المركب", "REGISTRATION": "رقم التسجيل", "ENGINE_TYPE": "نوع المحرك", "POWER": "القوة (حصان)", "LENGTH": "الطول (متر)", "CAPACITY": "سعة الطاقم", "CONSTRUCTION_DATE": "تاريخ الصنع", "PORT": "ميناء الرسو", "STATUS": "الحالة", "ACTIVE": "نشط", "MAINTENANCE": "صيانة", "INACTIVE": "غير نشط", "NO_BOAT_SELECTED": "لم يتم اختيار أي مركب", "NO_BOAT_SELECTED_DETAILS": "الرجاء اختيار مركب أولاً من صفحة 'المراكب'.", "CLICK_TO_SELECT": "انقر للاختيار", "SELECTED_BOAT": "المركب الحالي", "SELECTED": "محدد", "SEARCH": "ابحث عن مركب بالاسم...", "ACTIONS": "الإجراءات", "VIEWCREW": "عرض الطاقم", "SELECT_INFO": "الرجاء اختيار مركب من القائمة للمتابعة.", "CHANGE_SELECTION": "تغيير المركب", "SUCCESS_ADD": "تمت إضافة المركب بنجاح.", "SUCCESS_UPDATE": "تم تحديث المركب بنجاح.", "SUCCESS_DELETE": "تم حذف المركب بنجاح.", "TOAST_SELECTED": "تم اختيار المركب \"{{boatName}}\".", "TOAST_SELECTION_CLEARED": "تم إلغاء اختيار المركب.", "BOAT_NAME_CONFIRM": "المركب \"{{boatName}}\"" },
-  "SAILORS": { "TITLE": "البحارة", "ADD_SAILOR": "إضافة بحار", "ADD_NEW_SAILOR": "إضافة بحار جديد", "EDIT_SAILOR": "تعديل البحار", "FIRST_NAME": "الاسم", "LAST_NAME": "اللقب", "FUNCTION": "الوظيفة", "PART": "الحصة", "SELECT_FUNCTION": "اختر وظيفة", "SELECT_SAILOR": "اختر بحار", "PHONE": "الهاتف", "EMAIL": "البريد الإلكتروني", "ADDRESS": "العنوان", "BIRTH_DATE": "تاريخ الميلاد", "HIRE_DATE": "تاريخ التوظيف", "LICENSE_NUMBER": "رقم الرخصة", "CREW_OF": "طاقم مركب", "BACK": "رجوع", "ON_LEAVE": "في إجازة", "SUCCESS_ADD": "تمت إضافة البحار بنجاح.", "SUCCESS_UPDATE": "تم تحديث البحار بنجاح.", "SUCCESS_DELETE": "تم حذف البحار بنجاح.", "CAPITAINE": "قبطان", "SECOND": "مساعد قبطان", "MECANICIEN": "ميكانيكي", "MATELOT": "بحار", "PLACEHOLDER": { "LASTNAME": "أدخل اللقب", "FIRSTNAME": "أدخل الاسم", "PHONE": "رقم الهاتف" }, "FUNCTION_TYPE": { "CAPITAINE": "قبطان", "SECOND": "مساعد قبطان", "MECANICIEN": "ميكانيكي", "MATELOT": "بحار" } },
-  "SORTIES": { "TITLE": "الرحلات البحرية", "ADD": "إضافة رحلة", "EDIT": "تعديل الرحلة", "DETAILSTITLE": "تفاصيل الرحلة", "DESTINATION": "الوجهة", "DATEDEPART": "تاريخ المغادرة", "DATERETOUR": "تاريخ العودة", "STATUT": "الحالة", "STATUS": { "EN-COURS": "جارية", "TERMINEE": "منتهية", "ANNULEE": "ملغاة", "ONGOING": "جارية", "COMPLETED": "منتهية", "CANCELLED": "ملغاة" }, "GENERALINFO": "معلومات عامة", "OBSERVATIONS": "ملاحظات", "MANAGE": "إدارة الرحلة", "NOSORTIES": "لا توجد رحلات مسجلة لهذا المركب.", "SELECTSORTIES": "تحديد الرحلات البحرية", "SUCCESS_ADD": "تمت إضافة الرحلة بنجاح.", "SUCCESS_UPDATE": "تم تعديل الرحلة بنجاح.", "SUCCESS_DELETE": "تم حذف الرحلة بنجاح." },
-  "EXPENSES": { "TITLE": "المصاريف", "ADD": "إضافة مصروف", "EDIT": "تعديل المصروف", "TYPE": "نوع المصروف", "AMOUNT": "المبلغ", "DATE": "التاريخ", "DESCRIPTION": "الوصف", "NOEXPENSE": "لا توجد مصاريف مسجلة لهذه الرحلة.", "TYPES": { "FUEL": "وقود", "ICE": "ثلج", "OIL_CHANGE": "تغيير زيت", "CREW_CNSS": "الضمان الاجتماعي", "CREW_BONUS": "مكافأة الطاقم", "FOOD": "طعام", "VMS": "VMS", "MISC": "متنوع" }, "SUCCESS_ADD": "تمت إضافة المصروف بنجاح", "SUCCESS_UPDATE": "تم تحديث المصروف بنجاح" },
-  "POINTAGE": { "TITLE": "تسجيل حضور الطاقم", "CREW": "إدارة الحضور", "PRESENT": "حاضر", "ABSENT": "غائب", "NOCREW": "لا يوجد بحارة معينون لهذا المركب.", "OBSERVATIONS": "ملاحظات", "ADDOBS": "إضافة ملاحظة...", "TOTAL": "المجموع", "SUCCESS_PRESENCE": "تم تسجيل الحضور", "SUCCESS_ABSENCE": "تم تسجيل الغياب", "SUCCESS_OBS": "تم تحديث الملاحظات", "ERROR_ADD": "خطأ أثناء تسجيل الحضور" },
-  "AVANCES": { "TITLE": "السلف على الراتب", "ADD": "إضافة سلفة", "EDIT": "تعديل السلفة", "TOTAL": "مجموع السلف", "TOTAL_GENERAL": "المجموع الكلي للسلف", "NO_AVANCES": "لا توجد سلف لهذا البحار.", "SUCCESS_ADD": "تمت إضافة السلفة بنجاح.", "SUCCESS_UPDATE": "تم تحديث السلفة بنجاح.", "SUCCESS_DELETE": "تم حذف السلفة بنجاح.", "AMOUNT_POSITIVE": "يجب أن يكون المبلغ رقمًا موجبًا.", "ADD_MODAL": { "TITLE": "إضافة سلفة جديدة" }, "EDIT_MODAL": { "TITLE": "تعديل السلفة" }, "DELETE_CONFIRM_ITEM": "سلفة بقيمة {{amount}} دينار لـ {{name}}" },
-  "SALAIRES": { "AUTOCALCMESSAGE": "يتم حساب الرواتب تلقائياً عند كل تحديث للبيانات المالية", "TITLE": "حساب الرواتب", "CALCULER": "حساب الرواتب", "REVENU_TOTAL": "الإيراد الكلي", "TOTAL_DEPENSES": "مجموع المصاريف", "BENEFICE_NET": "الربح الصافي", "PART_PROPRIETAIRE": "حصة المالك (50%)", "PART_EQUIPAGE": "حصة الطاقم (50%)", "DEDUCTIONS": "الخصومات", "NUITS": "ليالي", "MARINS": "بحارة", "MONTANT_A_PARTAGER": "المبلغ الصافي للمشاركة", "DETAILS_PAR_MARIN": "التفاصيل لكل بحار", "SALAIRE_BASE": "الراتب الأساسي", "PRIME_NUITS": "علاوة الليالي", "SALAIRE_NET": "الراتب الصافي", "DEJA_PAYE": "مدفوع مسبقًا", "RESTE_A_PAYER": "المتبقي للدفع", "PAYER": "دفع", "PAYE": "مدفوع", "ERROR_NO_SORTIE": "الرجاء اختيار رحلة واحدة على الأقل", "ERROR_NO_PARTS": "مجموع حصص البحارة هو 0. الرجاء تحديد الحصص في قسم 'البحارة'.", "CALCUL_SUCCESS_TITLE": "اكتمل الحساب!", "PAYMENT_SUCCESS": "تم تسجيل الدفعة!", "PAYMENT_MODAL_TITLE": "دفعة لـ {{name}}", "PAYMENT_MODAL_LABEL": "المبلغ للدفع (المتبقي: {{amount}} دينار)", "PAYMENT_MODAL": { "ERROR_POSITIVE": "يجب أن يكون المبلغ موجباً.", "ERROR_EXCEED": "لا يمكن أن يتجاوز المبلغ الرصيد المتبقي." }, "TABS": { "OPEN_TRIPS": "الرحلات المفتوحة", "HISTORY": "السجل", "CALCULATED_TRIPS": "الرحلات المحسوبة" }, "NO_OPEN_TRIPS": "لا توجد رحلات منتهية بانتظار الحساب.", "NO_CALCULATED_TRIPS": "لم يتم إجراء أي حسابات رواتب بعد.", "HISTORY": { "MODAL_TITLE": "تفاصيل الحساب لـ : {{destinations}}", "NO_DATA_FOUND_TITLE": "التفاصيل غير موجودة", "NO_DATA_FOUND_TEXT": "لم يتم العثور على تفاصيل هذا الحساب. قد يكون حسابًا قديمًا. هل تريد وضع علامة 'مفتوح' على هذه الرحلة لإعادة حسابها؟", "RECALCULATE_BTN": "إعادة الحساب", "MOVED_FOR_RECALC": "تم نقل الرحلة إلى 'الرحلات المفتوحة' لإعادة حسابها." }, "RESULTS": { "TITLE": "نتائج الحساب", "CLOSE": "إغلاق", "FINANCIAL_SUMMARY": "ملخص مالي", "PROFIT_SHARING": "تقاسم الأرباح" }, "DETAILS_MODAL": { "REVENUE_TITLE": "تفاصيل الإيرادات", "EXPENSE_TITLE": "تفاصيل المصاريف", "INVOICE_NUM": "رقم الفاتورة", "CLIENT": "العميل" } },
-  "SALAIRES_HISTORY": { "CALCULATED_ON": "تم الحساب في" },
-  "VENTES": { "TITLE": "إدارة المبيعات", "ADD_INVOICE": "فاتورة جديدة", "ADD_INVOICE_FOR_TRIP": "إضافة فاتورة لهذه الرحلة", "NO_INVOICES_FOR_TRIP": "لا توجد فواتير مسجلة لهذه الرحلة", "TRIP_TOTAL": "مجموع مبيعات الرحلة", "GENERAL_TOTAL": "المجموع العام للمبيعات", "NO_TRIPS_AVAILABLE": "لا توجد رحلات بحرية متاحة.", "SUCCESS_ADD": "تمت إضافة الفاتورة بنجاح!", "SUCCESS_UPDATE": "تم تعديل الفاتورة بنجاح!", "SUCCESS_DELETE": "تم حذف الفاتورة بنجاح.", "DELETE_CONFIRM_ITEM": "الفاتورة رقم {{number}} ({{amount}} دينار)", "ADD_MODAL": { "TITLE": "فاتورة مبيعات جديدة", "SELECT_TRIP": "اختر رحلة" }, "EDIT_MODAL": { "TITLE": "تعديل الفاتورة" }, "DETAILS_MODAL": { "INVOICE_NUM": "رقم الفاتورة", "CLIENT": "العميل" } },
-  "FORM": { "ADD": "إضافة", "EDIT": "تعديل", "DELETE": "حذف", "CANCEL": "إلغاء", "SAVE": "حفظ", "REQUIRED": "هذا الحقل مطلوب.", "REQUIRED_FIELDS": "الرجاء ملء جميع الحقول المطلوبة.", "INVALID_PHONE": "رقم هاتف غير صالح.", "INVALID_EMAIL": "بريد إلكتروني غير صالح." },
-  "MESSAGES": { "LOADING": "جاري التحميل...", "SAVING": "جاري الحفظ...", "UPDATING": "جاري التعديل...", "DELETING": "جاري الحذف...", "CALCULATING": "جاري الحساب...", "LOADING_DETAILS": "جاري تحميل التفاصيل...", "ADDING_SAILOR": "جاري إضافة البحار...", "SUCCESS": "تمت العملية بنجاح!", "ERROR_TITLE": "خطأ", "WARNING_TITLE": "تنبيه", "ERROR_GENERIC": "حدث خطأ غير متوقع. الرجاء المحاولة مرة أخرى.", "AREYOUSURE": "هل أنت متأكد؟", "CONFIRMDELETEMESSAGE": "أنت على وشك حذف", "IRREVERSIBLE": "هذا الإجراء لا يمكن التراجع عنه.", "SAILOR_ADDED_SUCCESS": "تمت إضافة البحار {{name}} بنجاح." },
-  "LANGUAGE": { "AR": "العربية", "FR": "الفرنسية", "EN": "الإنجليزية" },
-  "COMMON": { "UNKNOWN": "غير معروف", "AMOUNT": "المبلغ", "AMOUNT_D_T": "المبلغ (دينار)", "AMOUNT_IN_TND": "المبلغ بالدينار التونسي", "DATE": "التاريخ", "OK": "موافق", "DESCRIPTION": "الوصف", "DETAILS": "التفاصيل", "DETAILS_OPTIONAL": "الوصف (اختياري)", "VIEW_DETAILS": "عرض التفاصيل" },
-  "MOCK_DATA": { "TITLE": "🎲 مولد البيانات الوهمية", "SUBTITLE": "أنشئ بيانات اختبار كاملة لتطبيقك بسرعة.", "ITEM_1": "✓ 2 مراكب صيد", "ITEM_2": "✓ عدة بحارة بحصص مختلفة", "ITEM_3": "✓ رحلات بحرية متعددة", "ITEM_4": "✓ مصاريف ومبيعات وسلف مرتبطة", "GENERATE_BUTTON": "إنشاء البيانات", "GENERATING_BUTTON": "جاري الإنشاء...", "CONFIRM_TITLE": "هل تريد إنشاء بيانات وهمية؟", "CONFIRM_TEXT": "سيقوم هذا الإجراء أولاً بحذف جميع البيانات الحالية قبل إنشاء سجلات اختبار جديدة.", "CONFIRM_BUTTON": "نعم، أنشئ", "LOADING_TITLE": "جاري الإنشاء...", "LOADING_TEXT": "الرجاء الانتظار أثناء إنشاء البيانات.", "SUCCESS_TITLE": "نجاح!", "SUCCESS_TEXT": "تم إنشاء بيانات الاختبار بنجاح.", "ERROR_TITLE": "خطأ" }
-}
-EOF
+# 6. Modifié: src/app/dashboard/dashboard-routing.module.ts
+cat > /tmp/dashboard-routing.module.ts << 'EOF'
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { TranslateModule } from '@ngx-translate/core';
 
-# 4. src/assets/i18n/en.json
-cat > /tmp/en.json << 'EOF'
-{
-  "FACTURES": {
-    "TITLE": "Invoices",
-    "NOFACTURE": "No invoices recorded for this trip.",
-    "ADD": "Add Invoice"
-  },
-  "AUTH": { "WELCOME": "Welcome", "SIGN_IN": "Please sign in to your account", "SIGNUP": "Fill in the information to sign up", "CREATE_ACCOUNT": "Create an Account", "EMAIL": "Email Address", "PASSWORD": "Password", "LOGIN": "Sign In", "NO_ACCOUNT": "Don't have an account? Sign Up", "HAVE_ACCOUNT": "Already have an account? Sign In" },
-  "DASHBOARD": { "TITLE": "Dashboard", "WELCOME": "Welcome to your dashboard", "ACTIVITIES": "Activities", "RECENT_ACTIVITIES": "Recent Activity", "NO_ACTIVITIES": "No recent activity to display", "TOTAL_BOATS": "Total Boats", "TOTAL_SAILORS": "Total Sailors", "ACTIVE_BOATS": "Active Boats", "MAINTENANCE": "In Maintenance", "BOAT_ADDED": "Boat added", "BOAT_UPDATED": "Boat updated", "SAILOR_ADDED": "Sailor added", "SAILOR_UPDATED": "Sailor updated", "TIME_AGO": { "NOW": "Just now", "MINUTES": "{{minutes}} min ago", "HOURS": "{{hours}}h ago", "DAYS": "{{days}}d ago" } },
-  "MENU": { "HOME": "Home", "BOATS": "Boats", "SORTIES": "Sea Trips", "AVANCES": "Advances", "SALAIRES": "Salaries", "VENTES": "Sales", "MOCK_DATA": "Mock Data", "SELECT_BOAT_FIRST": "Select a boat first to access this section" },
-  "BOATS": { "TITLE": "Boat Management", "BOAT": "Boat", "ADD_BOAT": "Add a Boat", "EDIT_BOAT": "Edit Boat", "DELETE": "Delete", "NAME": "Boat Name", "REGISTRATION": "Registration", "ENGINE_TYPE": "Engine Type", "POWER": "Power (HP)", "LENGTH": "Length (m)", "CAPACITY": "Crew Capacity", "CONSTRUCTION_DATE": "Construction Date", "PORT": "Home Port", "STATUS": "Status", "ACTIVE": "Active", "MAINTENANCE": "Maintenance", "INACTIVE": "Inactive", "NO_BOAT_SELECTED": "No boat is selected", "NO_BOAT_SELECTED_DETAILS": "Please select a boat from the 'Boats' page first.", "CLICK_TO_SELECT": "Click to select one", "SELECTED_BOAT": "Active Boat", "SELECTED": "Selected", "SEARCH": "Search for a boat by name...", "ACTIONS": "Actions", "VIEWCREW": "View Crew", "SELECT_INFO": "Please select a boat from the list to continue.", "CHANGE_SELECTION": "Change Boat", "SUCCESS_ADD": "Boat added successfully.", "SUCCESS_UPDATE": "Boat updated successfully.", "SUCCESS_DELETE": "Boat deleted successfully.", "TOAST_SELECTED": "Boat \"{{boatName}}\" selected.", "TOAST_SELECTION_CLEARED": "Boat selection cleared.", "BOAT_NAME_CONFIRM": "the boat \"{{boatName}}\"" },
-  "SAILORS": { "TITLE": "Sailors", "ADD_SAILOR": "Add Sailor", "ADD_NEW_SAILOR": "Add a New Sailor", "EDIT_SAILOR": "Edit Sailor", "FIRST_NAME": "First Name", "LAST_NAME": "Last Name", "FUNCTION": "Function", "PART": "Share", "SELECT_FUNCTION": "Select a function", "SELECT_SAILOR": "Select a sailor", "PHONE": "Phone", "EMAIL": "Email", "ADDRESS": "Address", "BIRTH_DATE": "Date of Birth", "HIRE_DATE": "Hire Date", "LICENSE_NUMBER": "License Number", "CREW_OF": "Crew of boat", "BACK": "Back", "ON_LEAVE": "On Leave", "SUCCESS_ADD": "Sailor added successfully.", "SUCCESS_UPDATE": "Sailor updated successfully.", "SUCCESS_DELETE": "Sailor deleted successfully.", "CAPITAINE": "Captain", "SECOND": "Second-in-command", "MECANICIEN": "Mechanic", "MATELOT": "Sailor", "PLACEHOLDER": { "LASTNAME": "Enter last name", "FIRSTNAME": "Enter first name", "PHONE": "Phone number" }, "FUNCTION_TYPE": { "CAPITAINE": "Captain", "SECOND": "Second-in-command", "MECANICIEN": "Mechanic", "MATELOT": "Sailor" } },
-  "SORTIES": { "TITLE": "Sea Trips", "ADD": "Add Trip", "EDIT": "Edit Trip", "DETAILSTITLE": "Trip Details", "DESTINATION": "Destination", "DATEDEPART": "Departure Date", "DATERETOUR": "Return Date", "STATUT": "Status", "STATUS": { "EN-COURS": "Ongoing", "TERMINEE": "Completed", "ANNULEE": "Cancelled", "ONGOING": "Ongoing", "COMPLETED": "Completed", "CANCELLED": "Cancelled" }, "GENERALINFO": "General Information", "OBSERVATIONS": "Observations", "MANAGE": "Manage Trip", "NOSORTIES": "No trips recorded for this boat.", "SELECTSORTIES": "Select Sea Trips", "SUCCESS_ADD": "Trip added successfully.", "SUCCESS_UPDATE": "Trip updated successfully.", "SUCCESS_DELETE": "Trip deleted successfully." },
-  "EXPENSES": { "TITLE": "Expenses", "ADD": "Add Expense", "EDIT": "Edit Expense", "TYPE": "Expense Type", "AMOUNT": "Amount", "DATE": "Date", "DESCRIPTION": "Description", "NOEXPENSE": "No expenses recorded for this trip.", "TYPES": { "FUEL": "Fuel", "ICE": "Ice", "OIL_CHANGE": "Oil Change", "CREW_CNSS": "Crew CNSS", "CREW_BONUS": "Crew Bonus", "FOOD": "Food", "VMS": "VMS", "MISC": "Miscellaneous" }, "SUCCESS_ADD": "Expense added successfully", "SUCCESS_UPDATE": "Expense updated successfully" },
-  "POINTAGE": { "TITLE": "Crew Attendance", "CREW": "Manage Attendance", "PRESENT": "Present", "ABSENT": "Absent", "NOCREW": "No sailors are assigned to this boat.", "OBSERVATIONS": "Observations", "ADDOBS": "Add an observation...", "TOTAL": "Total", "SUCCESS_PRESENCE": "Presence recorded", "SUCCESS_ABSENCE": "Absence recorded", "SUCCESS_OBS": "Observations updated", "ERROR_ADD": "Error while saving attendance" },
-  "AVANCES": { "TITLE": "Salary Advances", "ADD": "Add Advance", "EDIT": "Edit Advance", "TOTAL": "Total Advances", "TOTAL_GENERAL": "Grand Total of Advances", "NO_AVANCES": "No advances for this sailor.", "SUCCESS_ADD": "Advance added successfully.", "SUCCESS_UPDATE": "Advance updated successfully.", "SUCCESS_DELETE": "Advance deleted successfully.", "AMOUNT_POSITIVE": "Amount must be a positive number.", "ADD_MODAL": { "TITLE": "Add a new advance" }, "EDIT_MODAL": { "TITLE": "Edit advance" }, "DELETE_CONFIRM_ITEM": "the advance of {{amount}} TND for {{name}}" },
-  "SALAIRES": { "AUTOCALCMESSAGE": "Salary calculation is performed automatically with each financial data update", "TITLE": "Salary Calculation", "CALCULER": "Calculate Salaries", "REVENU_TOTAL": "Total Revenue", "TOTAL_DEPENSES": "Total Expenses", "BENEFICE_NET": "Net Profit", "PART_PROPRIETAIRE": "Owner's Share (50%)", "PART_EQUIPAGE": "Crew's Share (50%)", "DEDUCTIONS": "Deductions", "NUITS": "Nights", "MARINS": "Sailors", "MONTANT_A_PARTAGER": "Net Amount to Share", "DETAILS_PAR_MARIN": "Details per Sailor", "SALAIRE_BASE": "Base Salary", "PRIME_NUITS": "Night Bonus", "SALAIRE_NET": "Net Salary", "DEJA_PAYE": "Already Paid", "RESTE_A_PAYER": "Remaining to be Paid", "PAYER": "Pay", "PAYE": "Paid", "ERROR_NO_SORTIE": "Please select at least one trip", "ERROR_NO_PARTS": "The sum of sailor shares is 0. Please define shares in the 'Sailors' section.", "CALCUL_SUCCESS_TITLE": "Calculation complete!", "PAYMENT_SUCCESS": "Payment recorded!", "PAYMENT_MODAL_TITLE": "Payment for {{name}}", "PAYMENT_MODAL_LABEL": "Amount to pay (Remaining: {{amount}} TND)", "PAYMENT_MODAL": { "ERROR_POSITIVE": "Amount must be positive.", "ERROR_EXCEED": "Amount cannot exceed the remaining balance." }, "TABS": { "OPEN_TRIPS": "Open Trips", "HISTORY": "History", "CALCULATED_TRIPS": "Calculated Trips" }, "NO_OPEN_TRIPS": "No completed trips are pending calculation.", "NO_CALCULATED_TRIPS": "No salary calculations have been performed yet.", "HISTORY": { "MODAL_TITLE": "Calculation Details for: {{destinations}}", "NO_DATA_FOUND_TITLE": "Details Not Found", "NO_DATA_FOUND_TEXT": "Details for this calculation were not found. This might be an old calculation. Do you want to mark this trip as 'open' to recalculate it?", "RECALCULATE_BTN": "Recalculate", "MOVED_FOR_RECALC": "The trip has been moved to the 'Open Trips' tab for recalculation." }, "RESULTS": { "TITLE": "Calculation Results", "CLOSE": "Close", "FINANCIAL_SUMMARY": "Financial Summary", "PROFIT_SHARING": "Profit Sharing" }, "DETAILS_MODAL": { "REVENUE_TITLE": "Revenue Details", "EXPENSE_TITLE": "Expense Details", "INVOICE_NUM": "Invoice No.", "CLIENT": "Client" } },
-  "SALAIRES_HISTORY": { "CALCULATED_ON": "Calculated on" },
-  "VENTES": { "TITLE": "Sales Management", "ADD_INVOICE": "New Invoice", "ADD_INVOICE_FOR_TRIP": "Add an invoice for this trip", "NO_INVOICES_FOR_TRIP": "No invoices recorded for this trip", "TRIP_TOTAL": "Total sales for the trip", "GENERAL_TOTAL": "Grand total of sales", "NO_TRIPS_AVAILABLE": "No sea trips are available.", "SUCCESS_ADD": "Invoice added successfully!", "SUCCESS_UPDATE": "Invoice updated successfully!", "SUCCESS_DELETE": "Invoice deleted successfully.", "DELETE_CONFIRM_ITEM": "invoice {{number}} ({{amount}} TND)", "ADD_MODAL": { "TITLE": "New Sales Invoice", "SELECT_TRIP": "Select a trip" }, "EDIT_MODAL": { "TITLE": "Edit Invoice" }, "DETAILS_MODAL": { "INVOICE_NUM": "Invoice No.", "CLIENT": "Client" } },
-  "FORM": { "ADD": "Add", "EDIT": "Edit", "DELETE": "Delete", "CANCEL": "Cancel", "SAVE": "Save", "REQUIRED": "This field is required.", "REQUIRED_FIELDS": "Please fill in all required fields.", "INVALID_PHONE": "Invalid phone number.", "INVALID_EMAIL": "Invalid email address." },
-  "MESSAGES": { "LOADING": "Loading...", "SAVING": "Saving...", "UPDATING": "Updating...", "DELETING": "Deleting...", "CALCULATING": "Calculating...", "LOADING_DETAILS": "Loading details...", "ADDING_SAILOR": "Adding sailor...", "SUCCESS": "Operation successful!", "ERROR_TITLE": "Error", "WARNING_TITLE": "Warning", "ERROR_GENERIC": "An unexpected error occurred. Please try again.", "AREYOUSURE": "Are you sure?", "CONFIRMDELETEMESSAGE": "You are about to delete", "IRREVERSIBLE": "This action cannot be undone.", "SAILOR_ADDED_SUCCESS": "Sailor {{name}} has been added successfully." },
-  "LANGUAGE": { "AR": "Arabic", "FR": "French", "EN": "English" },
-  "COMMON": { "UNKNOWN": "Unknown", "AMOUNT": "Amount", "AMOUNT_D_T": "Amount (TND)", "AMOUNT_IN_TND": "Amount in Tunisian Dinar", "DATE": "Date", "OK": "OK", "DESCRIPTION": "Description", "DETAILS": "Details", "DETAILS_OPTIONAL": "Description (optional)", "VIEW_DETAILS": "View Details" },
-  "MOCK_DATA": { "TITLE": "🎲 Mock Data Generator", "SUBTITLE": "Quickly create complete test data for your application.", "ITEM_1": "✓ 2 fishing boats", "ITEM_2": "✓ Several sailors with different shares", "ITEM_3": "✓ Multiple sea trips", "ITEM_4": "✓ Associated expenses, sales, and advances", "GENERATE_BUTTON": "Generate Data", "GENERATING_BUTTON": "Generating...", "CONFIRM_TITLE": "Generate mock data?", "CONFIRM_TEXT": "This will first delete all existing data before creating new test records.", "CONFIRM_BUTTON": "Yes, generate", "LOADING_TITLE": "Generating...", "LOADING_TEXT": "Please wait while the data is being created.", "SUCCESS_TITLE": "Success!", "SUCCESS_TEXT": "Mock data has been generated successfully.", "ERROR_TITLE": "Error" }
-}
-EOF
+import { DashboardComponent } from './dashboard.component';
+import { DashboardHomeComponent } from './dashboard-home/dashboard-home.component';
+import { BoatSelectionGuard } from '../guards/boat-selection.guard';
+import { MockDataComponent } from '../mock-data/mock-data.component';
 
-# 5. src/assets/i18n/fr.json
-cat > /tmp/fr.json << 'EOF'
-{
-  "FACTURES": {
-    "TITLE": "Factures",
-    "NOFACTURE": "Aucune facture enregistrée pour cette sortie.",
-    "ADD": "Ajouter une facture"
-  },
-  "AUTH": { "WELCOME": "Bienvenue", "SIGN_IN": "Veuillez vous connecter à votre compte", "SIGNUP": "Remplissez les informations pour vous inscrire", "CREATE_ACCOUNT": "Créer un compte", "EMAIL": "Adresse e-mail", "PASSWORD": "Mot de passe", "LOGIN": "Se connecter", "NO_ACCOUNT": "Vous n'avez pas de compte ? S'inscrire", "HAVE_ACCOUNT": "Vous avez déjà un compte ? Se connecter" },
-  "DASHBOARD": { "TITLE": "Tableau de bord", "WELCOME": "Bienvenue sur votre tableau de bord", "ACTIVITIES": "Activités", "RECENT_ACTIVITIES": "Activité Récente", "NO_ACTIVITIES": "Aucune activité récente à afficher", "TOTAL_BOATS": "Bateaux au total", "TOTAL_SAILORS": "Marins au total", "ACTIVE_BOATS": "Bateaux Actifs", "MAINTENANCE": "En Maintenance", "BOAT_ADDED": "Bateau ajouté", "BOAT_UPDATED": "Bateau mis à jour", "SAILOR_ADDED": "Marin ajouté", "SAILOR_UPDATED": "Marin mis à jour", "TIME_AGO": { "NOW": "À l'instant", "MINUTES": "Il y a {{minutes}} min", "HOURS": "Il y a {{hours}}h", "DAYS": "Il y a {{days}}j" } },
-  "MENU": { "HOME": "Accueil", "BOATS": "Bateaux", "SORTIES": "Sorties en mer", "AVANCES": "Avances", "SALAIRES": "Salaires", "VENTES": "Ventes", "MOCK_DATA": "Données Test", "SELECT_BOAT_FIRST": "Sélectionnez un bateau pour accéder à cette section" },
-  "BOATS": { "TITLE": "Gestion des Bateaux", "BOAT": "Bateau", "ADD_BOAT": "Ajouter un Bateau", "EDIT_BOAT": "Modifier le Bateau", "DELETE": "Supprimer", "NAME": "Nom du bateau", "REGISTRATION": "Immatriculation", "ENGINE_TYPE": "Type de moteur", "POWER": "Puissance (CV)", "LENGTH": "Longueur (m)", "CAPACITY": "Capacité équipage", "CONSTRUCTION_DATE": "Date de construction", "PORT": "Port d'attache", "STATUS": "Statut", "ACTIVE": "Actif", "MAINTENANCE": "Maintenance", "INACTIVE": "Inactif", "NO_BOAT_SELECTED": "Aucun bateau n'est sélectionné", "NO_BOAT_SELECTED_DETAILS": "Veuillez d'abord sélectionner un bateau depuis la page 'Bateaux'.", "CLICK_TO_SELECT": "Cliquez pour en sélectionner un", "SELECTED_BOAT": "Bateau Actif", "SELECTED": "Sélectionné", "SEARCH": "Rechercher un bateau par nom...", "ACTIONS": "Actions", "VIEWCREW": "Voir l'équipage", "SELECT_INFO": "Veuillez sélectionner un bateau dans la liste pour continuer.", "CHANGE_SELECTION": "Changer de bateau", "SUCCESS_ADD": "Bateau ajouté avec succès.", "SUCCESS_UPDATE": "Bateau mis à jour avec succès.", "SUCCESS_DELETE": "Bateau supprimé avec succès.", "TOAST_SELECTED": "Bateau \"{{boatName}}\" sélectionné.", "TOAST_SELECTION_CLEARED": "Sélection du bateau annulée.", "BOAT_NAME_CONFIRM": "le bateau \"{{boatName}}\"" },
-  "SAILORS": { "TITLE": "Marins", "ADD_SAILOR": "Ajouter un Marin", "ADD_NEW_SAILOR": "Ajouter un nouveau marin", "EDIT_SAILOR": "Modifier le Marin", "FIRST_NAME": "Prénom", "LAST_NAME": "Nom", "FUNCTION": "Fonction", "PART": "Part", "SELECT_FUNCTION": "Sélectionner une fonction", "SELECT_SAILOR": "Sélectionner un marin", "PHONE": "Téléphone", "EMAIL": "Email", "ADDRESS": "Adresse", "BIRTH_DATE": "Date de naissance", "HIRE_DATE": "Date d'embauche", "LICENSE_NUMBER": "Numéro de permis", "CREW_OF": "Équipage du bateau", "BACK": "Retour", "ON_LEAVE": "En congé", "SUCCESS_ADD": "Marin ajouté avec succès.", "SUCCESS_UPDATE": "Marin mis à jour avec succès.", "SUCCESS_DELETE": "Marin supprimé avec succès.", "CAPITAINE": "Capitaine", "SECOND": "Second", "MECANICIEN": "Mécanicien", "MATELOT": "Matelot", "PLACEHOLDER": { "LASTNAME": "Entrez le nom", "FIRSTNAME": "Entrez le prénom", "PHONE": "Numéro de téléphone" }, "FUNCTION_TYPE": { "CAPITAINE": "Capitaine", "SECOND": "Second", "MECANICIEN": "Mécanicien", "MATELOT": "Matelot" } },
-  "SORTIES": { "TITLE": "Sorties en mer", "ADD": "Ajouter une Sortie", "EDIT": "Modifier la Sortie", "DETAILSTITLE": "Détails de la Sortie", "DESTINATION": "Destination", "DATEDEPART": "Date de départ", "DATERETOUR": "Date de retour", "STATUT": "Statut", "STATUS": { "EN-COURS": "En cours", "TERMINEE": "Terminée", "ANNULEE": "Annulée", "ONGOING": "En cours", "COMPLETED": "Terminée", "CANCELLED": "Annulée" }, "GENERALINFO": "Informations Générales", "OBSERVATIONS": "Observations", "MANAGE": "Gérer la sortie", "NOSORTIES": "Aucune sortie enregistrée pour ce bateau.", "SELECTSORTIES": "Sélectionner les sorties en mer", "SUCCESS_ADD": "Sortie ajoutée avec succès.", "SUCCESS_UPDATE": "Sortie modifiée avec succès.", "SUCCESS_DELETE": "Sortie supprimée avec succès." },
-  "EXPENSES": { "TITLE": "Dépenses", "ADD": "Ajouter une Dépense", "EDIT": "Modifier la Dépense", "TYPE": "Type de dépense", "AMOUNT": "Montant", "DATE": "Date", "DESCRIPTION": "Description", "NOEXPENSE": "Aucune dépense enregistrée pour cette sortie.", "TYPES": { "FUEL": "Carburant", "ICE": "Glace", "OIL_CHANGE": "Vidange", "CREW_CNSS": "CNSS Équipage", "CREW_BONUS": "Prime Équipage", "FOOD": "Alimentation", "VMS": "VMS", "MISC": "Divers" }, "SUCCESS_ADD": "Dépense ajoutée avec succès", "SUCCESS_UPDATE": "Dépense mise à jour avec succès" },
-  "POINTAGE": { "TITLE": "Pointage de l'Équipage", "CREW": "Gérer le pointage", "PRESENT": "Présent", "ABSENT": "Absent", "NOCREW": "Aucun marin n'est affecté à ce bateau.", "OBSERVATIONS": "Observations", "ADDOBS": "Ajouter une observation...", "TOTAL": "Total", "SUCCESS_PRESENCE": "Présence enregistrée", "SUCCESS_ABSENCE": "Absence enregistrée", "SUCCESS_OBS": "Observations mises à jour", "ERROR_ADD": "Erreur lors de l'enregistrement du pointage" },
-  "AVANCES": { "TITLE": "Avances sur Salaire", "ADD": "Ajouter une Avance", "EDIT": "Modifier l'Avance", "TOTAL": "Total Avances", "TOTAL_GENERAL": "Total Général des Avances", "NO_AVANCES": "Aucune avance pour ce marin.", "SUCCESS_ADD": "Avance ajoutée avec succès.", "SUCCESS_UPDATE": "Avance mise à jour avec succès.", "SUCCESS_DELETE": "Avance supprimée avec succès.", "AMOUNT_POSITIVE": "Le montant doit être un nombre positif.", "ADD_MODAL": { "TITLE": "Ajouter une nouvelle avance" }, "EDIT_MODAL": { "TITLE": "Modifier l'avance" }, "DELETE_CONFIRM_ITEM": "l'avance de {{amount}} DT pour {{name}}" },
-  "SALAIRES": { "AUTOCALCMESSAGE": "Le calcul des salaires se fait automatiquement à chaque mise à jour des données financières", "TITLE": "Calcul des Salaires", "CALCULER": "Calculer les Salaires", "REVENU_TOTAL": "Revenu Total", "TOTAL_DEPENSES": "Total des Dépenses", "BENEFICE_NET": "Bénéfice Net", "PART_PROPRIETAIRE": "Part Propriétaire (50%)", "PART_EQUIPAGE": "Part Équipage (50%)", "DEDUCTIONS": "Déductions", "NUITS": "Nuits", "MARINS": "Marins", "MONTANT_A_PARTAGER": "Montant Net à Partager", "DETAILS_PAR_MARIN": "Détails par Marin", "SALAIRE_BASE": "Salaire de Base", "PRIME_NUITS": "Prime de Nuits", "SALAIRE_NET": "Salaire Net", "DEJA_PAYE": "Déjà Payé", "RESTE_A_PAYER": "Reste à Payer", "PAYER": "Payer", "PAYE": "Payé", "ERROR_NO_SORTIE": "Veuillez sélectionner au moins une sortie", "ERROR_NO_PARTS": "La somme des parts des marins est de 0. Veuillez définir les parts dans la section 'Marins'.", "CALCUL_SUCCESS_TITLE": "Calcul terminé !", "PAYMENT_SUCCESS": "Paiement enregistré!", "PAYMENT_MODAL_TITLE": "Paiement pour {{name}}", "PAYMENT_MODAL_LABEL": "Montant à payer (Reste: {{amount}} DT)", "PAYMENT_MODAL": { "ERROR_POSITIVE": "Le montant doit être positif.", "ERROR_EXCEED": "Le montant ne peut pas dépasser le reste à payer." }, "TABS": { "OPEN_TRIPS": "Voyages Ouverts", "HISTORY": "Historique", "CALCULATED_TRIPS": "Voyages Calculés" }, "NO_OPEN_TRIPS": "Aucun voyage terminé n'est en attente de calcul.", "NO_CALCULATED_TRIPS": "Aucun calcul de salaire n'a encore été effectué.", "HISTORY": { "MODAL_TITLE": "Détails du Calcul pour : {{destinations}}", "NO_DATA_FOUND_TITLE": "Détails non trouvés", "NO_DATA_FOUND_TEXT": "Les détails pour ce calcul n'ont pas été trouvés. Il s'agit peut-être d'un ancien calcul. Voulez-vous marquer ce voyage comme 'ouvert' pour le recalculer ?", "RECALCULATE_BTN": "Recalculer", "MOVED_FOR_RECALC": "Le voyage a été déplacé vers l'onglet 'Voyages Ouverts'." }, "RESULTS": { "TITLE": "Résultats du Calcul", "CLOSE": "Fermer", "FINANCIAL_SUMMARY": "Résumé Financier", "PROFIT_SHARING": "Partage des Bénéfices" }, "DETAILS_MODAL": { "REVENUE_TITLE": "Détails des Revenus", "EXPENSE_TITLE": "Détails des Dépenses", "INVOICE_NUM": "N° Facture", "CLIENT": "Client" } },
-  "SALAIRES_HISTORY": { "CALCULATED_ON": "Calculé le" },
-  "VENTES": { "TITLE": "Gestion des Ventes", "ADD_INVOICE": "Nouvelle Facture", "ADD_INVOICE_FOR_TRIP": "Ajouter une facture pour cette sortie", "NO_INVOICES_FOR_TRIP": "Aucune facture enregistrée pour cette sortie", "TRIP_TOTAL": "Total des ventes pour la sortie", "GENERAL_TOTAL": "Total général des ventes", "NO_TRIPS_AVAILABLE": "Aucune sortie en mer n'est disponible.", "SUCCESS_ADD": "Facture ajoutée avec succès !", "SUCCESS_UPDATE": "Facture modifiée avec succès !", "SUCCESS_DELETE": "Facture supprimée avec succès.", "DELETE_CONFIRM_ITEM": "la facture {{number}} ({{amount}} DT)", "ADD_MODAL": { "TITLE": "Nouvelle Facture de Vente", "SELECT_TRIP": "Sélectionner une sortie" }, "EDIT_MODAL": { "TITLE": "Modifier la Facture" }, "DETAILS_MODAL": { "INVOICE_NUM": "N° Facture", "CLIENT": "Client" } },
-  "FORM": { "ADD": "Ajouter", "EDIT": "Modifier", "DELETE": "Supprimer", "CANCEL": "Annuler", "SAVE": "Enregistrer", "REQUIRED": "Ce champ est requis.", "REQUIRED_FIELDS": "Veuillez remplir tous les champs obligatoires.", "INVALID_PHONE": "Numéro de téléphone invalide.", "INVALID_EMAIL": "Adresse e-mail invalide." },
-  "MESSAGES": { "LOADING": "Chargement...", "SAVING": "Enregistrement...", "UPDATING": "Modification...", "DELETING": "Suppression...", "CALCULATING": "Calcul en cours...", "LOADING_DETAILS": "Chargement des détails...", "ADDING_SAILOR": "Ajout du marin...", "SUCCESS": "Opération réussie !", "ERROR_TITLE": "Erreur", "WARNING_TITLE": "Attention", "ERROR_GENERIC": "Une erreur inattendue est survenue. Veuillez réessayer.", "AREYOUSURE": "Êtes-vous sûr ?", "CONFIRMDELETEMESSAGE": "Vous êtes sur le point de supprimer", "IRREVERSIBLE": "Cette action est irréversible.", "SAILOR_ADDED_SUCCESS": "Le marin {{name}} a été ajouté avec succès." },
-  "LANGUAGE": { "AR": "Arabe", "FR": "Français", "EN": "Anglais" },
-  "COMMON": { "UNKNOWN": "Inconnu", "AMOUNT": "Montant", "AMOUNT_D_T": "Montant (DT)", "AMOUNT_IN_TND": "Montant en dinars tunisiens", "DATE": "Date", "OK": "OK", "DESCRIPTION": "Description", "DETAILS": "Détails", "DETAILS_OPTIONAL": "Description (optionnel)", "VIEW_DETAILS": "Voir Détails" },
-  "MOCK_DATA": { "TITLE": "🎲 Générateur de Données Fictives", "SUBTITLE": "Créez rapidement des données de test complètes pour votre application.", "ITEM_1": "✓ 2 bateaux de pêche", "ITEM_2": "✓ Plusieurs marins avec des parts différentes", "ITEM_3": "✓ Des sorties en mer multiples", "ITEM_4": "✓ Dépenses, ventes et avances associées", "GENERATE_BUTTON": "Générer les Données", "GENERATING_BUTTON": "Génération en cours...", "CONFIRM_TITLE": "Générer des données fictives ?", "CONFIRM_TEXT": "Cela va d'abord supprimer toutes les données existantes avant de créer de nouveaux enregistrements de test.", "CONFIRM_BUTTON": "Oui, générer", "LOADING_TITLE": "Génération en cours...", "LOADING_TEXT": "Veuillez patienter pendant la création des données.", "SUCCESS_TITLE": "Succès !", "SUCCESS_TEXT": "Les données de test ont été générées avec succès.", "ERROR_TITLE": "Erreur" }
-}
+// Importer le nouveau composant de formulaire
+import { AvanceFormComponent } from '../avances/avance-form.component';
+import { AvancesComponent } from '../avances/avances.component'; // Importer aussi le composant liste
+
+const routes: Routes = [
+  {
+    path: '',
+    component: DashboardComponent,
+    children: [
+      { path: '', component: DashboardHomeComponent },
+      {
+        path: 'bateaux',
+        loadChildren: () => import('../bateaux/bateaux.module').then(m => m.BateauxModule)
+      },
+      {
+        path: 'sorties',
+        loadChildren: () => import('../sorties/sorties.module').then(m => m.SortiesModule),
+        canActivate: [BoatSelectionGuard]
+      },
+      {
+        path: 'ventes',
+        loadComponent: () => import('../ventes/ventes-list.component').then(m => m.VentesListComponent),
+        canActivate: [BoatSelectionGuard]
+      },
+      // Routes pour les avances (utilisant maintenant le composant formulaire standalone)
+      {
+        path: 'avances',
+        canActivate: [BoatSelectionGuard],
+        children: [
+           { path: '', component: AvancesComponent }, // La liste reste standalone
+           { path: 'add', component: AvanceFormComponent }, // Formulaire ajout (standalone)
+           { path: 'edit/:id', component: AvanceFormComponent } // Formulaire modif (standalone)
+        ]
+      },
+      {
+        path: 'salaires',
+        loadComponent: () => import('../salaires/salaires-list.component').then(m => m.SalairesListComponent),
+        canActivate: [BoatSelectionGuard]
+      },
+      { path: 'mock-data', component: MockDataComponent },
+
+      { path: '', redirectTo: '', pathMatch: 'full' }
+    ]
+  }
+];
+
+@NgModule({
+  imports: [
+    CommonModule,
+    RouterModule.forChild(routes),
+    TranslateModule,
+    // Les composants Standalone chargés via loadComponent ou utilisés directement dans le routing
+    // sont automatiquement importés par Angular si nécessaire, pas besoin de les déclarer ici.
+    // AvancesComponent et AvanceFormComponent sont standalone.
+  ],
+  exports: [RouterModule]
+})
+export class DashboardRoutingModule { }
 EOF
 
 # --- Application des modifications ---
 
-echo "Début de l'application des modifications (v8 - CSS Amélioré)..."
+echo "Début de l'application des modifications (v8 - Refonte Formulaire Avance)..."
 
-replace_file "$SRC_DIR/app/avances/avances.component.ts" "/tmp/avances.component.ts"
-replace_file "$SRC_DIR/app/avances/avances.component.scss" "/tmp/avances.component.scss"
-# Les fichiers i18n restent inchangés par rapport à v5
-echo "Mise à jour des fichiers i18n ignorée (déjà à jour)."
-# replace_file "$SRC_DIR/assets/i18n/ar.json" "/tmp/ar.json"
-# replace_file "$SRC_DIR/assets/i18n/en.json" "/tmp/en.json"
-# replace_file "$SRC_DIR/assets/i18n/fr.json" "/tmp/fr.json"
+# Créer les nouveaux fichiers
+replace_file "$AVANCES_DIR/avance-form.component.ts" "/tmp/avance-form.component.ts"
+replace_file "$AVANCES_DIR/avance-form.component.html" "/tmp/avance-form.component.html"
+replace_file "$AVANCES_DIR/avance-form.component.scss" "/tmp/avance-form.component.scss"
+
+# Mettre à jour les fichiers existants
+replace_file "$AVANCES_DIR/avances.component.ts" "/tmp/avances.component.ts"
+replace_file "$AVANCES_DIR/avances.component.html" "/tmp/avances.component.html"
+replace_file "$DASHBOARD_DIR/dashboard-routing.module.ts" "/tmp/dashboard-routing.module.ts"
+
 
 # Nettoyage des fichiers temporaires
+rm /tmp/avance-form.component.ts
+rm /tmp/avance-form.component.html
+rm /tmp/avance-form.component.scss
 rm /tmp/avances.component.ts
-rm /tmp/avances.component.scss
-# rm /tmp/ar.json
-# rm /tmp/en.json
-# rm /tmp/fr.json
+rm /tmp/avances.component.html
+rm /tmp/dashboard-routing.module.ts
+
 
 echo "----------------------------------------"
-echo "✅ Modifications (v8 - CSS Amélioré) appliquées avec succès !"
-echo "Le popup utilise des styles CSS dédiés améliorés."
-echo "Les sauvegardes des fichiers originaux ont été créées avec le suffixe .bak_$TIMESTAMP"
-echo "N'oubliez pas de redémarrer 'ng serve' si nécessaire."
+echo "✅ Modifications (v8 - Refonte Formulaire Avance) appliquées avec succès !"
+echo "Le formulaire d'avance est maintenant une page dédiée avec un style amélioré."
+echo "Les sauvegardes des fichiers modifiés ont été créées avec le suffixe .bak_$TIMESTAMP"
+echo "N'oubliez pas de redémarrer 'ng serve' pour voir les changements."
 echo "----------------------------------------"
 
 exit 0
-

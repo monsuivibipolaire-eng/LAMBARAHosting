@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router'; // Import Router
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import Swal from 'sweetalert2';
 import { AvanceService } from '../services/avance.service';
@@ -17,7 +17,7 @@ import { combineLatest } from 'rxjs';
   standalone: true,
   imports: [CommonModule, TranslateModule, RouterModule],
   templateUrl: './avances.component.html',
-  styleUrls: ['./avances.component.scss'] // Garder le lien SCSS
+  styleUrls: ['./avances.component.scss']
 })
 export class AvancesComponent implements OnInit {
   selectedBoat: Bateau | null = null;
@@ -30,7 +30,8 @@ export class AvancesComponent implements OnInit {
     private marinService: MarinService,
     private selectedBoatService: SelectedBoatService,
     private alertService: AlertService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private router: Router // Inject Router for navigation
   ) {}
 
   ngOnInit(): void {
@@ -92,7 +93,7 @@ export class AvancesComponent implements OnInit {
     return '';
   }
 
-  formatDisplayDate(date: any): string {
+   formatDisplayDate(date: any): string {
     let dateObj: Date;
     if (date?.toDate) {
       dateObj = date.toDate();
@@ -113,224 +114,36 @@ export class AvancesComponent implements OnInit {
     return `${day}/${month}/${year}`;
   }
 
-  async addAvance(): Promise<void> {
-    if (!this.selectedBoat) return;
-
-    const marinsOptions = this.marins.reduce((acc, marin) => {
-      const fonction = this.translate.instant('SAILORS.FUNCTION_TYPE.' + marin.fonction.toUpperCase());
-      acc[marin.id!] = `${marin.prenom} ${marin.nom} - ${fonction}`;
-      return acc;
-    }, {} as { [key: string]: string });
-
-    const t = {
-      title: this.translate.instant('AVANCES.ADD_MODAL.TITLE'),
-      sailor: this.translate.instant('SAILORS.TITLE'),
-      selectSailor: this.translate.instant('SAILORS.SELECT_SAILOR'),
-      amount: this.translate.instant('COMMON.AMOUNT_D_T'),
-      amountPlaceholder: this.translate.instant('COMMON.AMOUNT_IN_TND'),
-      date: this.translate.instant('COMMON.DATE'),
-      description: this.translate.instant('COMMON.DESCRIPTION'),
-      descriptionPlaceholder: this.translate.instant('COMMON.DESCRIPTION_OPTIONAL'),
-      add: this.translate.instant('FORM.ADD'),
-      cancel: this.translate.instant('FORM.CANCEL'),
-      requiredFields: this.translate.instant('FORM.REQUIRED_FIELDS'),
-      amountPositive: this.translate.instant('AVANCES.AMOUNT_POSITIVE')
-    };
-
-    const textDirection = document.body.classList.contains('rtl') ? 'rtl' : 'ltr';
-
-    const { value: formValues } = await Swal.fire({
-      title: `<div class="swal-custom-title">${t.title}</div>`,
-      html: `
-        <div class="swal-custom-form" dir="${textDirection}">
-          <div class="swal-form-group">
-            <label class="swal-form-label" for="swal-marin">${t.sailor} <span class="required-star">*</span></label>
-            <select id="swal-marin" class="swal-custom-select">
-              <option value="">${t.selectSailor}</option>
-              ${Object.keys(marinsOptions).map(id => `<option value="${id}">${marinsOptions[id]}</option>`).join('')}
-            </select>
-          </div>
-          <div class="swal-form-group">
-            <label class="swal-form-label" for="swal-montant">${t.amount} <span class="required-star">*</span></label>
-            <input id="swal-montant" type="number" class="swal-custom-input" placeholder="0.00" step="0.01" min="0" autocomplete="off" />
-            <div class="swal-input-helper">${t.amountPlaceholder}</div>
-          </div>
-          <div class="swal-form-group">
-            <label class="swal-form-label" for="swal-date">${t.date} <span class="required-star">*</span></label>
-            <input id="swal-date" type="date" class="swal-custom-input" value="${this.getTodayDate()}" />
-          </div>
-          <div class="swal-form-group">
-            <label class="swal-form-label" for="swal-description">${t.description}</label>
-            <textarea id="swal-description" class="swal-custom-textarea" placeholder="${t.descriptionPlaceholder}"></textarea>
-          </div>
-        </div>
-      `,
-      focusConfirm: false,
-      showCancelButton: true,
-      confirmButtonText: t.add,
-      cancelButtonText: t.cancel,
-      confirmButtonColor: '#10b981',
-      cancelButtonColor: '#6b7280',
-      width: '600px', // Largeur fixe
-      customClass: {
-        popup: 'swal-custom-styles', // Classe principale pour CSS
-        title: 'swal-ignore-styles',
-        htmlContainer: 'swal-ignore-styles',
-        confirmButton: 'swal-custom-button swal-custom-confirm-button', // Boutons stylisés par CSS
-        cancelButton: 'swal-custom-button swal-custom-cancel-button'
-      },
-       didOpen: () => {
-         const form = document.querySelector('.swal-custom-form') as HTMLElement;
-         if (form) {
-            form.dir = textDirection; // Appliquer dir dynamiquement
-         }
-       },
-      preConfirm: () => {
-        // Validation reste la même
-        const marinId = (document.getElementById('swal-marin') as HTMLSelectElement).value;
-        const montantStr = (document.getElementById('swal-montant') as HTMLInputElement).value;
-        const date = (document.getElementById('swal-date') as HTMLInputElement).value;
-        const montant = parseFloat(montantStr);
-
-        if (!marinId || !montantStr || !date) {
-          Swal.showValidationMessage(t.requiredFields);
-          return false;
-        }
-        if (isNaN(montant) || montant <= 0) {
-          Swal.showValidationMessage(t.amountPositive);
-          return false;
-        }
-        return { marinId, montant, date, description: (document.getElementById('swal-description') as HTMLTextAreaElement).value };
-      }
-    });
-
-    if (formValues) {
-      // Logique d'ajout reste la même
-      try {
-        this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
-        const newAvance: Omit<Avance, 'id'> = {
-          marinId: formValues.marinId,
-          bateauId: this.selectedBoat!.id!,
-          montant: formValues.montant,
-          dateAvance: new Date(formValues.date),
-          createdAt: new Date(),
-          calculSalaireId: undefined // CORRECTION : undefined au lieu de null
-        };
-        if (formValues.description && formValues.description.trim() !== '') {
-          newAvance.description = formValues.description.trim();
-        }
-        await this.avanceService.addAvance(newAvance);
-        this.alertService.success(this.translate.instant('AVANCES.SUCCESS_ADD'));
-      } catch (error) {
-        console.error("Erreur ajout avance:", error);
-        this.alertService.error();
-      }
-    }
+  // Navigate to Add Form
+  navigateToAddAvance(): void {
+    this.router.navigate(['/dashboard/avances/add']);
   }
 
-
-  async editAvance(avance: Avance): Promise<void> {
-    const t = {
-      title: this.translate.instant('AVANCES.EDIT_MODAL.TITLE'),
-      amount: this.translate.instant('COMMON.AMOUNT_D_T'),
-      date: this.translate.instant('COMMON.DATE'),
-      description: this.translate.instant('COMMON.DESCRIPTION'),
-      descriptionPlaceholder: this.translate.instant('COMMON.DESCRIPTION_OPTIONAL'),
-      edit: this.translate.instant('FORM.EDIT'),
-      cancel: this.translate.instant('FORM.CANCEL'),
-      amountPositive: this.translate.instant('AVANCES.AMOUNT_POSITIVE'),
-      requiredFields: this.translate.instant('FORM.REQUIRED_FIELDS')
-    };
-
-    const textDirection = document.body.classList.contains('rtl') ? 'rtl' : 'ltr';
-
-    const { value: formValues } = await Swal.fire({
-      title: `<div class="swal-custom-title">${t.title}</div>`,
-      html: `
-        <div class="swal-custom-form" dir="${textDirection}">
-           <div class="swal-form-group">
-            <label class="swal-form-label" for="swal-montant">${t.amount} <span class="required-star">*</span></label>
-            <input id="swal-montant" type="number" class="swal-custom-input" value="${avance.montant}" step="0.01" min="0">
-          </div>
-          <div class="swal-form-group">
-            <label class="swal-form-label" for="swal-date">${t.date} <span class="required-star">*</span></label>
-            <input id="swal-date" type="date" class="swal-custom-input" value="${this.formatDate(avance.dateAvance)}">
-          </div>
-          <div class="swal-form-group">
-            <label class="swal-form-label" for="swal-description">${t.description}</label>
-            <textarea id="swal-description" class="swal-custom-textarea" placeholder="${t.descriptionPlaceholder}">${avance.description || ''}</textarea>
-          </div>
-        </div>`,
-      focusConfirm: false,
-      showCancelButton: true,
-      confirmButtonText: t.edit,
-      cancelButtonText: t.cancel,
-      confirmButtonColor: '#f59e0b', // Couleur orange
-      cancelButtonColor: '#6b7280',
-      width: '600px',
-      customClass: {
-        popup: 'swal-custom-styles',
-        title: 'swal-ignore-styles',
-        htmlContainer: 'swal-ignore-styles',
-        confirmButton: 'swal-custom-button swal-custom-confirm-button', // Utilise les styles CSS
-        cancelButton: 'swal-custom-button swal-custom-cancel-button'
-      },
-       didOpen: () => {
-         const form = document.querySelector('.swal-custom-form') as HTMLElement;
-         if (form) {
-            form.dir = textDirection;
-         }
-       },
-      preConfirm: () => {
-        // Validation reste la même
-        const montantStr = (document.getElementById('swal-montant') as HTMLInputElement).value;
-        const date = (document.getElementById('swal-date') as HTMLInputElement).value;
-        const montant = parseFloat(montantStr);
-
-        if (!montantStr || !date) {
-            Swal.showValidationMessage(t.requiredFields);
-            return false;
-        }
-        if (isNaN(montant) || montant <= 0) {
-            Swal.showValidationMessage(t.amountPositive);
-            return false;
-        }
-        return { montant, date, description: (document.getElementById('swal-description') as HTMLTextAreaElement).value };
-      }
-    });
-
-    if (formValues) {
-      // Logique de modification reste la même
-      try {
-        this.alertService.loading(this.translate.instant('MESSAGES.UPDATING'));
-        const updateData: Partial<Avance> = {
-          montant: formValues.montant,
-          dateAvance: new Date(formValues.date)
-        };
-        updateData.description = (formValues.description && formValues.description.trim() !== '') ? formValues.description.trim() : '';
-
-        await this.avanceService.updateAvance(avance.id!, updateData);
-        this.alertService.success(this.translate.instant('AVANCES.SUCCESS_UPDATE'));
-      } catch (error) {
-        console.error('Erreur modif avance:', error);
-        this.alertService.error();
-      }
-    }
+  // Navigate to Edit Form
+  navigateToEditAvance(avanceId: string): void {
+     if (!avanceId) return;
+    this.router.navigate(['/dashboard/avances/edit', avanceId]);
   }
 
+  // Delete Avance (Confirmation handled by alertService)
   async deleteAvance(avance: Avance): Promise<void> {
-    // Logique de suppression reste la même
+    if (!avance || !avance.id) return; // Guard clause
+
     const marinName = this.getMarinName(avance.marinId);
     const itemName = this.translate.instant('AVANCES.DELETE_CONFIRM_ITEM', { amount: avance.montant, name: marinName });
     const confirmed = await this.alertService.confirmDelete(itemName);
+
     if (confirmed) {
       try {
         this.alertService.loading(this.translate.instant('MESSAGES.DELETING'));
-        await this.avanceService.deleteAvance(avance.id!);
+        await this.avanceService.deleteAvance(avance.id);
+        // Data reloads automatically via Firestore listener, no need to manually remove
         this.alertService.toast(this.translate.instant('AVANCES.SUCCESS_DELETE'));
       } catch (error) {
-        console.error('Erreur suppression avance:', error);
-        this.alertService.error();
+        console.error('Erreur lors de la suppression:', error);
+        this.alertService.error(); // Show generic error message
+      } finally {
+         this.alertService.close(); // Ensure loading indicator closes
       }
     }
   }
