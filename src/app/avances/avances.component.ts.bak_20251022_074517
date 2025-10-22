@@ -17,7 +17,7 @@ import { combineLatest } from 'rxjs';
   standalone: true,
   imports: [CommonModule, TranslateModule, RouterModule],
   templateUrl: './avances.component.html',
-  styleUrls: ['./avances.component.scss'] // Garder le lien SCSS
+  styleUrls: ['./avances.component.scss'] // Assurez-vous que le SCSS est lié
 })
 export class AvancesComponent implements OnInit {
   selectedBoat: Bateau | null = null;
@@ -48,10 +48,13 @@ export class AvancesComponent implements OnInit {
     this.loading = true;
     combineLatest([
       this.marinService.getMarinsByBateau(this.selectedBoat.id!),
+      // ✅ On récupère toujours les avances NON réglées
       this.avanceService.getUnsettledAvancesByBateau(this.selectedBoat.id!)
     ]).subscribe(([marins, avances]) => {
       this.marins = marins;
+      // Trier les marins par nom pour l'affichage
       this.marins.sort((a, b) => a.nom.localeCompare(b.nom));
+      // Trier les avances par date (plus récentes en premier) pour chaque marin
       this.avances = avances.sort((a, b) => {
         const dateA = a.dateAvance instanceof Date ? a.dateAvance : (a.dateAvance as any)?.toDate();
         const dateB = b.dateAvance instanceof Date ? b.dateAvance : (b.dateAvance as any)?.toDate();
@@ -104,6 +107,7 @@ export class AvancesComponent implements OnInit {
      else {
       return '';
     }
+    // Vérifier si la date est valide
     if (isNaN(dateObj.getTime())) {
         return '';
     }
@@ -113,15 +117,19 @@ export class AvancesComponent implements OnInit {
     return `${day}/${month}/${year}`;
   }
 
+
+  // ✅ AMÉLIORATION: Méthode entièrement revue pour un meilleur design et traductions
   async addAvance(): Promise<void> {
     if (!this.selectedBoat) return;
 
     const marinsOptions = this.marins.reduce((acc, marin) => {
+      // La traduction est maintenant correcte grâce aux clés ajoutées
       const fonction = this.translate.instant('SAILORS.FUNCTION_TYPE.' + marin.fonction.toUpperCase());
       acc[marin.id!] = `${marin.prenom} ${marin.nom} - ${fonction}`;
       return acc;
     }, {} as { [key: string]: string });
 
+    // Objet pour regrouper les traductions nécessaires
     const t = {
       title: this.translate.instant('AVANCES.ADD_MODAL.TITLE'),
       sailor: this.translate.instant('SAILORS.TITLE'),
@@ -130,38 +138,40 @@ export class AvancesComponent implements OnInit {
       amountPlaceholder: this.translate.instant('COMMON.AMOUNT_IN_TND'),
       date: this.translate.instant('COMMON.DATE'),
       description: this.translate.instant('COMMON.DESCRIPTION'),
-      descriptionPlaceholder: "",
+      descriptionPlaceholder: this.translate.instant('COMMON.DESCRIPTION_OPTIONAL'),
       add: this.translate.instant('FORM.ADD'),
       cancel: this.translate.instant('FORM.CANCEL'),
       requiredFields: this.translate.instant('FORM.REQUIRED_FIELDS'),
       amountPositive: this.translate.instant('AVANCES.AMOUNT_POSITIVE')
     };
 
-    const textDirection = document.body.classList.contains('rtl') ? 'rtl' : 'ltr';
-
     const { value: formValues } = await Swal.fire({
-      title: `<div class="swal-custom-title">${t.title}</div>`,
+      title: `<div style="text-align: center;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: #1f2937; margin-bottom: 0.5rem;">
+                  ${t.title}
+                </div>
+              </div>`,
       html: `
-        <div class="swal-custom-form" dir="${textDirection}">
-          <div class="swal-form-group">
-            <label class="swal-form-label" for="swal-marin">${t.sailor} <span class="required-star">*</span></label>
-            <select id="swal-marin" class="swal-custom-select">
+        <div class="swal-custom-form">
+          <div class="form-group">
+            <label class="form-label">${t.sailor} <span class="required-star">*</span></label>
+            <select id="swal-marin" class="custom-select">
               <option value="">${t.selectSailor}</option>
               ${Object.keys(marinsOptions).map(id => `<option value="${id}">${marinsOptions[id]}</option>`).join('')}
             </select>
           </div>
-          <div class="swal-form-group">
-            <label class="swal-form-label" for="swal-montant">${t.amount} <span class="required-star">*</span></label>
-            <input id="swal-montant" type="number" class="swal-custom-input" placeholder="0.00" step="0.01" min="0" autocomplete="off" />
-            <div class="swal-input-helper">${t.amountPlaceholder}</div>
+          <div class="form-group">
+            <label class="form-label">${t.amount} <span class="required-star">*</span></label>
+            <input id="swal-montant" type="number" class="custom-input" placeholder="0.00" step="0.01" min="0" autocomplete="off" />
+            <div class="input-helper">${t.amountPlaceholder}</div>
           </div>
-          <div class="swal-form-group">
-            <label class="swal-form-label" for="swal-date">${t.date} <span class="required-star">*</span></label>
-            <input id="swal-date" type="date" class="swal-custom-input" value="${this.getTodayDate()}" />
+          <div class="form-group">
+            <label class="form-label">${t.date} <span class="required-star">*</span></label>
+            <input id="swal-date" type="date" class="custom-input" value="${this.getTodayDate()}" />
           </div>
-          <div class="swal-form-group">
-            <label class="swal-form-label" for="swal-description">${t.description}</label>
-            <textarea id="swal-description" class="swal-custom-textarea" placeholder="${t.descriptionPlaceholder}"></textarea>
+          <div class="form-group">
+            <label class="form-label">${t.description}</label>
+            <textarea id="swal-description" class="custom-textarea" placeholder="${t.descriptionPlaceholder}"></textarea>
           </div>
         </div>
       `,
@@ -169,24 +179,12 @@ export class AvancesComponent implements OnInit {
       showCancelButton: true,
       confirmButtonText: t.add,
       cancelButtonText: t.cancel,
-      confirmButtonColor: '#10b981',
-      cancelButtonColor: '#6b7280',
-      width: '600px', // Largeur fixe
+      confirmButtonColor: '#10b981', // Vert pour ajouter
+      cancelButtonColor: '#6b7280', // Gris pour annuler
       customClass: {
-        popup: 'swal-custom-styles', // Classe principale pour CSS
-        title: 'swal-ignore-styles',
-        htmlContainer: 'swal-ignore-styles',
-        confirmButton: 'swal-custom-button swal-custom-confirm-button', // Boutons stylisés par CSS
-        cancelButton: 'swal-custom-button swal-custom-cancel-button'
+        popup: 'swal-wide-popup' // Classe pour potentiellement élargir le popup si besoin
       },
-       didOpen: () => {
-         const form = document.querySelector('.swal-custom-form') as HTMLElement;
-         if (form) {
-            form.dir = textDirection; // Appliquer dir dynamiquement
-         }
-       },
       preConfirm: () => {
-        // Validation reste la même
         const marinId = (document.getElementById('swal-marin') as HTMLSelectElement).value;
         const montantStr = (document.getElementById('swal-montant') as HTMLInputElement).value;
         const date = (document.getElementById('swal-date') as HTMLInputElement).value;
@@ -200,12 +198,16 @@ export class AvancesComponent implements OnInit {
           Swal.showValidationMessage(t.amountPositive);
           return false;
         }
-        return { marinId, montant, date, description: (document.getElementById('swal-description') as HTMLTextAreaElement).value };
+        return {
+          marinId,
+          montant,
+          date,
+          description: (document.getElementById('swal-description') as HTMLTextAreaElement).value
+        };
       }
     });
 
     if (formValues) {
-      // Logique d'ajout reste la même
       try {
         this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
         const newAvance: Omit<Avance, 'id'> = {
@@ -214,16 +216,18 @@ export class AvancesComponent implements OnInit {
           montant: formValues.montant,
           dateAvance: new Date(formValues.date),
           createdAt: new Date(),
-          calculSalaireId: undefined
+          calculSalaireId: undefined // CORRECTION: Utiliser undefined au lieu de null
         };
+        // Ajouter la description seulement si elle n'est pas vide
         if (formValues.description && formValues.description.trim() !== '') {
           newAvance.description = formValues.description.trim();
         }
         await this.avanceService.addAvance(newAvance);
+        // Pas besoin de recharger ici, le listener s'en charge
         this.alertService.success(this.translate.instant('AVANCES.SUCCESS_ADD'));
       } catch (error) {
-        console.error("Erreur ajout avance:", error);
-        this.alertService.error();
+        console.error("Erreur lors de l'ajout de l'avance:", error);
+        this.alertService.error(); // Message d'erreur générique
       }
     }
   }
@@ -235,54 +239,43 @@ export class AvancesComponent implements OnInit {
       amount: this.translate.instant('COMMON.AMOUNT_D_T'),
       date: this.translate.instant('COMMON.DATE'),
       description: this.translate.instant('COMMON.DESCRIPTION'),
-      descriptionPlaceholder: "",
       edit: this.translate.instant('FORM.EDIT'),
       cancel: this.translate.instant('FORM.CANCEL'),
       amountPositive: this.translate.instant('AVANCES.AMOUNT_POSITIVE'),
       requiredFields: this.translate.instant('FORM.REQUIRED_FIELDS')
     };
 
-    const textDirection = document.body.classList.contains('rtl') ? 'rtl' : 'ltr';
-
     const { value: formValues } = await Swal.fire({
-      title: `<div class="swal-custom-title">${t.title}</div>`,
+      title: `<div style="text-align: center;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: #1f2937; margin-bottom: 0.5rem;">
+                  ${t.title}
+                </div>
+              </div>`,
       html: `
-        <div class="swal-custom-form" dir="${textDirection}">
-           <div class="swal-form-group">
-            <label class="swal-form-label" for="swal-montant">${t.amount} <span class="required-star">*</span></label>
-            <input id="swal-montant" type="number" class="swal-custom-input" value="${avance.montant}" step="0.01" min="0">
+        <div class="swal-custom-form">
+          <div class="form-group">
+            <label class="form-label">${t.amount} <span class="required-star">*</span></label>
+            <input id="swal-montant" type="number" class="custom-input" value="${avance.montant}" step="0.01" min="0">
           </div>
-          <div class="swal-form-group">
-            <label class="swal-form-label" for="swal-date">${t.date} <span class="required-star">*</span></label>
-            <input id="swal-date" type="date" class="swal-custom-input" value="${this.formatDate(avance.dateAvance)}">
+          <div class="form-group">
+            <label class="form-label">${t.date} <span class="required-star">*</span></label>
+            <input id="swal-date" type="date" class="custom-input" value="${this.formatDate(avance.dateAvance)}">
           </div>
-          <div class="swal-form-group">
-            <label class="swal-form-label" for="swal-description">${t.description}</label>
-            <textarea id="swal-description" class="swal-custom-textarea" placeholder="${t.descriptionPlaceholder}">${avance.description || ''}</textarea>
+          <div class="form-group">
+            <label class="form-label">${t.description}</label>
+            <textarea id="swal-description" class="custom-textarea">${avance.description || ''}</textarea>
           </div>
         </div>`,
       focusConfirm: false,
       showCancelButton: true,
       confirmButtonText: t.edit,
       cancelButtonText: t.cancel,
-      confirmButtonColor: '#f59e0b', // Couleur orange
+      confirmButtonColor: '#f59e0b', // Orange pour modifier
       cancelButtonColor: '#6b7280',
-      width: '600px',
       customClass: {
-        popup: 'swal-custom-styles',
-        title: 'swal-ignore-styles',
-        htmlContainer: 'swal-ignore-styles',
-        confirmButton: 'swal-custom-button swal-custom-confirm-button', // Utilise les styles CSS
-        cancelButton: 'swal-custom-button swal-custom-cancel-button'
+        popup: 'swal-wide-popup'
       },
-       didOpen: () => {
-         const form = document.querySelector('.swal-custom-form') as HTMLElement;
-         if (form) {
-            form.dir = textDirection;
-         }
-       },
       preConfirm: () => {
-        // Validation reste la même
         const montantStr = (document.getElementById('swal-montant') as HTMLInputElement).value;
         const date = (document.getElementById('swal-date') as HTMLInputElement).value;
         const montant = parseFloat(montantStr);
@@ -295,41 +288,47 @@ export class AvancesComponent implements OnInit {
             Swal.showValidationMessage(t.amountPositive);
             return false;
         }
-        return { montant, date, description: (document.getElementById('swal-description') as HTMLTextAreaElement).value };
+        return {
+            montant,
+            date,
+            description: (document.getElementById('swal-description') as HTMLTextAreaElement).value
+        };
       }
     });
 
     if (formValues) {
-      // Logique de modification reste la même
       try {
         this.alertService.loading(this.translate.instant('MESSAGES.UPDATING'));
         const updateData: Partial<Avance> = {
           montant: formValues.montant,
           dateAvance: new Date(formValues.date)
         };
+        // Mettre à jour la description (ou la vider si vide)
         updateData.description = (formValues.description && formValues.description.trim() !== '') ? formValues.description.trim() : '';
 
         await this.avanceService.updateAvance(avance.id!, updateData);
+        // Pas besoin de recharger ici
         this.alertService.success(this.translate.instant('AVANCES.SUCCESS_UPDATE'));
       } catch (error) {
-        console.error('Erreur modif avance:', error);
+        console.error('Erreur lors de la modification:', error);
         this.alertService.error();
       }
     }
   }
 
   async deleteAvance(avance: Avance): Promise<void> {
-    // Logique de suppression reste la même
     const marinName = this.getMarinName(avance.marinId);
+    // Utiliser la clé de traduction dédiée
     const itemName = this.translate.instant('AVANCES.DELETE_CONFIRM_ITEM', { amount: avance.montant, name: marinName });
     const confirmed = await this.alertService.confirmDelete(itemName);
     if (confirmed) {
       try {
         this.alertService.loading(this.translate.instant('MESSAGES.DELETING'));
         await this.avanceService.deleteAvance(avance.id!);
+        // Pas besoin de recharger ici
         this.alertService.toast(this.translate.instant('AVANCES.SUCCESS_DELETE'));
       } catch (error) {
-        console.error('Erreur suppression avance:', error);
+        console.error('Erreur lors de la suppression:', error);
         this.alertService.error();
       }
     }

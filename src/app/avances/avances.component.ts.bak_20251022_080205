@@ -130,7 +130,7 @@ export class AvancesComponent implements OnInit {
       amountPlaceholder: this.translate.instant('COMMON.AMOUNT_IN_TND'),
       date: this.translate.instant('COMMON.DATE'),
       description: this.translate.instant('COMMON.DESCRIPTION'),
-      descriptionPlaceholder: "",
+      descriptionPlaceholder: this.translate.instant('COMMON.DESCRIPTION_OPTIONAL'),
       add: this.translate.instant('FORM.ADD'),
       cancel: this.translate.instant('FORM.CANCEL'),
       requiredFields: this.translate.instant('FORM.REQUIRED_FIELDS'),
@@ -171,22 +171,22 @@ export class AvancesComponent implements OnInit {
       cancelButtonText: t.cancel,
       confirmButtonColor: '#10b981',
       cancelButtonColor: '#6b7280',
-      width: '600px', // Largeur fixe
+      width: '600px', // Largeur fixe pour le popup
       customClass: {
-        popup: 'swal-custom-styles', // Classe principale pour CSS
-        title: 'swal-ignore-styles',
-        htmlContainer: 'swal-ignore-styles',
-        confirmButton: 'swal-custom-button swal-custom-confirm-button', // Boutons stylisés par CSS
-        cancelButton: 'swal-custom-button swal-custom-cancel-button'
+        popup: 'swal-custom-styles', // Classe pour cibler les styles CSS
+        title: 'swal-ignore-styles', // Empêche Swal de trop styler notre titre custom
+        htmlContainer: 'swal-ignore-styles', // Idem pour le container HTML
+        confirmButton: 'swal-custom-confirm-button', // Classes optionnelles pour boutons
+        cancelButton: 'swal-custom-cancel-button'
       },
        didOpen: () => {
+         // Applique la direction ici si nécessaire, bien que le `dir` sur le div principal devrait suffire
          const form = document.querySelector('.swal-custom-form') as HTMLElement;
          if (form) {
-            form.dir = textDirection; // Appliquer dir dynamiquement
+            form.dir = textDirection;
          }
        },
       preConfirm: () => {
-        // Validation reste la même
         const marinId = (document.getElementById('swal-marin') as HTMLSelectElement).value;
         const montantStr = (document.getElementById('swal-montant') as HTMLInputElement).value;
         const date = (document.getElementById('swal-date') as HTMLInputElement).value;
@@ -200,12 +200,16 @@ export class AvancesComponent implements OnInit {
           Swal.showValidationMessage(t.amountPositive);
           return false;
         }
-        return { marinId, montant, date, description: (document.getElementById('swal-description') as HTMLTextAreaElement).value };
+        return {
+          marinId,
+          montant,
+          date,
+          description: (document.getElementById('swal-description') as HTMLTextAreaElement).value
+        };
       }
     });
 
     if (formValues) {
-      // Logique d'ajout reste la même
       try {
         this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
         const newAvance: Omit<Avance, 'id'> = {
@@ -222,7 +226,7 @@ export class AvancesComponent implements OnInit {
         await this.avanceService.addAvance(newAvance);
         this.alertService.success(this.translate.instant('AVANCES.SUCCESS_ADD'));
       } catch (error) {
-        console.error("Erreur ajout avance:", error);
+        console.error("Erreur lors de l'ajout de l'avance:", error);
         this.alertService.error();
       }
     }
@@ -235,7 +239,7 @@ export class AvancesComponent implements OnInit {
       amount: this.translate.instant('COMMON.AMOUNT_D_T'),
       date: this.translate.instant('COMMON.DATE'),
       description: this.translate.instant('COMMON.DESCRIPTION'),
-      descriptionPlaceholder: "",
+      descriptionPlaceholder: this.translate.instant('COMMON.DESCRIPTION_OPTIONAL'),
       edit: this.translate.instant('FORM.EDIT'),
       cancel: this.translate.instant('FORM.CANCEL'),
       amountPositive: this.translate.instant('AVANCES.AMOUNT_POSITIVE'),
@@ -265,15 +269,15 @@ export class AvancesComponent implements OnInit {
       showCancelButton: true,
       confirmButtonText: t.edit,
       cancelButtonText: t.cancel,
-      confirmButtonColor: '#f59e0b', // Couleur orange
+      confirmButtonColor: '#f59e0b',
       cancelButtonColor: '#6b7280',
       width: '600px',
       customClass: {
         popup: 'swal-custom-styles',
         title: 'swal-ignore-styles',
         htmlContainer: 'swal-ignore-styles',
-        confirmButton: 'swal-custom-button swal-custom-confirm-button', // Utilise les styles CSS
-        cancelButton: 'swal-custom-button swal-custom-cancel-button'
+        confirmButton: 'swal-custom-confirm-button',
+        cancelButton: 'swal-custom-cancel-button'
       },
        didOpen: () => {
          const form = document.querySelector('.swal-custom-form') as HTMLElement;
@@ -282,7 +286,6 @@ export class AvancesComponent implements OnInit {
          }
        },
       preConfirm: () => {
-        // Validation reste la même
         const montantStr = (document.getElementById('swal-montant') as HTMLInputElement).value;
         const date = (document.getElementById('swal-date') as HTMLInputElement).value;
         const montant = parseFloat(montantStr);
@@ -295,12 +298,15 @@ export class AvancesComponent implements OnInit {
             Swal.showValidationMessage(t.amountPositive);
             return false;
         }
-        return { montant, date, description: (document.getElementById('swal-description') as HTMLTextAreaElement).value };
+        return {
+            montant,
+            date,
+            description: (document.getElementById('swal-description') as HTMLTextAreaElement).value
+        };
       }
     });
 
     if (formValues) {
-      // Logique de modification reste la même
       try {
         this.alertService.loading(this.translate.instant('MESSAGES.UPDATING'));
         const updateData: Partial<Avance> = {
@@ -312,14 +318,13 @@ export class AvancesComponent implements OnInit {
         await this.avanceService.updateAvance(avance.id!, updateData);
         this.alertService.success(this.translate.instant('AVANCES.SUCCESS_UPDATE'));
       } catch (error) {
-        console.error('Erreur modif avance:', error);
+        console.error('Erreur lors de la modification:', error);
         this.alertService.error();
       }
     }
   }
 
   async deleteAvance(avance: Avance): Promise<void> {
-    // Logique de suppression reste la même
     const marinName = this.getMarinName(avance.marinId);
     const itemName = this.translate.instant('AVANCES.DELETE_CONFIRM_ITEM', { amount: avance.montant, name: marinName });
     const confirmed = await this.alertService.confirmDelete(itemName);
@@ -329,7 +334,7 @@ export class AvancesComponent implements OnInit {
         await this.avanceService.deleteAvance(avance.id!);
         this.alertService.toast(this.translate.instant('AVANCES.SUCCESS_DELETE'));
       } catch (error) {
-        console.error('Erreur suppression avance:', error);
+        console.error('Erreur lors de la suppression:', error);
         this.alertService.error();
       }
     }

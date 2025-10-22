@@ -1,6 +1,6 @@
 ====================================
   Projet Angular - Code Source
-  Date: Tue Oct 21 16:41:08 CET 2025
+  Date: Wed Oct 22 07:18:49 CET 2025
 ====================================
 
 Arborescence du projet:
@@ -59,13 +59,8 @@ Arborescence du projet:
 │   │   ├── marin-form.component.scss
 │   │   ├── marin-form.component.ts
 │   │   ├── marins-list.component.html
-│   │   ├── marins-list.component.html.bak_20251019_102615
-│   │   ├── marins-list.component.html.bak_solde_20251019_102840
 │   │   ├── marins-list.component.scss
 │   │   ├── marins-list.component.ts
-│   │   ├── marins-list.component.ts.bak_20251019_102615
-│   │   ├── marins-list.component.ts.bak_before_fix
-│   │   ├── marins-list.component.ts.bak_solde_20251019_102840
 │   │   └── marins.module.ts
 │   ├── mock-data
 │   │   └── mock-data.component.ts
@@ -85,12 +80,8 @@ Arborescence du projet:
 │   │   └── sortie.model.ts
 │   ├── salaires
 │   │   ├── salaires-list.component.html
-│   │   ├── salaires-list.component.html.bak
 │   │   ├── salaires-list.component.scss
-│   │   ├── salaires-list.component.ts
-│   │   ├── salaires-list.component.ts.bak_20251019_102308
-│   │   ├── salaires-list.component.ts.bak_before_advances_fix
-│   │   └── salaires-list.component.ts.bak_before_history_fix
+│   │   └── salaires-list.component.ts
 │   ├── services
 │   │   ├── alert.service.ts
 │   │   ├── avance.service.ts
@@ -152,14 +143,8 @@ Arborescence du projet:
 ├── assets
 │   └── i18n
 │       ├── ar.json
-│       ├── ar.json.bak_20251019_102615
-│       ├── ar.json.bak_solde_20251019_102840
 │       ├── en.json
-│       ├── en.json.bak_20251019_102616
-│       ├── en.json.bak_solde_20251019_102840
-│       ├── fr.json
-│       ├── fr.json.bak_20251019_102615
-│       └── fr.json.bak_solde_20251019_102840
+│       └── fr.json
 ├── environments
 │   ├── environment.development.ts
 │   └── environment.ts
@@ -171,7 +156,7 @@ Arborescence du projet:
 │   └── _btn-back.scss
 └── styles.scss
 
-28 directories, 137 files
+28 directories, 122 files
 
 ====================================
   FICHIERS SOURCE
@@ -393,11 +378,11 @@ export class AuthGuard implements CanActivate {
 
 ====================================
 FICHIER: ./src/app/auth.service.ts
-Lignes:       53
+Lignes:       43
 ====================================
 
 import { Injectable } from '@angular/core';
-import { Auth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, authState, User } from '@angular/fire/auth';
+import { Auth, signInWithEmailAndPassword, signOut, authState, User } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 
@@ -417,16 +402,6 @@ export class AuthService {
       this.router.navigate(['/dashboard']);
     } catch (error) {
       console.error('Login error:', error);
-      throw error;
-    }
-  }
-
-  async signup(email: string, password: string): Promise<void> {
-    try {
-      await createUserWithEmailAndPassword(this.auth, email, password);
-      this.router.navigate(['/dashboard']);
-    } catch (error) {
-      console.error('Signup error:', error);
       throw error;
     }
   }
@@ -466,7 +441,7 @@ export class Auth {
 
 ====================================
 FICHIER: ./src/app/auth/auth.component.ts
-Lignes:       97
+Lignes:       83
 ====================================
 
 import { Component, OnInit } from '@angular/core';
@@ -486,11 +461,9 @@ import { TranslateModule } from '@ngx-translate/core';
 })
 export class AuthComponent implements OnInit {
   authForm!: FormGroup;
-  isLoginMode = true;
   loading = false;
   error: string = '';
   languageDropdownOpen = false;
-
   languages = [
     { code: 'ar', name: 'العربية', flag: '🇹🇳' },
     { code: 'fr', name: 'Français', flag: '🇫🇷' },
@@ -515,25 +488,13 @@ export class AuthComponent implements OnInit {
     });
   }
 
-  toggleMode(): void {
-    this.isLoginMode = !this.isLoginMode;
-    this.error = '';
-    this.authForm.reset();
-  }
-
   async onSubmit(): Promise<void> {
     if (this.authForm.valid) {
       this.loading = true;
       this.error = '';
-
       const { email, password } = this.authForm.value;
-
       try {
-        if (this.isLoginMode) {
-          await this.authService.login(email, password);
-        } else {
-          await this.authService.signup(email, password);
-        }
+        await this.authService.login(email, password);
         this.router.navigate(['/dashboard']);
       } catch (error: any) {
         this.error = error.message || 'Une erreur est survenue';
@@ -569,7 +530,7 @@ export class AuthComponent implements OnInit {
 
 ====================================
 FICHIER: ./src/app/avances/avances.component.ts
-Lignes:      281
+Lignes:      283
 ====================================
 
 import { Component, OnInit } from '@angular/core';
@@ -619,16 +580,17 @@ export class AvancesComponent implements OnInit {
 
   loadData(): void {
     if (!this.selectedBoat) return;
+    this.loading = true; // S'assurer que le loading est bien actif
     combineLatest([
       this.marinService.getMarinsByBateau(this.selectedBoat.id!),
-      this.avanceService.getAvancesByBateau(this.selectedBoat.id!)
+      this.avanceService.getUnsettledAvancesByBateau(this.selectedBoat.id!)
     ]).subscribe(([marins, avances]) => {
       this.marins = marins;
       this.avances = avances;
       this.loading = false;
     });
   }
-
+  
   getMarinName(marinId: string): string {
     const marin = this.marins.find(m => m.id === marinId);
     return marin ? `${marin.prenom} ${marin.nom}` : this.translate.instant('COMMON.UNKNOWN');
@@ -675,116 +637,114 @@ export class AvancesComponent implements OnInit {
     return `${day}/${month}/${year}`;
   }
 
+  // ✅ AMÉLIORATION: Méthode entièrement revue pour un meilleur design
   async addAvance(): Promise<void> {
-  if (!this.selectedBoat) return;
+    if (!this.selectedBoat) return;
 
-  const marinsOptions = this.marins.reduce((acc, marin) => {
-    acc[marin.id!] = `${marin.prenom} ${marin.nom} - ${this.translate.instant('SAILORS.FUNCTION_TYPE.' + marin.fonction.toUpperCase())}`;
-    return acc;
-  }, {} as any);
+    const marinsOptions = this.marins.reduce((acc, marin) => {
+      // La traduction est maintenant correcte grâce aux clés ajoutées
+      const fonction = this.translate.instant('SAILORS.FUNCTION_TYPE.' + marin.fonction.toUpperCase());
+      acc[marin.id!] = `${marin.prenom} ${marin.nom} - ${fonction}`;
+      return acc;
+    }, {} as { [key: string]: string });
 
-  const t = {
-    title: this.translate.instant('AVANCES.ADD_MODAL.TITLE'),
-    sailor: this.translate.instant('SAILORS.TITLE'),
-    selectSailor: this.translate.instant('SAILORS.SELECT_SAILOR'),
-    amount: this.translate.instant('COMMON.AMOUNT_D_T'),
-    amountPlaceholder: this.translate.instant('COMMON.AMOUNT_IN_TND'),
-    date: this.translate.instant('COMMON.DATE'),
-    description: this.translate.instant('COMMON.DESCRIPTION'),
-    descriptionPlaceholder: this.translate.instant('COMMON.DESCRIPTION_OPTIONAL'),
-    add: this.translate.instant('FORM.ADD'),
-    cancel: this.translate.instant('FORM.CANCEL'),
-    requiredFields: this.translate.instant('FORM.REQUIRED_FIELDS'),
-    amountPositive: this.translate.instant('AVANCES.AMOUNT_POSITIVE')
-  };
+    const t = {
+      title: this.translate.instant('AVANCES.ADD_MODAL.TITLE'),
+      sailor: this.translate.instant('SAILORS.TITLE'),
+      selectSailor: this.translate.instant('SAILORS.SELECT_SAILOR'),
+      amount: this.translate.instant('COMMON.AMOUNT_D_T'),
+      amountPlaceholder: this.translate.instant('COMMON.AMOUNT_IN_TND'),
+      date: this.translate.instant('COMMON.DATE'),
+      description: this.translate.instant('COMMON.DESCRIPTION'),
+      descriptionPlaceholder: this.translate.instant('COMMON.DESCRIPTION_OPTIONAL'),
+      add: this.translate.instant('FORM.ADD'),
+      cancel: this.translate.instant('FORM.CANCEL'),
+      requiredFields: this.translate.instant('FORM.REQUIRED_FIELDS'),
+      amountPositive: this.translate.instant('AVANCES.AMOUNT_POSITIVE')
+    };
 
-  const { value: formValues } = await Swal.fire({
-    title: `<i class="swal-icon-money"></i> ${t.title}`,
-    html: `
-      <div class="swal-form">
-        <div class="form-group">
-          <label class="form-label"><i class="swal-icon-user"></i> ${t.sailor} <span class="required-star">*</span></label>
-          <select id="swal-marin" class="swal2-input">
-            <option value="">${t.selectSailor}</option>
-            ${Object.keys(marinsOptions).map(id => `<option value="${id}">${marinsOptions[id]}</option>`).join('')}
-          </select>
+    const { value: formValues } = await Swal.fire({
+      title: t.title,
+      html: `
+        <div class="swal-custom-form">
+          <div class="form-group">
+            <label class="form-label">${t.sailor} <span class="required-star">*</span></label>
+            <select id="swal-marin" class="custom-select">
+              <option value="">${t.selectSailor}</option>
+              ${Object.keys(marinsOptions).map(id => `<option value="${id}">${marinsOptions[id]}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">${t.amount} <span class="required-star">*</span></label>
+            <input id="swal-montant" type="number" class="custom-input" placeholder="0.00" step="0.01" min="0" />
+            <div class="input-helper">${t.amountPlaceholder}</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">${t.date} <span class="required-star">*</span></label>
+            <input id="swal-date" type="date" class="custom-input" value="${this.getTodayDate()}" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">${t.description}</label>
+            <textarea id="swal-description" class="custom-textarea" placeholder="${t.descriptionPlaceholder}"></textarea>
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label"><i class="swal-icon-cash"></i> ${t.amount} <span class="required-star">*</span></label>
-          <input id="swal-montant" type="number" class="swal2-input" placeholder="0.00" step="0.01" min="0" />
-          <div class="input-helper">${t.amountPlaceholder}</div>
-        </div>
-        <div class="form-group">
-          <label class="form-label"><i class="swal-icon-calendar"></i> ${t.date} <span class="required-star">*</span></label>
-          <input id="swal-date" type="date" class="swal2-input" value="${this.getTodayDate()}" />
-        </div>
-        <div class="form-group">
-          <label class="form-label"><i class="swal-icon-details"></i> ${t.description}</label>
-          <textarea id="swal-description" class="swal2-textarea" placeholder="${t.descriptionPlaceholder}"></textarea>
-        </div>
-      </div>
-    `,
-    focusConfirm: false,
-    showCancelButton: true,
-    confirmButtonText: t.add,
-    cancelButtonText: t.cancel,
-    confirmButtonColor: '#10b981',
-    preConfirm: () => {
-      const marinId = (document.getElementById('swal-marin') as HTMLSelectElement).value;
-      const montant = parseFloat((document.getElementById('swal-montant') as HTMLInputElement).value);
-      const date = (document.getElementById('swal-date') as HTMLInputElement).value;
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: t.add,
+      cancelButtonText: t.cancel,
+      confirmButtonColor: '#10b981',
+      customClass: {
+        popup: 'swal-wide-popup'
+      },
+      preConfirm: () => {
+        const marinId = (document.getElementById('swal-marin') as HTMLSelectElement).value;
+        const montant = parseFloat((document.getElementById('swal-montant') as HTMLInputElement).value);
+        const date = (document.getElementById('swal-date') as HTMLInputElement).value;
 
-      if (!marinId || !montant || !date) {
-        Swal.showValidationMessage(t.requiredFields);
-        return false;
+        if (!marinId || !montant || !date) {
+          Swal.showValidationMessage(t.requiredFields);
+          return false;
+        }
+        if (montant <= 0) {
+          Swal.showValidationMessage(t.amountPositive);
+          return false;
+        }
+        return {
+          marinId,
+          montant,
+          date,
+          description: (document.getElementById('swal-description') as HTMLTextAreaElement).value
+        };
       }
+    });
 
-      if (montant <= 0) {
-        Swal.showValidationMessage(t.amountPositive);
-        return false;
+    if (formValues) {
+      try {
+        this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
+        const newAvance: Omit<Avance, 'id'> = {
+          marinId: formValues.marinId,
+          bateauId: this.selectedBoat!.id!,
+          montant: formValues.montant,
+          dateAvance: new Date(formValues.date),
+          createdAt: new Date()
+        };
+        if (formValues.description && formValues.description.trim() !== '') {
+          newAvance.description = formValues.description.trim();
+        }
+        await this.avanceService.addAvance(newAvance);
+        this.alertService.success(this.translate.instant('AVANCES.SUCCESS_ADD'));
+      } catch (error) {
+        console.error("Erreur lors de l'ajout de l'avance:", error);
+        this.alertService.error();
       }
-
-      return {
-        marinId,
-        montant,
-        date,
-        description: (document.getElementById('swal-description') as HTMLTextAreaElement).value
-      };
-    }
-  });
-
-  if (formValues) {
-    try {
-      this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
-      
-      const newAvance: any = {
-        marinId: formValues.marinId,
-        bateauId: this.selectedBoat.id!,
-        montant: formValues.montant,
-        dateAvance: new Date(formValues.date),
-        createdAt: new Date() // ✅ AJOUT: Date de création
-      };
-
-      if (formValues.description && formValues.description.trim() !== '') {
-        newAvance.description = formValues.description.trim();
-      }
-
-      // ✅ CORRECTION: Attendre l'enregistrement
-      await this.avanceService.addAvance(newAvance);
-      
-      this.alertService.success(this.translate.instant('AVANCES.SUCCESS_ADD'));
-    } catch (error) {
-      console.error('Erreur lors de l\'ajout de l\'avance:', error);
-      this.alertService.error();
     }
   }
-}
-
 
   async editAvance(avance: Avance): Promise<void> {
     const t = {
         title: this.translate.instant('AVANCES.EDIT_MODAL.TITLE'),
-        amount: this.translate.instant('COMMON.AMOUNT_D T'),
+        amount: this.translate.instant('COMMON.AMOUNT_D_T'),
         date: this.translate.instant('COMMON.DATE'),
         description: this.translate.instant('COMMON.DESCRIPTION'),
         edit: this.translate.instant('FORM.EDIT'),
@@ -794,18 +754,18 @@ export class AvancesComponent implements OnInit {
     const { value: formValues } = await Swal.fire({
       title: t.title,
       html: `
-        <div class="swal-form">
+        <div class="swal-custom-form">
           <div class="form-group">
             <label class="form-label">${t.amount}</label>
-            <input id="swal-montant" type="number" class="swal2-input" value="${avance.montant}" step="0.01" min="0">
+            <input id="swal-montant" type="number" class="custom-input" value="${avance.montant}" step="0.01" min="0">
           </div>
           <div class="form-group">
             <label class="form-label">${t.date}</label>
-            <input id="swal-date" type="date" class="swal2-input" value="${this.formatDate(avance.dateAvance)}">
+            <input id="swal-date" type="date" class="custom-input" value="${this.formatDate(avance.dateAvance)}">
           </div>
           <div class="form-group">
             <label class="form-label">${t.description}</label>
-            <textarea id="swal-description" class="swal2-textarea">${avance.description || ''}</textarea>
+            <textarea id="swal-description" class="custom-textarea">${avance.description || ''}</textarea>
           </div>
         </div>`,
       focusConfirm: false,
@@ -813,6 +773,9 @@ export class AvancesComponent implements OnInit {
       confirmButtonText: t.edit,
       cancelButtonText: t.cancel,
       confirmButtonColor: '#f59e0b',
+      customClass: {
+        popup: 'swal-wide-popup'
+      },
       preConfirm: () => ({
         montant: parseFloat((document.getElementById('swal-montant') as HTMLInputElement).value),
         date: (document.getElementById('swal-date') as HTMLInputElement).value,
@@ -823,7 +786,7 @@ export class AvancesComponent implements OnInit {
     if (formValues) {
       try {
         this.alertService.loading();
-        const updateData: any = {
+        const updateData: Partial<Avance> = {
           montant: formValues.montant,
           dateAvance: new Date(formValues.date)
         };
@@ -5739,7 +5702,7 @@ Lignes:      342
 
 ====================================
 FICHIER: ./src/app/auth/auth.component.html
-Lignes:       45
+Lignes:       42
 ====================================
 
 <div class="auth-container">
@@ -5761,8 +5724,8 @@ Lignes:       45
   </div>
   <div class="auth-box">
     <div class="auth-header">
-      <h1 class="auth-title">{{ (isLoginMode ? 'AUTH.WELCOME' : 'AUTH.CREATE_ACCOUNT') | translate }}</h1>
-      <p class="auth-subtitle">{{ (isLoginMode ? 'AUTH.SIGN_IN' : 'AUTH.SIGNUP') | translate }}</p>
+      <h1 class="auth-title">{{ 'AUTH.WELCOME' | translate }}</h1>
+      <p class="auth-subtitle">{{ 'AUTH.SIGN_IN' | translate }}</p>
     </div>
     <form [formGroup]="authForm" (ngSubmit)="onSubmit()" class="auth-form">
       <div class="form-group">
@@ -5777,14 +5740,11 @@ Lignes:       45
         <span class="error-message" *ngIf="authForm.get('password')?.hasError('required') && authForm.get('password')?.touched">{{ 'FORM.REQUIRED' | translate }}</span>
       </div>
       <button type="submit" class="auth-button" [disabled]="!authForm.valid || loading">
-        <span *ngIf="!loading">{{ (isLoginMode ? 'AUTH.LOGIN' : 'AUTH.SIGNUP') | translate }}</span>
+        <span *ngIf="!loading">{{ 'AUTH.LOGIN' | translate }}</span>
         <span *ngIf="loading">{{ 'MESSAGES.LOADING' | translate }}</span>
       </button>
       <div class="auth-error" *ngIf="error">{{ error }}</div>
     </form>
-    <div class="auth-footer">
-      <button class="toggle-button" (click)="toggleMode()">{{ (isLoginMode ? 'AUTH.NO_ACCOUNT' : 'AUTH.HAVE_ACCOUNT') | translate }}</button>
-    </div>
   </div>
 </div>
 
@@ -6203,7 +6163,7 @@ Lignes:       93
 
 ====================================
 FICHIER: ./src/app/dashboard/dashboard.component.html
-Lignes:      168
+Lignes:      119
 ====================================
 
 <div class="dashboard-layout">
@@ -6229,24 +6189,13 @@ Lignes:      168
             <span>{{ 'MENU.BOATS' | translate }}</span>
           </a>
         </li>
-<li *ngIf="selectedBoat">
+        <li *ngIf="selectedBoat">
           <a [routerLink]="['/dashboard/bateaux', selectedBoat.id, 'marins']" routerLinkActive="active" class="nav-item">
             <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
             <span>{{ 'MENU.SAILORS' | translate }}</span>
           </a>
-        </li>
-        <li *ngIf="!selectedBoat" class="menu-disabled">
-          <div class="nav-item-disabled">
-            <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-            <span>{{ 'MENU.SAILORS' | translate }}</span>
-          </div>
-          <div class="tooltip-disabled">
-            {{ 'MENU.SELECT_BOAT_FIRST' | translate }}
-          </div>
         </li>
         <li *ngIf="selectedBoat">
           <a routerLink="/dashboard/sorties" routerLinkActive="active" class="nav-item">
@@ -6256,7 +6205,6 @@ Lignes:      168
             <span>{{ 'MENU.SORTIES' | translate }}</span>
           </a>
         </li>
-        <!-- ✅ NOUVEAU: MENU VENTES -->
         <li *ngIf="selectedBoat">
           <a routerLink="/dashboard/ventes" routerLinkActive="active" class="nav-item">
             <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -6280,51 +6228,6 @@ Lignes:      168
             </svg>
             <span>{{ 'MENU.SALAIRES' | translate }}</span>
           </a>
-        </li>
-        <!-- Messages pour bateau non sélectionné -->
-        <li *ngIf="!selectedBoat" class="menu-disabled">
-          <div class="nav-item-disabled">
-            <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-            </svg>
-            <span>{{ 'MENU.SORTIES' | translate }}</span>
-          </div>
-          <div class="tooltip-disabled">
-            {{ 'MENU.SELECT_BOAT_FIRST' | translate }}
-          </div>
-        </li>
-        <li *ngIf="!selectedBoat" class="menu-disabled">
-          <div class="nav-item-disabled">
-            <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            <span>{{ 'MENU.VENTES' | translate }}</span>
-          </div>
-          <div class="tooltip-disabled">
-            {{ 'MENU.SELECT_BOAT_FIRST' | translate }}
-          </div>
-        </li>
-        <li *ngIf="!selectedBoat" class="menu-disabled">
-          <div class="nav-item-disabled">
-            <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            <span>{{ 'MENU.AVANCES' | translate }}</span>
-          </div>
-          <div class="tooltip-disabled">
-            {{ 'MENU.SELECT_BOAT_FIRST' | translate }}
-          </div>
-        </li>
-        <li *ngIf="!selectedBoat" class="menu-disabled">
-          <div class="nav-item-disabled">
-            <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-            </svg>
-            <span>{{ 'MENU.SALAIRES' | translate }}</span>
-          </div>
-          <div class="tooltip-disabled">
-            {{ 'MENU.SELECT_BOAT_FIRST' | translate }}
-          </div>
         </li>
         <li>
           <a routerLink="/dashboard/mock-data" routerLinkActive="active" class="nav-item">
@@ -6354,7 +6257,6 @@ Lignes:      168
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
           </svg>
         </div>
-
         <div *ngIf="!selectedBoat" class="no-boat-badge" (click)="goToBoatSelection()">
           <svg class="warning-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
@@ -6365,8 +6267,17 @@ Lignes:      168
           </div>
         </div>
       </div>
-
-      <app-language-selector></app-language-selector>
+      
+      <div class="header-right">
+        <div class="user-info" *ngIf="userEmail">
+          <svg class="user-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+          <span>{{ userEmail }}</span>
+        </div>
+        <app-language-selector></app-language-selector>
+        <button class="btn-logout" (click)="logout()" [title]="'MENU.LOGOUT' | translate">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+        </button>
+      </div>
     </header>
 
     <div class="content">
@@ -7803,8 +7714,60 @@ Lignes:      314
 
 ====================================
 FICHIER: ./src/app/avances/avances.component.scss
-Lignes:      359
+Lignes:      314
 ====================================
+
+// Styles globaux pour les popups Swal customisées
+:host::ng-deep {
+  .swal-wide-popup {
+    width: 600px !important;
+  }
+  .swal-custom-form {
+    text-align: left;
+    padding: 1rem 0;
+  }
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+  .form-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.625rem;
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.9rem;
+  }
+  .required-star {
+    color: #ef4444;
+    font-weight: 700;
+  }
+  .custom-input, .custom-textarea, .custom-select {
+    width: 100%;
+    padding: 0.75rem 0.875rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s;
+    font-family: inherit;
+    background: white;
+  }
+  .custom-input:focus, .custom-textarea:focus, .custom-select:focus {
+    outline: none;
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  }
+  .custom-textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+  .input-helper {
+    margin-top: 0.4rem;
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+}
+
 
 .avances-container {
   max-width: 1200px;
@@ -7938,42 +7901,17 @@ Lignes:      359
   text-transform: capitalize;
 }
 
-.fonction-capitaine {
-  background-color: #fef3c7;
-  color: #92400e;
-}
-
-.fonction-second {
-  background-color: #e0e7ff;
-  color: #3730a3;
-}
-
-.fonction-mecanicien {
-  background-color: #ccfbf1;
-  color: #115e59;
-}
-
-.fonction-matelot {
-  background-color: #f3e8ff;
-  color: #6b21a8;
-}
+.fonction-capitaine { background-color: #fef3c7; color: #92400e; }
+.fonction-second { background-color: #e0e7ff; color: #3730a3; }
+.fonction-mecanicien { background-color: #ccfbf1; color: #115e59; }
+.fonction-matelot { background-color: #f3e8ff; color: #6b21a8; }
 
 .marin-total {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-
-  .total-label {
-    font-size: 0.875rem;
-    color: #6b7280;
-    font-weight: 500;
-  }
-
-  .total-amount {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #059669;
-  }
+  .total-label { font-size: 0.875rem; color: #6b7280; font-weight: 500; }
+  .total-amount { font-size: 1.5rem; font-weight: 700; color: #059669; }
 }
 
 .avances-list {
@@ -7985,13 +7923,8 @@ Lignes:      359
   border-bottom: 1px solid #f3f4f6;
   transition: background-color 0.2s;
 
-  &:hover {
-    background-color: #f9fafb;
-  }
-
-  &:last-child {
-    border-bottom: none;
-  }
+  &:hover { background-color: #f9fafb; }
+  &:last-child { border-bottom: none; }
 }
 
 .avance-main {
@@ -8007,7 +7940,6 @@ Lignes:      359
   flex-direction: column;
   gap: 0.5rem;
 
-  /* ✅ STYLE POUR LA DATE */
   .avance-date-row {
     display: flex;
     align-items: center;
@@ -8016,15 +7948,9 @@ Lignes:      359
     color: #1f2937;
     font-size: 0.95rem;
 
-    .date-icon {
-      width: 18px;
-      height: 18px;
-      color: #3b82f6;
-      flex-shrink: 0;
-    }
+    .date-icon { width: 18px; height: 18px; color: #3b82f6; flex-shrink: 0; }
   }
 
-  /* ✅ STYLE POUR LA DESCRIPTION */
   .avance-description {
     display: flex;
     align-items: flex-start;
@@ -8033,18 +7959,8 @@ Lignes:      359
     color: #6b7280;
     line-height: 1.5;
     padding-left: 1.625rem;
-
-    .desc-icon {
-      width: 16px;
-      height: 16px;
-      color: #9ca3af;
-      flex-shrink: 0;
-      margin-top: 0.125rem;
-    }
-
-    span {
-      flex: 1;
-    }
+    .desc-icon { width: 16px; height: 16px; color: #9ca3af; flex-shrink: 0; margin-top: 0.125rem; }
+    span { flex: 1; }
   }
 }
 
@@ -8069,46 +7985,27 @@ Lignes:      359
   border-radius: 0.375rem;
   cursor: pointer;
   transition: all 0.2s;
-
-  svg {
-    width: 18px;
-    height: 18px;
-  }
+  svg { width: 18px; height: 18px; }
 }
 
 .btn-warning {
   background-color: #fef3c7;
   color: #92400e;
-
-  &:hover {
-    background-color: #fde68a;
-  }
+  &:hover { background-color: #fde68a; }
 }
 
 .btn-danger {
   background-color: #fee2e2;
   color: #991b1b;
-
-  &:hover {
-    background-color: #fecaca;
-  }
+  &:hover { background-color: #fecaca; }
 }
 
 .no-avances {
   padding: 2rem;
   text-align: center;
   color: #9ca3af;
-
-  .no-avances-icon {
-    width: 48px;
-    height: 48px;
-    margin: 0 auto 0.5rem;
-    opacity: 0.5;
-  }
-
-  p {
-    margin: 0;
-  }
+  .no-avances-icon { width: 48px; height: 48px; margin: 0 auto 0.5rem; opacity: 0.5; }
+  p { margin: 0; }
 }
 
 .total-card {
@@ -8122,48 +8019,17 @@ Lignes:      359
   margin-top: 2rem;
   box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
 
-  .total-label-main {
-    font-size: 1.25rem;
-    font-weight: 600;
-  }
-
-  .total-amount-main {
-    font-size: 2rem;
-    font-weight: 700;
-  }
+  .total-label-main { font-size: 1.25rem; font-weight: 600; }
+  .total-amount-main { font-size: 2rem; font-weight: 700; }
 }
 
-/* Responsive */
 @media (max-width: 768px) {
-  .avances-container {
-    padding: 1rem;
-  }
-
-  .title {
-    font-size: 1.5rem;
-  }
-
-  .marin-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-
-  .avance-main {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .avance-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .total-card {
-    flex-direction: column;
-    gap: 0.5rem;
-    text-align: center;
-  }
+  .avances-container { padding: 1rem; }
+  .title { font-size: 1.5rem; }
+  .marin-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .avance-main { flex-direction: column; align-items: flex-start; }
+  .avance-actions { width: 100%; justify-content: space-between; }
+  .total-card { flex-direction: column; gap: 0.5rem; text-align: center; }
 }
 
 ====================================
@@ -9221,7 +9087,7 @@ Lignes:      304
 
 ====================================
 FICHIER: ./src/app/dashboard/dashboard.component.scss
-Lignes:      482
+Lignes:      376
 ====================================
 
 .dashboard-layout {
@@ -9247,7 +9113,6 @@ Lignes:      482
 .logo {
   padding: 1.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-
   h2 {
     margin: 0;
     font-size: 1.5rem;
@@ -9257,7 +9122,6 @@ Lignes:      482
 
 .sidebar-nav {
   padding: 1rem 0;
-
   ul {
     list-style: none;
     padding: 0;
@@ -9276,7 +9140,6 @@ Lignes:      482
     text-decoration: none;
     transition: all 0.3s ease;
     border-left: 3px solid transparent;
-
     &:hover {
       background-color: rgba(255, 255, 255, 0.1);
       color: white;
@@ -9329,7 +9192,6 @@ Lignes:      482
   flex: 1;
 }
 
-/* Badge du bateau sélectionné */
 .selected-boat-badge {
   display: inline-flex;
   align-items: center;
@@ -9357,7 +9219,6 @@ Lignes:      482
     display: flex;
     flex-direction: column;
     gap: 0.125rem;
-
     .boat-label {
       font-size: 0.75rem;
       opacity: 0.9;
@@ -9384,7 +9245,6 @@ Lignes:      482
   }
 }
 
-/* Badge aucun bateau sélectionné */
 .no-boat-badge {
   display: inline-flex;
   align-items: center;
@@ -9397,7 +9257,6 @@ Lignes:      482
   cursor: pointer;
   transition: all 0.3s ease;
   animation: pulse 2s ease-in-out infinite;
-
   &:hover {
     background: #fecaca;
     transform: scale(1.02);
@@ -9414,7 +9273,6 @@ Lignes:      482
     display: flex;
     flex-direction: column;
     gap: 0.125rem;
-
     .no-boat-label {
       font-size: 0.875rem;
       font-weight: 700;
@@ -9428,24 +9286,14 @@ Lignes:      482
 }
 
 @keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.85;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
 }
 
 @keyframes shake {
-  0%, 100% {
-    transform: rotate(0deg);
-  }
-  25% {
-    transform: rotate(-5deg);
-  }
-  75% {
-    transform: rotate(5deg);
-  }
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
 }
 
 .content {
@@ -9455,139 +9303,100 @@ Lignes:      482
   overflow-x: hidden;
 }
 
-/* RESPONSIVE */
+// ✅ NOUVEAUX STYLES AJOUTÉS
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #4b5563;
+  font-weight: 500;
+  font-size: 0.875rem;
+  
+  .user-icon {
+    width: 20px;
+    height: 20px;
+    color: #9ca3af;
+  }
+}
+
+.btn-logout {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+
+  svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  &:hover {
+    background-color: #fee2e2;
+    color: #ef4444;
+  }
+}
+// FIN DES NOUVEAUX STYLES
+
 @media (max-width: 1024px) {
-  .sidebar {
-    width: 220px;
-  }
-
-  .main-content {
-    margin-left: 220px;
-    width: calc(100% - 220px);
-  }
-
-  .content {
-    padding: 1.5rem;
-  }
-
-  .boat-info .boat-name {
-    font-size: 0.9rem;
-  }
-
-  .boat-info .boat-registration {
-    font-size: 0.8rem;
-  }
+  .sidebar { width: 220px; }
+  .main-content { margin-left: 220px; width: calc(100% - 220px); }
+  .content { padding: 1.5rem; }
+  .boat-info .boat-name { font-size: 0.9rem; }
+  .boat-info .boat-registration { font-size: 0.8rem; }
+  .user-info span { display: none; } // Cache l'email sur les écrans moyens
 }
 
 @media (max-width: 768px) {
-  .sidebar {
-    transform: translateX(-100%);
-    width: 260px;
-  }
-
-  .main-content {
-    margin-left: 0;
-    width: 100%;
-  }
-
-  .header {
-    padding: 0.75rem 1rem;
-    flex-wrap: wrap;
-  }
-
-  .boat-selector {
-    width: 100%;
-    order: 1;
-    margin-top: 0.75rem;
-  }
-
-  .selected-boat-badge,
-  .no-boat-badge {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  .content {
-    padding: 1rem;
-  }
+  .sidebar { transform: translateX(-100%); width: 260px; }
+  .main-content { margin-left: 0; width: 100%; }
+  .header { padding: 0.75rem 1rem; flex-wrap: wrap; }
+  .boat-selector { width: 100%; order: 2; margin-top: 0.75rem; }
+  .header-right { order: 1; width: 100%; justify-content: flex-end; }
+  .selected-boat-badge, .no-boat-badge { width: 100%; justify-content: flex-start; }
+  .content { padding: 1rem; }
 }
 
 @media (max-width: 480px) {
-  .content {
-    padding: 0.75rem;
-  }
-
-  .selected-boat-badge,
-  .no-boat-badge {
-    padding: 0.625rem 1rem;
-  }
-
-  .boat-info .boat-name {
-    font-size: 0.875rem;
-  }
-
-  .boat-info .boat-registration {
-    font-size: 0.75rem;
-  }
-
-  .no-boat-info .no-boat-label {
-    font-size: 0.8125rem;
-  }
-
-  .no-boat-info .no-boat-action {
-    font-size: 0.6875rem;
-  }
+  .content { padding: 0.75rem; }
+  .selected-boat-badge, .no-boat-badge { padding: 0.625rem 1rem; }
+  .boat-info .boat-name { font-size: 0.875rem; }
+  .boat-info .boat-registration { font-size: 0.75rem; }
+  .no-boat-info .no-boat-label { font-size: 0.8125rem; }
+  .no-boat-info .no-boat-action { font-size: 0.6875rem; }
 }
 
-/* RTL SUPPORT */
-body.rtl,
-:host-context(.rtl) {
-  .sidebar {
-    left: auto;
-    right: 0;
-    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+body.rtl, :host-context(.rtl) {
+  .sidebar { left: auto; right: 0; box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1); }
+  .nav-item { border-left: none; border-right: 3px solid transparent;
+    &.active { border-right-color: #60a5fa; }
+    span { margin-left: 0; margin-right: 0.75rem; }
   }
-
-  .nav-item {
-    border-left: none;
-    border-right: 3px solid transparent;
-
-    &.active {
-      border-right-color: #60a5fa;
-    }
-
-    span {
-      margin-left: 0;
-      margin-right: 0.75rem;
-    }
-  }
-
-  .main-content {
-    margin-left: 0;
-    margin-right: 260px;
-  }
+  .main-content { margin-left: 0; margin-right: 260px; }
 
   @media (max-width: 1024px) {
-    .main-content {
-      margin-right: 220px;
-    }
+    .main-content { margin-right: 220px; }
   }
 
   @media (max-width: 768px) {
-    .sidebar {
-      transform: translateX(100%);
-    }
-
-    .main-content {
-      margin-right: 0;
-    }
+    .sidebar { transform: translateX(100%); }
+    .main-content { margin-right: 0; }
   }
 }
 
-/* Menu item désactivé */
 .menu-disabled {
   position: relative;
-
   .nav-item-disabled {
     display: flex;
     align-items: center;
@@ -9595,19 +9404,8 @@ body.rtl,
     color: rgba(255, 255, 255, 0.4);
     cursor: not-allowed;
     position: relative;
-
-    span {
-      margin-left: 0.75rem;
-      font-weight: 500;
-    }
-
-    .lock-icon {
-      width: 16px;
-      height: 16px;
-      margin-left: auto;
-    }
+    span { margin-left: 0.75rem; font-weight: 500; }
   }
-
   .tooltip-disabled {
     position: absolute;
     left: 100%;
@@ -9626,7 +9424,6 @@ body.rtl,
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     z-index: 1001;
     pointer-events: none;
-
     &::before {
       content: '';
       position: absolute;
@@ -9637,35 +9434,22 @@ body.rtl,
       border-right-color: #1f2937;
     }
   }
-
   &:hover .tooltip-disabled {
     opacity: 1;
     visibility: visible;
   }
 }
 
-/* RTL Support pour le tooltip */
-body.rtl,
-:host-context(.rtl) {
+body.rtl, :host-context(.rtl) {
   .menu-disabled {
     .nav-item-disabled {
-      span {
-        margin-left: 0;
-        margin-right: 0.75rem;
-      }
-
-      .lock-icon {
-        margin-left: 0;
-        margin-right: auto;
-      }
+      span { margin-left: 0; margin-right: 0.75rem; }
     }
-
     .tooltip-disabled {
       left: auto;
       right: 100%;
       margin-left: 0;
       margin-right: 0.5rem;
-
       &::before {
         right: auto;
         left: 100%;
@@ -9676,34 +9460,10 @@ body.rtl,
   }
 }
 
-/* Responsive */
 @media (max-width: 768px) {
-  .menu-disabled {
-    .tooltip-disabled {
-      position: fixed;
-      left: 50%;
-      right: auto;
-      top: auto;
-      bottom: 20px;
-      transform: translateX(-50%);
-      margin-left: 0;
-
-      &::before {
-        display: none;
-      }
-    }
-  }
-}
-
-// Bouton Mock Data
-.mock-data-btn {
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6) !important;
-  }
-  
-  &:active {
-    transform: translateY(0);
+  .menu-disabled .tooltip-disabled {
+    position: fixed; left: 50%; right: auto; top: auto; bottom: 20px; transform: translateX(-50%); margin-left: 0;
+    &::before { display: none; }
   }
 }
 
@@ -12821,6 +12581,6 @@ Lignes:       25
   RÉSUMÉ
 ====================================
 Total fichiers: 122
-Total lignes: 11906
-Date: Tue Oct 21 16:41:10 CET 2025
+Total lignes: 11681
+Date: Wed Oct 22 07:18:51 CET 2025
 ====================================

@@ -1,127 +1,88 @@
-// Styles globaux améliorés pour les popups Swal customisées via :host::ng-deep
+// Styles globaux améliorés pour les popups Swal customisées
 :host::ng-deep {
 
-  // Classe principale appliquée au popup
+  // Classe générale pour nos popups customisés
   .swal-custom-styles {
-    width: 600px !important; // Largeur du popup
-    font-family: inherit !important; // Police par défaut de l'application
-    border-radius: 0.75rem !important; // Coins arrondis pour le popup
+    width: 600px !important; // Popup un peu plus large
+    font-family: inherit !important; // Utiliser la police du reste de l'app
 
-    // Style pour le titre (si la classe swal-custom-title est utilisée)
+    // Titre customisé
     .swal-custom-title {
-      font-size: 1.75rem !important; // Taille du titre
+      font-size: 1.5rem !important;
       font-weight: 700 !important;
-      color: #1f2937 !important; // Couleur du titre
-      margin-bottom: 1.5rem !important; // Espace sous le titre
-      padding-top: 1rem; // Un peu d'espace au-dessus
-      text-align: center;
+      color: #1f2937 !important;
+      margin-bottom: 0.5rem !important;
+      text-align: center; // Centrer le titre explicitement
     }
 
-     // Conteneur HTML (pour notre formulaire)
-    .swal2-html-container {
-       margin: 0 !important; // Reset marge
-       padding: 0 1.5rem !important; // Padding latéral pour le formulaire
-       overflow: visible !important;
-     }
+    // Container HTML (contient notre formulaire)
+    .swal-custom-html-container {
+      margin: 1rem 0 0 0 !important; // Espace au-dessus du formulaire
+      padding: 0 !important; // Enlever le padding par défaut
+    }
 
-    // Formulaire à l'intérieur du popup
+    // Styles du formulaire dans le popup
     .swal-custom-form {
-      padding: 0; // Pas de padding supplémentaire ici
-      text-align: left; // Défaut LTR
-
-      // Alignement spécifique RTL
-      &[dir="rtl"] {
-         text-align: right;
-      }
+      padding: 1rem 0; // Padding interne au formulaire
     }
 
     // Groupe de formulaire (label + input)
     .swal-form-group {
-      margin-bottom: 1.25rem; // Espacement vertical entre les champs
-      &:last-child {
-         margin-bottom: 0; // Pas de marge pour le dernier groupe avant les boutons
-      }
+      margin-bottom: 1.25rem; // Espacement entre les groupes
+      text-align: inherit; // Hérite de .swal-custom-form
     }
 
     // Label du champ
     .swal-form-label {
-      display: block; // Assure que le label est sur sa propre ligne
-      margin-bottom: 0.5rem; // Espace sous le label
+      display: block; // Assure que le label prend toute la largeur
+      margin-bottom: 0.625rem;
       font-weight: 600;
-      color: #374151; // Couleur du label (gris foncé)
-      font-size: 0.9rem; // Taille du label
+      color: #374151; // Gris foncé
+      font-size: 0.9rem;
+      text-align: inherit; // Hérite de .swal-custom-form
     }
 
     // Étoile pour champ requis
     .required-star {
       color: #ef4444; // Rouge
       font-weight: 700;
+      margin-left: 0.25rem; // Petit espace avant l'étoile
       font-size: 1rem;
       line-height: 1;
-      display: inline-block; // Pour que la marge fonctionne bien
-      // Marge ajoutée dynamiquement en fonction de dir
-      margin-left: 0.25rem;
-    }
-    // Ajustement étoile pour RTL
-    .swal-custom-form[dir="rtl"] .required-star {
-        margin-left: 0;
-        margin-right: 0.25rem;
     }
 
     // Styles communs pour input, textarea, select
     .swal-custom-input, .swal-custom-textarea, .swal-custom-select {
-      display: block; // S'assurer qu'ils prennent toute la largeur
       width: 100%;
-      padding: 0.75rem 1rem; // Padding interne
-      border: 1px solid #d1d5db; // Bordure grise standard
+      padding: 0.75rem 0.875rem;
+      border: 2px solid #e5e7eb; // Bordure grise claire
       border-radius: 0.5rem; // Coins arrondis
       font-size: 0.95rem;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      transition: all 0.3s;
       font-family: inherit;
-      background-color: #f9fafb; // Fond légèrement grisé
-      color: #1f2937; // Couleur de texte foncée
+      background: white;
       box-sizing: border-box;
-
-      // Placeholder style
-      &::placeholder {
-          color: #9ca3af; // Placeholder gris clair
-          opacity: 1;
-      }
+      text-align: inherit; // Hérite de .swal-custom-form
 
       &:focus {
         outline: none;
-        border-color: #10b981; // Bordure verte au focus (Ajouter)
-        background-color: #ffffff; // Fond blanc au focus
-        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); // Halo vert léger
+        border-color: #10b981; // Vert au focus
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
       }
-       // Style pour select
-       &.swal-custom-select {
-            background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>');
-            background-position: right 0.75rem center; // LTR par défaut
-            background-repeat: no-repeat;
-            background-size: 1.25em 1.25em;
-            padding-right: 2.5rem; // Espace pour la flèche
-            appearance: none; // Masquer la flèche par défaut
-       }
-       // Flèche select en RTL
-       .swal-custom-form[dir="rtl"] &.swal-custom-select {
-            background-position: left 0.75rem center;
-            padding-right: 1rem; // Reset padding droit
-            padding-left: 2.5rem; // Padding gauche pour la flèche
-       }
     }
 
     // Style spécifique textarea
     .swal-custom-textarea {
-      resize: vertical; // Permettre redimensionnement vertical
-      min-height: 90px; // Hauteur minimale un peu plus grande
+      resize: vertical;
+      min-height: 80px;
     }
 
     // Texte d'aide sous l'input
     .swal-input-helper {
-      margin-top: 0.5rem; // Plus d'espace
+      margin-top: 0.4rem;
       font-size: 0.8rem;
       color: #6b7280; // Gris moyen
+      text-align: inherit; // Hérite de .swal-custom-form
     }
 
     // Message de validation d'erreur
@@ -129,82 +90,36 @@
       background-color: #fee2e2 !important; // Fond rouge clair
       color: #b91c1c !important; // Texte rouge foncé
       font-weight: 500;
-      border-left: 4px solid #ef4444 !important; // Bordure gauche rouge par défaut
-      border-right: none !important;
-      margin: 0.75em 0 0 !important; // Un peu moins d'espace au-dessus
-      padding: 0.75em 1em !important; // Padding ajusté
+      border-left: 4px solid #ef4444 !important; // Bordure gauche rouge (ou droite en RTL)
+      border-right: none !important; // S'assurer qu'il n'y a pas de bordure droite par défaut
+      margin: 1em 0 0 !important;
+      padding: 0.75em !important; // Padding ajusté
       font-size: 0.9em !important;
-      text-align: left !important; // Alignement gauche par défaut
-      border-radius: 0.375rem !important; // Coins arrondis
-      display: block !important; // Assure l'affichage correct
-    }
-    // Message validation en RTL
-     .swal-custom-form[dir="rtl"] + .swal2-validation-message {
-        border-left: none !important;
-        border-right: 4px solid #ef4444 !important; // Bordure droite en RTL
-        text-align: right !important; // Alignement droit en RTL
+      text-align: inherit !important; // Hérite de .swal-custom-form
     }
 
-    // Conteneur des boutons d'action
-    .swal2-actions {
-        margin-top: 1.5rem !important; // Espace au-dessus des boutons
-        gap: 0.75rem; // Espace entre les boutons
-    }
-
-    // Styles des boutons (classes ajoutées dans le .ts)
-    .swal-custom-button {
+    // Styles des boutons (peut être ajusté si nécessaire)
+    .swal-custom-confirm-button,
+    .swal-custom-cancel-button {
         padding: 0.75rem 1.5rem !important;
         font-weight: 600 !important;
         border-radius: 0.5rem !important;
         font-size: 0.95rem !important;
-        border: none !important;
-        cursor: pointer;
-        transition: background-color 0.2s, transform 0.1s;
-
-        &:focus {
-            outline: none !important;
-             box-shadow: 0 0 0 3px rgba(var(--focus-ring-color, 16, 185, 129), 0.4) !important; // Halo focus générique
-        }
-
-        &:hover {
-            transform: translateY(-1px); // Léger effet au survol
-        }
-        &:active {
-            transform: translateY(0px); // Annuler l'effet au clic
-        }
     }
-    // Bouton Confirmer (vert)
-    .swal-custom-confirm-button {
-        background-color: #10b981 !important;
-        color: white !important;
-         --focus-ring-color: 16, 185, 129; // Vert pour focus
+  }
 
-        &:hover {
-            background-color: #059669 !important; // Vert plus foncé
-        }
-    }
-     // Bouton Annuler (gris)
-    .swal-custom-cancel-button {
-        background-color: #6b7280 !important;
-        color: white !important;
-         --focus-ring-color: 107, 114, 128; // Gris pour focus
+  // Support RTL pour la validation SweetAlert
+  body.rtl :host::ng-deep .swal-custom-styles .swal2-validation-message {
+      border-left: none !important;
+      border-right: 4px solid #ef4444 !important; // Bordure droite en RTL
+  }
 
-        &:hover {
-            background-color: #4b5563 !important; // Gris plus foncé
-        }
-    }
-    // Bouton Confirmer (orange pour edit)
-    .swal-custom-styles .swal2-confirm.swal-custom-confirm-button[style*="rgb(245, 158, 11)"] { // Cibler la couleur inline orange
-        background-color: #f59e0b !important;
-         --focus-ring-color: 245, 158, 11; // Orange pour focus
-         &:hover {
-             background-color: #d97706 !important; // Orange plus foncé
-         }
-    }
-
-  } // Fin de .swal-custom-styles
-
-} // Fin de :host::ng-deep
+  // Support RTL pour l'étoile requise
+  body.rtl :host::ng-deep .swal-custom-styles .required-star {
+      margin-left: 0;
+      margin-right: 0.25rem; // Espace à droite de l'étoile
+  }
+}
 
 // Styles spécifiques au composant Avances (inchangés)
 .avances-container {
@@ -470,15 +385,22 @@
   .avance-actions { width: 100%; justify-content: space-between; }
   .total-card { flex-direction: column; gap: 0.5rem; text-align: center; }
 
-  :host::ng-deep .swal-custom-styles { // Ajustement popup sur mobile
+  // Ajustement pour popup sur mobile si nécessaire
+  :host::ng-deep .swal-wide-popup {
     width: 90% !important;
   }
 }
 
 // Support RTL général pour ce composant
 :host-context(.rtl) {
+    .marin-header {
+        // Pas besoin de changer flex, juste l'alignement si nécessaire
+    }
     .marin-total {
         align-items: flex-start; // Aligner à gauche en RTL
+    }
+    .avance-main {
+        // Pas besoin de changer flex
     }
      .avance-details .avance-description {
         padding-left: 0;

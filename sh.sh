@@ -1,31 +1,56 @@
 #!/bin/bash
 
-# ==============================================================================
-#  Script pour améliorer le design de la popup "Ajouter une sلفة"
-#  et corriger les traductions manquantes.
-# ==============================================================================
+# Ce script applique les modifications au composant Avances.
+# Version 8 : Rétablit l'utilisation de CSS dédié via :host::ng-deep
+#             avec des styles améliorés pour ressembler davantage
+#             à un formulaire standard (labels au-dessus, espacement, etc.).
+# Supprime l'approche Tailwind inline.
+# Utilise 'cat' pour remplacer le contenu.
 
-# --- Fichiers à modifier ---
-AVANCES_TS="src/app/avances/avances.component.ts"
-AVANCES_SCSS="src/app/avances/avances.component.scss"
-I18N_AR="src/assets/i18n/ar.json"
-I18N_EN="src/assets/i18n/en.json"
-I18N_FR="src/assets/i18n/fr.json"
+# Variables
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+SRC_DIR="src"
 
-# --- Vérification des fichiers ---
-for file in $AVANCES_TS $AVANCES_SCSS $I18N_AR $I18N_EN $I18N_FR; do
-    if [ ! -f "$file" ]; then
-        echo "❌ Erreur : Fichier manquant -> $file"
-        exit 1
+# Fonction pour sauvegarder et remplacer un fichier
+replace_file() {
+  local file_path="$1"
+  local new_content_file="$2"
+  local backup_path="${file_path}.bak_${TIMESTAMP}"
+
+  if [ -f "$file_path" ]; then
+    echo "Sauvegarde de '$file_path' vers '$backup_path'..."
+    cp "$file_path" "$backup_path"
+    if [ $? -ne 0 ]; then
+      echo "Erreur : Échec de la sauvegarde de '$file_path'. Abandon."
+      exit 1
     fi
-done
 
-echo "🔧 Début de l'amélioration de la popup d'ajout d'avance..."
+    echo "Remplacement de '$file_path'..."
+    cat "$new_content_file" > "$file_path"
+    if [ $? -ne 0 ]; then
+      echo "Erreur : Échec du remplacement de '$file_path'. Vérifiez '$new_content_file'."
+      # Restaurer si possible
+      echo "Restauration depuis la sauvegarde..."
+      cp "$backup_path" "$file_path"
+      exit 1
+    fi
+    echo "  -> '$file_path' mis à jour."
+  else
+    echo "Attention : Le fichier '$file_path' n'existe pas. Création du fichier..."
+    mkdir -p "$(dirname "$file_path")" # Crée le dossier parent si nécessaire
+    cat "$new_content_file" > "$file_path"
+     if [ $? -ne 0 ]; then
+      echo "Erreur : Échec de la création de '$file_path'."
+      exit 1
+    fi
+    echo "  -> '$file_path' créé."
+  fi
+}
 
-# --- 1. Remplacement du fichier TypeScript (avances.component.ts) ---
-echo "🔄 1/3 - Mise à jour de la méthode 'addAvance' avec le nouveau design..."
-cp "$AVANCES_TS" "$AVANCES_TS.bak"
-cat > "$AVANCES_TS" << 'EOF'
+# --- Définition du nouveau contenu ---
+
+# 1. src/app/avances/avances.component.ts
+cat > /tmp/avances.component.ts << 'EOF'
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -45,7 +70,7 @@ import { combineLatest } from 'rxjs';
   standalone: true,
   imports: [CommonModule, TranslateModule, RouterModule],
   templateUrl: './avances.component.html',
-  styleUrls: ['./avances.component.scss']
+  styleUrls: ['./avances.component.scss'] // Garder le lien SCSS
 })
 export class AvancesComponent implements OnInit {
   selectedBoat: Bateau | null = null;
@@ -73,17 +98,22 @@ export class AvancesComponent implements OnInit {
 
   loadData(): void {
     if (!this.selectedBoat) return;
-    this.loading = true; // S'assurer que le loading est bien actif
+    this.loading = true;
     combineLatest([
       this.marinService.getMarinsByBateau(this.selectedBoat.id!),
       this.avanceService.getUnsettledAvancesByBateau(this.selectedBoat.id!)
     ]).subscribe(([marins, avances]) => {
       this.marins = marins;
-      this.avances = avances;
+      this.marins.sort((a, b) => a.nom.localeCompare(b.nom));
+      this.avances = avances.sort((a, b) => {
+        const dateA = a.dateAvance instanceof Date ? a.dateAvance : (a.dateAvance as any)?.toDate();
+        const dateB = b.dateAvance instanceof Date ? b.dateAvance : (b.dateAvance as any)?.toDate();
+        return (dateB?.getTime() || 0) - (dateA?.getTime() || 0);
+      });
       this.loading = false;
     });
   }
-  
+
   getMarinName(marinId: string): string {
     const marin = this.marins.find(m => m.id === marinId);
     return marin ? `${marin.prenom} ${marin.nom}` : this.translate.instant('COMMON.UNKNOWN');
@@ -121,8 +151,14 @@ export class AvancesComponent implements OnInit {
       dateObj = date.toDate();
     } else if (date instanceof Date) {
       dateObj = date;
-    } else {
+    } else if (typeof date === 'string') {
+        dateObj = new Date(date);
+    }
+     else {
       return '';
+    }
+    if (isNaN(dateObj.getTime())) {
+        return '';
     }
     const day = String(dateObj.getDate()).padStart(2, '0');
     const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -130,12 +166,10 @@ export class AvancesComponent implements OnInit {
     return `${day}/${month}/${year}`;
   }
 
-  // ✅ AMÉLIORATION: Méthode entièrement revue pour un meilleur design
   async addAvance(): Promise<void> {
     if (!this.selectedBoat) return;
 
     const marinsOptions = this.marins.reduce((acc, marin) => {
-      // La traduction est maintenant correcte grâce aux clés ajoutées
       const fonction = this.translate.instant('SAILORS.FUNCTION_TYPE.' + marin.fonction.toUpperCase());
       acc[marin.id!] = `${marin.prenom} ${marin.nom} - ${fonction}`;
       return acc;
@@ -156,29 +190,31 @@ export class AvancesComponent implements OnInit {
       amountPositive: this.translate.instant('AVANCES.AMOUNT_POSITIVE')
     };
 
+    const textDirection = document.body.classList.contains('rtl') ? 'rtl' : 'ltr';
+
     const { value: formValues } = await Swal.fire({
-      title: t.title,
+      title: `<div class="swal-custom-title">${t.title}</div>`,
       html: `
-        <div class="swal-custom-form">
-          <div class="form-group">
-            <label class="form-label">${t.sailor} <span class="required-star">*</span></label>
-            <select id="swal-marin" class="custom-select">
+        <div class="swal-custom-form" dir="${textDirection}">
+          <div class="swal-form-group">
+            <label class="swal-form-label" for="swal-marin">${t.sailor} <span class="required-star">*</span></label>
+            <select id="swal-marin" class="swal-custom-select">
               <option value="">${t.selectSailor}</option>
               ${Object.keys(marinsOptions).map(id => `<option value="${id}">${marinsOptions[id]}</option>`).join('')}
             </select>
           </div>
-          <div class="form-group">
-            <label class="form-label">${t.amount} <span class="required-star">*</span></label>
-            <input id="swal-montant" type="number" class="custom-input" placeholder="0.00" step="0.01" min="0" />
-            <div class="input-helper">${t.amountPlaceholder}</div>
+          <div class="swal-form-group">
+            <label class="swal-form-label" for="swal-montant">${t.amount} <span class="required-star">*</span></label>
+            <input id="swal-montant" type="number" class="swal-custom-input" placeholder="0.00" step="0.01" min="0" autocomplete="off" />
+            <div class="swal-input-helper">${t.amountPlaceholder}</div>
           </div>
-          <div class="form-group">
-            <label class="form-label">${t.date} <span class="required-star">*</span></label>
-            <input id="swal-date" type="date" class="custom-input" value="${this.getTodayDate()}" />
+          <div class="swal-form-group">
+            <label class="swal-form-label" for="swal-date">${t.date} <span class="required-star">*</span></label>
+            <input id="swal-date" type="date" class="swal-custom-input" value="${this.getTodayDate()}" />
           </div>
-          <div class="form-group">
-            <label class="form-label">${t.description}</label>
-            <textarea id="swal-description" class="custom-textarea" placeholder="${t.descriptionPlaceholder}"></textarea>
+          <div class="swal-form-group">
+            <label class="swal-form-label" for="swal-description">${t.description}</label>
+            <textarea id="swal-description" class="swal-custom-textarea" placeholder="${t.descriptionPlaceholder}"></textarea>
           </div>
         </div>
       `,
@@ -187,32 +223,42 @@ export class AvancesComponent implements OnInit {
       confirmButtonText: t.add,
       cancelButtonText: t.cancel,
       confirmButtonColor: '#10b981',
+      cancelButtonColor: '#6b7280',
+      width: '600px', // Largeur fixe
       customClass: {
-        popup: 'swal-wide-popup'
+        popup: 'swal-custom-styles', // Classe principale pour CSS
+        title: 'swal-ignore-styles',
+        htmlContainer: 'swal-ignore-styles',
+        confirmButton: 'swal-custom-button swal-custom-confirm-button', // Boutons stylisés par CSS
+        cancelButton: 'swal-custom-button swal-custom-cancel-button'
       },
+       didOpen: () => {
+         const form = document.querySelector('.swal-custom-form') as HTMLElement;
+         if (form) {
+            form.dir = textDirection; // Appliquer dir dynamiquement
+         }
+       },
       preConfirm: () => {
+        // Validation reste la même
         const marinId = (document.getElementById('swal-marin') as HTMLSelectElement).value;
-        const montant = parseFloat((document.getElementById('swal-montant') as HTMLInputElement).value);
+        const montantStr = (document.getElementById('swal-montant') as HTMLInputElement).value;
         const date = (document.getElementById('swal-date') as HTMLInputElement).value;
+        const montant = parseFloat(montantStr);
 
-        if (!marinId || !montant || !date) {
+        if (!marinId || !montantStr || !date) {
           Swal.showValidationMessage(t.requiredFields);
           return false;
         }
-        if (montant <= 0) {
+        if (isNaN(montant) || montant <= 0) {
           Swal.showValidationMessage(t.amountPositive);
           return false;
         }
-        return {
-          marinId,
-          montant,
-          date,
-          description: (document.getElementById('swal-description') as HTMLTextAreaElement).value
-        };
+        return { marinId, montant, date, description: (document.getElementById('swal-description') as HTMLTextAreaElement).value };
       }
     });
 
     if (formValues) {
+      // Logique d'ajout reste la même
       try {
         this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
         const newAvance: Omit<Avance, 'id'> = {
@@ -220,7 +266,8 @@ export class AvancesComponent implements OnInit {
           bateauId: this.selectedBoat!.id!,
           montant: formValues.montant,
           dateAvance: new Date(formValues.date),
-          createdAt: new Date()
+          createdAt: new Date(),
+          calculSalaireId: undefined
         };
         if (formValues.description && formValues.description.trim() !== '') {
           newAvance.description = formValues.description.trim();
@@ -228,82 +275,114 @@ export class AvancesComponent implements OnInit {
         await this.avanceService.addAvance(newAvance);
         this.alertService.success(this.translate.instant('AVANCES.SUCCESS_ADD'));
       } catch (error) {
-        console.error("Erreur lors de l'ajout de l'avance:", error);
+        console.error("Erreur ajout avance:", error);
         this.alertService.error();
       }
     }
   }
 
+
   async editAvance(avance: Avance): Promise<void> {
     const t = {
-        title: this.translate.instant('AVANCES.EDIT_MODAL.TITLE'),
-        amount: this.translate.instant('COMMON.AMOUNT_D_T'),
-        date: this.translate.instant('COMMON.DATE'),
-        description: this.translate.instant('COMMON.DESCRIPTION'),
-        edit: this.translate.instant('FORM.EDIT'),
-        cancel: this.translate.instant('FORM.CANCEL')
+      title: this.translate.instant('AVANCES.EDIT_MODAL.TITLE'),
+      amount: this.translate.instant('COMMON.AMOUNT_D_T'),
+      date: this.translate.instant('COMMON.DATE'),
+      description: this.translate.instant('COMMON.DESCRIPTION'),
+      descriptionPlaceholder: this.translate.instant('COMMON.DESCRIPTION_OPTIONAL'),
+      edit: this.translate.instant('FORM.EDIT'),
+      cancel: this.translate.instant('FORM.CANCEL'),
+      amountPositive: this.translate.instant('AVANCES.AMOUNT_POSITIVE'),
+      requiredFields: this.translate.instant('FORM.REQUIRED_FIELDS')
     };
 
+    const textDirection = document.body.classList.contains('rtl') ? 'rtl' : 'ltr';
+
     const { value: formValues } = await Swal.fire({
-      title: t.title,
+      title: `<div class="swal-custom-title">${t.title}</div>`,
       html: `
-        <div class="swal-custom-form">
-          <div class="form-group">
-            <label class="form-label">${t.amount}</label>
-            <input id="swal-montant" type="number" class="custom-input" value="${avance.montant}" step="0.01" min="0">
+        <div class="swal-custom-form" dir="${textDirection}">
+           <div class="swal-form-group">
+            <label class="swal-form-label" for="swal-montant">${t.amount} <span class="required-star">*</span></label>
+            <input id="swal-montant" type="number" class="swal-custom-input" value="${avance.montant}" step="0.01" min="0">
           </div>
-          <div class="form-group">
-            <label class="form-label">${t.date}</label>
-            <input id="swal-date" type="date" class="custom-input" value="${this.formatDate(avance.dateAvance)}">
+          <div class="swal-form-group">
+            <label class="swal-form-label" for="swal-date">${t.date} <span class="required-star">*</span></label>
+            <input id="swal-date" type="date" class="swal-custom-input" value="${this.formatDate(avance.dateAvance)}">
           </div>
-          <div class="form-group">
-            <label class="form-label">${t.description}</label>
-            <textarea id="swal-description" class="custom-textarea">${avance.description || ''}</textarea>
+          <div class="swal-form-group">
+            <label class="swal-form-label" for="swal-description">${t.description}</label>
+            <textarea id="swal-description" class="swal-custom-textarea" placeholder="${t.descriptionPlaceholder}">${avance.description || ''}</textarea>
           </div>
         </div>`,
       focusConfirm: false,
       showCancelButton: true,
       confirmButtonText: t.edit,
       cancelButtonText: t.cancel,
-      confirmButtonColor: '#f59e0b',
+      confirmButtonColor: '#f59e0b', // Couleur orange
+      cancelButtonColor: '#6b7280',
+      width: '600px',
       customClass: {
-        popup: 'swal-wide-popup'
+        popup: 'swal-custom-styles',
+        title: 'swal-ignore-styles',
+        htmlContainer: 'swal-ignore-styles',
+        confirmButton: 'swal-custom-button swal-custom-confirm-button', // Utilise les styles CSS
+        cancelButton: 'swal-custom-button swal-custom-cancel-button'
       },
-      preConfirm: () => ({
-        montant: parseFloat((document.getElementById('swal-montant') as HTMLInputElement).value),
-        date: (document.getElementById('swal-date') as HTMLInputElement).value,
-        description: (document.getElementById('swal-description') as HTMLTextAreaElement).value
-      })
+       didOpen: () => {
+         const form = document.querySelector('.swal-custom-form') as HTMLElement;
+         if (form) {
+            form.dir = textDirection;
+         }
+       },
+      preConfirm: () => {
+        // Validation reste la même
+        const montantStr = (document.getElementById('swal-montant') as HTMLInputElement).value;
+        const date = (document.getElementById('swal-date') as HTMLInputElement).value;
+        const montant = parseFloat(montantStr);
+
+        if (!montantStr || !date) {
+            Swal.showValidationMessage(t.requiredFields);
+            return false;
+        }
+        if (isNaN(montant) || montant <= 0) {
+            Swal.showValidationMessage(t.amountPositive);
+            return false;
+        }
+        return { montant, date, description: (document.getElementById('swal-description') as HTMLTextAreaElement).value };
+      }
     });
 
     if (formValues) {
+      // Logique de modification reste la même
       try {
-        this.alertService.loading();
+        this.alertService.loading(this.translate.instant('MESSAGES.UPDATING'));
         const updateData: Partial<Avance> = {
           montant: formValues.montant,
           dateAvance: new Date(formValues.date)
         };
         updateData.description = (formValues.description && formValues.description.trim() !== '') ? formValues.description.trim() : '';
+
         await this.avanceService.updateAvance(avance.id!, updateData);
         this.alertService.success(this.translate.instant('AVANCES.SUCCESS_UPDATE'));
       } catch (error) {
-        console.error('Erreur:', error);
+        console.error('Erreur modif avance:', error);
         this.alertService.error();
       }
     }
   }
 
   async deleteAvance(avance: Avance): Promise<void> {
+    // Logique de suppression reste la même
     const marinName = this.getMarinName(avance.marinId);
     const itemName = this.translate.instant('AVANCES.DELETE_CONFIRM_ITEM', { amount: avance.montant, name: marinName });
     const confirmed = await this.alertService.confirmDelete(itemName);
     if (confirmed) {
       try {
-        this.alertService.loading();
+        this.alertService.loading(this.translate.instant('MESSAGES.DELETING'));
         await this.avanceService.deleteAvance(avance.id!);
         this.alertService.toast(this.translate.instant('AVANCES.SUCCESS_DELETE'));
       } catch (error) {
-        console.error('Erreur:', error);
+        console.error('Erreur suppression avance:', error);
         this.alertService.error();
       }
     }
@@ -311,62 +390,218 @@ export class AvancesComponent implements OnInit {
 }
 EOF
 
-# --- 2. Remplacement du fichier SCSS (avances.component.scss) ---
-echo "🔄 2/3 - Ajout des styles pour la nouvelle popup..."
-cp "$AVANCES_SCSS" "$AVANCES_SCSS.bak"
-cat > "$AVANCES_SCSS" << 'EOF'
-// Styles globaux pour les popups Swal customisées
+# 2. src/app/avances/avances.component.scss
+# Styles CSS dédiés améliorés
+cat > /tmp/avances.component.scss << 'EOF'
+// Styles globaux améliorés pour les popups Swal customisées via :host::ng-deep
 :host::ng-deep {
-  .swal-wide-popup {
-    width: 600px !important;
-  }
-  .swal-custom-form {
-    text-align: left;
-    padding: 1rem 0;
-  }
-  .form-group {
-    margin-bottom: 1.25rem;
-  }
-  .form-label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.625rem;
-    font-weight: 600;
-    color: #374151;
-    font-size: 0.9rem;
-  }
-  .required-star {
-    color: #ef4444;
-    font-weight: 700;
-  }
-  .custom-input, .custom-textarea, .custom-select {
-    width: 100%;
-    padding: 0.75rem 0.875rem;
-    border: 2px solid #e5e7eb;
-    border-radius: 0.5rem;
-    font-size: 0.95rem;
-    transition: all 0.3s;
-    font-family: inherit;
-    background: white;
-  }
-  .custom-input:focus, .custom-textarea:focus, .custom-select:focus {
-    outline: none;
-    border-color: #10b981;
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-  }
-  .custom-textarea {
-    resize: vertical;
-    min-height: 80px;
-  }
-  .input-helper {
-    margin-top: 0.4rem;
-    font-size: 0.8rem;
-    color: #6b7280;
-  }
-}
 
+  // Classe principale appliquée au popup
+  .swal-custom-styles {
+    width: 600px !important; // Largeur du popup
+    font-family: inherit !important; // Police par défaut de l'application
+    border-radius: 0.75rem !important; // Coins arrondis pour le popup
 
+    // Style pour le titre (si la classe swal-custom-title est utilisée)
+    .swal-custom-title {
+      font-size: 1.75rem !important; // Taille du titre
+      font-weight: 700 !important;
+      color: #1f2937 !important; // Couleur du titre
+      margin-bottom: 1.5rem !important; // Espace sous le titre
+      padding-top: 1rem; // Un peu d'espace au-dessus
+      text-align: center;
+    }
+
+     // Conteneur HTML (pour notre formulaire)
+    .swal2-html-container {
+       margin: 0 !important; // Reset marge
+       padding: 0 1.5rem !important; // Padding latéral pour le formulaire
+       overflow: visible !important;
+     }
+
+    // Formulaire à l'intérieur du popup
+    .swal-custom-form {
+      padding: 0; // Pas de padding supplémentaire ici
+      text-align: left; // Défaut LTR
+
+      // Alignement spécifique RTL
+      &[dir="rtl"] {
+         text-align: right;
+      }
+    }
+
+    // Groupe de formulaire (label + input)
+    .swal-form-group {
+      margin-bottom: 1.25rem; // Espacement vertical entre les champs
+      &:last-child {
+         margin-bottom: 0; // Pas de marge pour le dernier groupe avant les boutons
+      }
+    }
+
+    // Label du champ
+    .swal-form-label {
+      display: block; // Assure que le label est sur sa propre ligne
+      margin-bottom: 0.5rem; // Espace sous le label
+      font-weight: 600;
+      color: #374151; // Couleur du label (gris foncé)
+      font-size: 0.9rem; // Taille du label
+    }
+
+    // Étoile pour champ requis
+    .required-star {
+      color: #ef4444; // Rouge
+      font-weight: 700;
+      font-size: 1rem;
+      line-height: 1;
+      display: inline-block; // Pour que la marge fonctionne bien
+      // Marge ajoutée dynamiquement en fonction de dir
+      margin-left: 0.25rem;
+    }
+    // Ajustement étoile pour RTL
+    .swal-custom-form[dir="rtl"] .required-star {
+        margin-left: 0;
+        margin-right: 0.25rem;
+    }
+
+    // Styles communs pour input, textarea, select
+    .swal-custom-input, .swal-custom-textarea, .swal-custom-select {
+      display: block; // S'assurer qu'ils prennent toute la largeur
+      width: 100%;
+      padding: 0.75rem 1rem; // Padding interne
+      border: 1px solid #d1d5db; // Bordure grise standard
+      border-radius: 0.5rem; // Coins arrondis
+      font-size: 0.95rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      font-family: inherit;
+      background-color: #f9fafb; // Fond légèrement grisé
+      color: #1f2937; // Couleur de texte foncée
+      box-sizing: border-box;
+
+      // Placeholder style
+      &::placeholder {
+          color: #9ca3af; // Placeholder gris clair
+          opacity: 1;
+      }
+
+      &:focus {
+        outline: none;
+        border-color: #10b981; // Bordure verte au focus (Ajouter)
+        background-color: #ffffff; // Fond blanc au focus
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); // Halo vert léger
+      }
+       // Style pour select
+       &.swal-custom-select {
+            background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>');
+            background-position: right 0.75rem center; // LTR par défaut
+            background-repeat: no-repeat;
+            background-size: 1.25em 1.25em;
+            padding-right: 2.5rem; // Espace pour la flèche
+            appearance: none; // Masquer la flèche par défaut
+       }
+       // Flèche select en RTL
+       .swal-custom-form[dir="rtl"] &.swal-custom-select {
+            background-position: left 0.75rem center;
+            padding-right: 1rem; // Reset padding droit
+            padding-left: 2.5rem; // Padding gauche pour la flèche
+       }
+    }
+
+    // Style spécifique textarea
+    .swal-custom-textarea {
+      resize: vertical; // Permettre redimensionnement vertical
+      min-height: 90px; // Hauteur minimale un peu plus grande
+    }
+
+    // Texte d'aide sous l'input
+    .swal-input-helper {
+      margin-top: 0.5rem; // Plus d'espace
+      font-size: 0.8rem;
+      color: #6b7280; // Gris moyen
+    }
+
+    // Message de validation d'erreur
+    .swal2-validation-message {
+      background-color: #fee2e2 !important; // Fond rouge clair
+      color: #b91c1c !important; // Texte rouge foncé
+      font-weight: 500;
+      border-left: 4px solid #ef4444 !important; // Bordure gauche rouge par défaut
+      border-right: none !important;
+      margin: 0.75em 0 0 !important; // Un peu moins d'espace au-dessus
+      padding: 0.75em 1em !important; // Padding ajusté
+      font-size: 0.9em !important;
+      text-align: left !important; // Alignement gauche par défaut
+      border-radius: 0.375rem !important; // Coins arrondis
+      display: block !important; // Assure l'affichage correct
+    }
+    // Message validation en RTL
+     .swal-custom-form[dir="rtl"] + .swal2-validation-message {
+        border-left: none !important;
+        border-right: 4px solid #ef4444 !important; // Bordure droite en RTL
+        text-align: right !important; // Alignement droit en RTL
+    }
+
+    // Conteneur des boutons d'action
+    .swal2-actions {
+        margin-top: 1.5rem !important; // Espace au-dessus des boutons
+        gap: 0.75rem; // Espace entre les boutons
+    }
+
+    // Styles des boutons (classes ajoutées dans le .ts)
+    .swal-custom-button {
+        padding: 0.75rem 1.5rem !important;
+        font-weight: 600 !important;
+        border-radius: 0.5rem !important;
+        font-size: 0.95rem !important;
+        border: none !important;
+        cursor: pointer;
+        transition: background-color 0.2s, transform 0.1s;
+
+        &:focus {
+            outline: none !important;
+             box-shadow: 0 0 0 3px rgba(var(--focus-ring-color, 16, 185, 129), 0.4) !important; // Halo focus générique
+        }
+
+        &:hover {
+            transform: translateY(-1px); // Léger effet au survol
+        }
+        &:active {
+            transform: translateY(0px); // Annuler l'effet au clic
+        }
+    }
+    // Bouton Confirmer (vert)
+    .swal-custom-confirm-button {
+        background-color: #10b981 !important;
+        color: white !important;
+         --focus-ring-color: 16, 185, 129; // Vert pour focus
+
+        &:hover {
+            background-color: #059669 !important; // Vert plus foncé
+        }
+    }
+     // Bouton Annuler (gris)
+    .swal-custom-cancel-button {
+        background-color: #6b7280 !important;
+        color: white !important;
+         --focus-ring-color: 107, 114, 128; // Gris pour focus
+
+        &:hover {
+            background-color: #4b5563 !important; // Gris plus foncé
+        }
+    }
+    // Bouton Confirmer (orange pour edit)
+    .swal-custom-styles .swal2-confirm.swal-custom-confirm-button[style*="rgb(245, 158, 11)"] { // Cibler la couleur inline orange
+        background-color: #f59e0b !important;
+         --focus-ring-color: 245, 158, 11; // Orange pour focus
+         &:hover {
+             background-color: #d97706 !important; // Orange plus foncé
+         }
+    }
+
+  } // Fin de .swal-custom-styles
+
+} // Fin de :host::ng-deep
+
+// Styles spécifiques au composant Avances (inchangés)
 .avances-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -513,11 +748,11 @@ cat > "$AVANCES_SCSS" << 'EOF'
 }
 
 .avances-list {
-  padding: 1rem;
+  padding: 0;
 }
 
 .avance-item {
-  padding: 1rem;
+  padding: 1rem 1.5rem;
   border-bottom: 1px solid #f3f4f6;
   transition: background-color 0.2s;
 
@@ -621,6 +856,7 @@ cat > "$AVANCES_SCSS" << 'EOF'
   .total-amount-main { font-size: 2rem; font-weight: 700; }
 }
 
+// Responsive
 @media (max-width: 768px) {
   .avances-container { padding: 1rem; }
   .title { font-size: 1.5rem; }
@@ -628,43 +864,143 @@ cat > "$AVANCES_SCSS" << 'EOF'
   .avance-main { flex-direction: column; align-items: flex-start; }
   .avance-actions { width: 100%; justify-content: space-between; }
   .total-card { flex-direction: column; gap: 0.5rem; text-align: center; }
+
+  :host::ng-deep .swal-custom-styles { // Ajustement popup sur mobile
+    width: 90% !important;
+  }
+}
+
+// Support RTL général pour ce composant
+:host-context(.rtl) {
+    .marin-total {
+        align-items: flex-start; // Aligner à gauche en RTL
+    }
+     .avance-details .avance-description {
+        padding-left: 0;
+        padding-right: 1.625rem; // Padding à droite pour RTL
+        .desc-icon {
+            margin-left: 0.5rem; // Marge gauche pour l'icône en RTL
+            margin-right: 0;
+        }
+    }
+    .avance-actions {
+        .avance-amount {
+            margin-right: 0;
+            margin-left: 0.5rem; // Marge gauche pour le montant en RTL
+        }
+    }
 }
 EOF
 
-# --- 3. Ajout des clés de traduction ---
-echo "🔄 3/3 - Ajout des clés de traduction manquantes pour les fonctions..."
+# 3. src/assets/i18n/ar.json
+# Le contenu JSON reste le même
+cat > /tmp/ar.json << 'EOF'
+{
+  "FACTURES": {
+    "TITLE": "الفواتير",
+    "NOFACTURE": "لا توجد فواتير مسجلة لهذه الرحلة.",
+    "ADD": "إضافة فاتورة"
+  },
+  "AUTH": { "WELCOME": "مرحباً بك", "SIGN_IN": "الرجاء تسجيل الدخول إلى حسابك", "SIGNUP": "املأ المعلومات للتسجيل", "CREATE_ACCOUNT": "إنشاء حساب جديد", "EMAIL": "البريد الإلكتروني", "PASSWORD": "كلمة المرور", "LOGIN": "تسجيل الدخول", "NO_ACCOUNT": "ليس لديك حساب؟ سجل الآن", "HAVE_ACCOUNT": "هل لديك حساب بالفعل؟ تسجيل الدخول" },
+  "DASHBOARD": { "TITLE": "لوحة التحكم", "WELCOME": "مرحباً بك في لوحة التحكم", "ACTIVITIES": "الأنشطة", "RECENT_ACTIVITIES": "النشاطات الأخيرة", "NO_ACTIVITIES": "لا توجد أنشطة حديثة لعرضها", "TOTAL_BOATS": "إجمالي المراكب", "TOTAL_SAILORS": "إجمالي البحارة", "ACTIVE_BOATS": "المراكب النشطة", "MAINTENANCE": "تحت الصيانة", "BOAT_ADDED": "تمت إضافة المركب", "BOAT_UPDATED": "تم تحديث المركب", "SAILOR_ADDED": "تمت إضافة البحار", "SAILOR_UPDATED": "تم تحديث البحار", "TIME_AGO": { "NOW": "الآن", "MINUTES": "قبل {{minutes}} د", "HOURS": "قبل {{hours}} س", "DAYS": "قبل {{days}} ي" } },
+  "MENU": { "HOME": "الرئيسية", "BOATS": "المراكب", "SORTIES": "الرحلات البحرية", "AVANCES": "السلف", "SALAIRES": "الرواتب", "VENTES": "المبيعات", "MOCK_DATA": "بيانات تجريبية", "SELECT_BOAT_FIRST": "اختر مركبًا أولاً للوصول" },
+  "BOATS": { "TITLE": "إدارة المراكب", "BOAT": "مركب", "ADD_BOAT": "إضافة مركب", "EDIT_BOAT": "تعديل المركب", "DELETE": "حذف", "NAME": "اسم المركب", "REGISTRATION": "رقم التسجيل", "ENGINE_TYPE": "نوع المحرك", "POWER": "القوة (حصان)", "LENGTH": "الطول (متر)", "CAPACITY": "سعة الطاقم", "CONSTRUCTION_DATE": "تاريخ الصنع", "PORT": "ميناء الرسو", "STATUS": "الحالة", "ACTIVE": "نشط", "MAINTENANCE": "صيانة", "INACTIVE": "غير نشط", "NO_BOAT_SELECTED": "لم يتم اختيار أي مركب", "NO_BOAT_SELECTED_DETAILS": "الرجاء اختيار مركب أولاً من صفحة 'المراكب'.", "CLICK_TO_SELECT": "انقر للاختيار", "SELECTED_BOAT": "المركب الحالي", "SELECTED": "محدد", "SEARCH": "ابحث عن مركب بالاسم...", "ACTIONS": "الإجراءات", "VIEWCREW": "عرض الطاقم", "SELECT_INFO": "الرجاء اختيار مركب من القائمة للمتابعة.", "CHANGE_SELECTION": "تغيير المركب", "SUCCESS_ADD": "تمت إضافة المركب بنجاح.", "SUCCESS_UPDATE": "تم تحديث المركب بنجاح.", "SUCCESS_DELETE": "تم حذف المركب بنجاح.", "TOAST_SELECTED": "تم اختيار المركب \"{{boatName}}\".", "TOAST_SELECTION_CLEARED": "تم إلغاء اختيار المركب.", "BOAT_NAME_CONFIRM": "المركب \"{{boatName}}\"" },
+  "SAILORS": { "TITLE": "البحارة", "ADD_SAILOR": "إضافة بحار", "ADD_NEW_SAILOR": "إضافة بحار جديد", "EDIT_SAILOR": "تعديل البحار", "FIRST_NAME": "الاسم", "LAST_NAME": "اللقب", "FUNCTION": "الوظيفة", "PART": "الحصة", "SELECT_FUNCTION": "اختر وظيفة", "SELECT_SAILOR": "اختر بحار", "PHONE": "الهاتف", "EMAIL": "البريد الإلكتروني", "ADDRESS": "العنوان", "BIRTH_DATE": "تاريخ الميلاد", "HIRE_DATE": "تاريخ التوظيف", "LICENSE_NUMBER": "رقم الرخصة", "CREW_OF": "طاقم مركب", "BACK": "رجوع", "ON_LEAVE": "في إجازة", "SUCCESS_ADD": "تمت إضافة البحار بنجاح.", "SUCCESS_UPDATE": "تم تحديث البحار بنجاح.", "SUCCESS_DELETE": "تم حذف البحار بنجاح.", "CAPITAINE": "قبطان", "SECOND": "مساعد قبطان", "MECANICIEN": "ميكانيكي", "MATELOT": "بحار", "PLACEHOLDER": { "LASTNAME": "أدخل اللقب", "FIRSTNAME": "أدخل الاسم", "PHONE": "رقم الهاتف" }, "FUNCTION_TYPE": { "CAPITAINE": "قبطان", "SECOND": "مساعد قبطان", "MECANICIEN": "ميكانيكي", "MATELOT": "بحار" } },
+  "SORTIES": { "TITLE": "الرحلات البحرية", "ADD": "إضافة رحلة", "EDIT": "تعديل الرحلة", "DETAILSTITLE": "تفاصيل الرحلة", "DESTINATION": "الوجهة", "DATEDEPART": "تاريخ المغادرة", "DATERETOUR": "تاريخ العودة", "STATUT": "الحالة", "STATUS": { "EN-COURS": "جارية", "TERMINEE": "منتهية", "ANNULEE": "ملغاة", "ONGOING": "جارية", "COMPLETED": "منتهية", "CANCELLED": "ملغاة" }, "GENERALINFO": "معلومات عامة", "OBSERVATIONS": "ملاحظات", "MANAGE": "إدارة الرحلة", "NOSORTIES": "لا توجد رحلات مسجلة لهذا المركب.", "SELECTSORTIES": "تحديد الرحلات البحرية", "SUCCESS_ADD": "تمت إضافة الرحلة بنجاح.", "SUCCESS_UPDATE": "تم تعديل الرحلة بنجاح.", "SUCCESS_DELETE": "تم حذف الرحلة بنجاح." },
+  "EXPENSES": { "TITLE": "المصاريف", "ADD": "إضافة مصروف", "EDIT": "تعديل المصروف", "TYPE": "نوع المصروف", "AMOUNT": "المبلغ", "DATE": "التاريخ", "DESCRIPTION": "الوصف", "NOEXPENSE": "لا توجد مصاريف مسجلة لهذه الرحلة.", "TYPES": { "FUEL": "وقود", "ICE": "ثلج", "OIL_CHANGE": "تغيير زيت", "CREW_CNSS": "الضمان الاجتماعي", "CREW_BONUS": "مكافأة الطاقم", "FOOD": "طعام", "VMS": "VMS", "MISC": "متنوع" }, "SUCCESS_ADD": "تمت إضافة المصروف بنجاح", "SUCCESS_UPDATE": "تم تحديث المصروف بنجاح" },
+  "POINTAGE": { "TITLE": "تسجيل حضور الطاقم", "CREW": "إدارة الحضور", "PRESENT": "حاضر", "ABSENT": "غائب", "NOCREW": "لا يوجد بحارة معينون لهذا المركب.", "OBSERVATIONS": "ملاحظات", "ADDOBS": "إضافة ملاحظة...", "TOTAL": "المجموع", "SUCCESS_PRESENCE": "تم تسجيل الحضور", "SUCCESS_ABSENCE": "تم تسجيل الغياب", "SUCCESS_OBS": "تم تحديث الملاحظات", "ERROR_ADD": "خطأ أثناء تسجيل الحضور" },
+  "AVANCES": { "TITLE": "السلف على الراتب", "ADD": "إضافة سلفة", "EDIT": "تعديل السلفة", "TOTAL": "مجموع السلف", "TOTAL_GENERAL": "المجموع الكلي للسلف", "NO_AVANCES": "لا توجد سلف لهذا البحار.", "SUCCESS_ADD": "تمت إضافة السلفة بنجاح.", "SUCCESS_UPDATE": "تم تحديث السلفة بنجاح.", "SUCCESS_DELETE": "تم حذف السلفة بنجاح.", "AMOUNT_POSITIVE": "يجب أن يكون المبلغ رقمًا موجبًا.", "ADD_MODAL": { "TITLE": "إضافة سلفة جديدة" }, "EDIT_MODAL": { "TITLE": "تعديل السلفة" }, "DELETE_CONFIRM_ITEM": "سلفة بقيمة {{amount}} دينار لـ {{name}}" },
+  "SALAIRES": { "AUTOCALCMESSAGE": "يتم حساب الرواتب تلقائياً عند كل تحديث للبيانات المالية", "TITLE": "حساب الرواتب", "CALCULER": "حساب الرواتب", "REVENU_TOTAL": "الإيراد الكلي", "TOTAL_DEPENSES": "مجموع المصاريف", "BENEFICE_NET": "الربح الصافي", "PART_PROPRIETAIRE": "حصة المالك (50%)", "PART_EQUIPAGE": "حصة الطاقم (50%)", "DEDUCTIONS": "الخصومات", "NUITS": "ليالي", "MARINS": "بحارة", "MONTANT_A_PARTAGER": "المبلغ الصافي للمشاركة", "DETAILS_PAR_MARIN": "التفاصيل لكل بحار", "SALAIRE_BASE": "الراتب الأساسي", "PRIME_NUITS": "علاوة الليالي", "SALAIRE_NET": "الراتب الصافي", "DEJA_PAYE": "مدفوع مسبقًا", "RESTE_A_PAYER": "المتبقي للدفع", "PAYER": "دفع", "PAYE": "مدفوع", "ERROR_NO_SORTIE": "الرجاء اختيار رحلة واحدة على الأقل", "ERROR_NO_PARTS": "مجموع حصص البحارة هو 0. الرجاء تحديد الحصص في قسم 'البحارة'.", "CALCUL_SUCCESS_TITLE": "اكتمل الحساب!", "PAYMENT_SUCCESS": "تم تسجيل الدفعة!", "PAYMENT_MODAL_TITLE": "دفعة لـ {{name}}", "PAYMENT_MODAL_LABEL": "المبلغ للدفع (المتبقي: {{amount}} دينار)", "PAYMENT_MODAL": { "ERROR_POSITIVE": "يجب أن يكون المبلغ موجباً.", "ERROR_EXCEED": "لا يمكن أن يتجاوز المبلغ الرصيد المتبقي." }, "TABS": { "OPEN_TRIPS": "الرحلات المفتوحة", "HISTORY": "السجل", "CALCULATED_TRIPS": "الرحلات المحسوبة" }, "NO_OPEN_TRIPS": "لا توجد رحلات منتهية بانتظار الحساب.", "NO_CALCULATED_TRIPS": "لم يتم إجراء أي حسابات رواتب بعد.", "HISTORY": { "MODAL_TITLE": "تفاصيل الحساب لـ : {{destinations}}", "NO_DATA_FOUND_TITLE": "التفاصيل غير موجودة", "NO_DATA_FOUND_TEXT": "لم يتم العثور على تفاصيل هذا الحساب. قد يكون حسابًا قديمًا. هل تريد وضع علامة 'مفتوح' على هذه الرحلة لإعادة حسابها؟", "RECALCULATE_BTN": "إعادة الحساب", "MOVED_FOR_RECALC": "تم نقل الرحلة إلى 'الرحلات المفتوحة' لإعادة حسابها." }, "RESULTS": { "TITLE": "نتائج الحساب", "CLOSE": "إغلاق", "FINANCIAL_SUMMARY": "ملخص مالي", "PROFIT_SHARING": "تقاسم الأرباح" }, "DETAILS_MODAL": { "REVENUE_TITLE": "تفاصيل الإيرادات", "EXPENSE_TITLE": "تفاصيل المصاريف", "INVOICE_NUM": "رقم الفاتورة", "CLIENT": "العميل" } },
+  "SALAIRES_HISTORY": { "CALCULATED_ON": "تم الحساب في" },
+  "VENTES": { "TITLE": "إدارة المبيعات", "ADD_INVOICE": "فاتورة جديدة", "ADD_INVOICE_FOR_TRIP": "إضافة فاتورة لهذه الرحلة", "NO_INVOICES_FOR_TRIP": "لا توجد فواتير مسجلة لهذه الرحلة", "TRIP_TOTAL": "مجموع مبيعات الرحلة", "GENERAL_TOTAL": "المجموع العام للمبيعات", "NO_TRIPS_AVAILABLE": "لا توجد رحلات بحرية متاحة.", "SUCCESS_ADD": "تمت إضافة الفاتورة بنجاح!", "SUCCESS_UPDATE": "تم تعديل الفاتورة بنجاح!", "SUCCESS_DELETE": "تم حذف الفاتورة بنجاح.", "DELETE_CONFIRM_ITEM": "الفاتورة رقم {{number}} ({{amount}} دينار)", "ADD_MODAL": { "TITLE": "فاتورة مبيعات جديدة", "SELECT_TRIP": "اختر رحلة" }, "EDIT_MODAL": { "TITLE": "تعديل الفاتورة" }, "DETAILS_MODAL": { "INVOICE_NUM": "رقم الفاتورة", "CLIENT": "العميل" } },
+  "FORM": { "ADD": "إضافة", "EDIT": "تعديل", "DELETE": "حذف", "CANCEL": "إلغاء", "SAVE": "حفظ", "REQUIRED": "هذا الحقل مطلوب.", "REQUIRED_FIELDS": "الرجاء ملء جميع الحقول المطلوبة.", "INVALID_PHONE": "رقم هاتف غير صالح.", "INVALID_EMAIL": "بريد إلكتروني غير صالح." },
+  "MESSAGES": { "LOADING": "جاري التحميل...", "SAVING": "جاري الحفظ...", "UPDATING": "جاري التعديل...", "DELETING": "جاري الحذف...", "CALCULATING": "جاري الحساب...", "LOADING_DETAILS": "جاري تحميل التفاصيل...", "ADDING_SAILOR": "جاري إضافة البحار...", "SUCCESS": "تمت العملية بنجاح!", "ERROR_TITLE": "خطأ", "WARNING_TITLE": "تنبيه", "ERROR_GENERIC": "حدث خطأ غير متوقع. الرجاء المحاولة مرة أخرى.", "AREYOUSURE": "هل أنت متأكد؟", "CONFIRMDELETEMESSAGE": "أنت على وشك حذف", "IRREVERSIBLE": "هذا الإجراء لا يمكن التراجع عنه.", "SAILOR_ADDED_SUCCESS": "تمت إضافة البحار {{name}} بنجاح." },
+  "LANGUAGE": { "AR": "العربية", "FR": "الفرنسية", "EN": "الإنجليزية" },
+  "COMMON": { "UNKNOWN": "غير معروف", "AMOUNT": "المبلغ", "AMOUNT_D_T": "المبلغ (دينار)", "AMOUNT_IN_TND": "المبلغ بالدينار التونسي", "DATE": "التاريخ", "OK": "موافق", "DESCRIPTION": "الوصف", "DETAILS": "التفاصيل", "DETAILS_OPTIONAL": "الوصف (اختياري)", "VIEW_DETAILS": "عرض التفاصيل" },
+  "MOCK_DATA": { "TITLE": "🎲 مولد البيانات الوهمية", "SUBTITLE": "أنشئ بيانات اختبار كاملة لتطبيقك بسرعة.", "ITEM_1": "✓ 2 مراكب صيد", "ITEM_2": "✓ عدة بحارة بحصص مختلفة", "ITEM_3": "✓ رحلات بحرية متعددة", "ITEM_4": "✓ مصاريف ومبيعات وسلف مرتبطة", "GENERATE_BUTTON": "إنشاء البيانات", "GENERATING_BUTTON": "جاري الإنشاء...", "CONFIRM_TITLE": "هل تريد إنشاء بيانات وهمية؟", "CONFIRM_TEXT": "سيقوم هذا الإجراء أولاً بحذف جميع البيانات الحالية قبل إنشاء سجلات اختبار جديدة.", "CONFIRM_BUTTON": "نعم، أنشئ", "LOADING_TITLE": "جاري الإنشاء...", "LOADING_TEXT": "الرجاء الانتظار أثناء إنشاء البيانات.", "SUCCESS_TITLE": "نجاح!", "SUCCESS_TEXT": "تم إنشاء بيانات الاختبار بنجاح.", "ERROR_TITLE": "خطأ" }
+}
+EOF
 
-# fr.json
-sed -i'' '/"PLACEHOLDER": {/i \
-    "FUNCTION_TYPE": {\
-      "CAPITAINE": "Capitaine",\
-      "SECOND": "Second",\
-      "MECANICIEN": "Mécanicien",\
-      "MATELOT": "Matelot"\
-    },
-' "$I18N_FR"
+# 4. src/assets/i18n/en.json
+cat > /tmp/en.json << 'EOF'
+{
+  "FACTURES": {
+    "TITLE": "Invoices",
+    "NOFACTURE": "No invoices recorded for this trip.",
+    "ADD": "Add Invoice"
+  },
+  "AUTH": { "WELCOME": "Welcome", "SIGN_IN": "Please sign in to your account", "SIGNUP": "Fill in the information to sign up", "CREATE_ACCOUNT": "Create an Account", "EMAIL": "Email Address", "PASSWORD": "Password", "LOGIN": "Sign In", "NO_ACCOUNT": "Don't have an account? Sign Up", "HAVE_ACCOUNT": "Already have an account? Sign In" },
+  "DASHBOARD": { "TITLE": "Dashboard", "WELCOME": "Welcome to your dashboard", "ACTIVITIES": "Activities", "RECENT_ACTIVITIES": "Recent Activity", "NO_ACTIVITIES": "No recent activity to display", "TOTAL_BOATS": "Total Boats", "TOTAL_SAILORS": "Total Sailors", "ACTIVE_BOATS": "Active Boats", "MAINTENANCE": "In Maintenance", "BOAT_ADDED": "Boat added", "BOAT_UPDATED": "Boat updated", "SAILOR_ADDED": "Sailor added", "SAILOR_UPDATED": "Sailor updated", "TIME_AGO": { "NOW": "Just now", "MINUTES": "{{minutes}} min ago", "HOURS": "{{hours}}h ago", "DAYS": "{{days}}d ago" } },
+  "MENU": { "HOME": "Home", "BOATS": "Boats", "SORTIES": "Sea Trips", "AVANCES": "Advances", "SALAIRES": "Salaries", "VENTES": "Sales", "MOCK_DATA": "Mock Data", "SELECT_BOAT_FIRST": "Select a boat first to access this section" },
+  "BOATS": { "TITLE": "Boat Management", "BOAT": "Boat", "ADD_BOAT": "Add a Boat", "EDIT_BOAT": "Edit Boat", "DELETE": "Delete", "NAME": "Boat Name", "REGISTRATION": "Registration", "ENGINE_TYPE": "Engine Type", "POWER": "Power (HP)", "LENGTH": "Length (m)", "CAPACITY": "Crew Capacity", "CONSTRUCTION_DATE": "Construction Date", "PORT": "Home Port", "STATUS": "Status", "ACTIVE": "Active", "MAINTENANCE": "Maintenance", "INACTIVE": "Inactive", "NO_BOAT_SELECTED": "No boat is selected", "NO_BOAT_SELECTED_DETAILS": "Please select a boat from the 'Boats' page first.", "CLICK_TO_SELECT": "Click to select one", "SELECTED_BOAT": "Active Boat", "SELECTED": "Selected", "SEARCH": "Search for a boat by name...", "ACTIONS": "Actions", "VIEWCREW": "View Crew", "SELECT_INFO": "Please select a boat from the list to continue.", "CHANGE_SELECTION": "Change Boat", "SUCCESS_ADD": "Boat added successfully.", "SUCCESS_UPDATE": "Boat updated successfully.", "SUCCESS_DELETE": "Boat deleted successfully.", "TOAST_SELECTED": "Boat \"{{boatName}}\" selected.", "TOAST_SELECTION_CLEARED": "Boat selection cleared.", "BOAT_NAME_CONFIRM": "the boat \"{{boatName}}\"" },
+  "SAILORS": { "TITLE": "Sailors", "ADD_SAILOR": "Add Sailor", "ADD_NEW_SAILOR": "Add a New Sailor", "EDIT_SAILOR": "Edit Sailor", "FIRST_NAME": "First Name", "LAST_NAME": "Last Name", "FUNCTION": "Function", "PART": "Share", "SELECT_FUNCTION": "Select a function", "SELECT_SAILOR": "Select a sailor", "PHONE": "Phone", "EMAIL": "Email", "ADDRESS": "Address", "BIRTH_DATE": "Date of Birth", "HIRE_DATE": "Hire Date", "LICENSE_NUMBER": "License Number", "CREW_OF": "Crew of boat", "BACK": "Back", "ON_LEAVE": "On Leave", "SUCCESS_ADD": "Sailor added successfully.", "SUCCESS_UPDATE": "Sailor updated successfully.", "SUCCESS_DELETE": "Sailor deleted successfully.", "CAPITAINE": "Captain", "SECOND": "Second-in-command", "MECANICIEN": "Mechanic", "MATELOT": "Sailor", "PLACEHOLDER": { "LASTNAME": "Enter last name", "FIRSTNAME": "Enter first name", "PHONE": "Phone number" }, "FUNCTION_TYPE": { "CAPITAINE": "Captain", "SECOND": "Second-in-command", "MECANICIEN": "Mechanic", "MATELOT": "Sailor" } },
+  "SORTIES": { "TITLE": "Sea Trips", "ADD": "Add Trip", "EDIT": "Edit Trip", "DETAILSTITLE": "Trip Details", "DESTINATION": "Destination", "DATEDEPART": "Departure Date", "DATERETOUR": "Return Date", "STATUT": "Status", "STATUS": { "EN-COURS": "Ongoing", "TERMINEE": "Completed", "ANNULEE": "Cancelled", "ONGOING": "Ongoing", "COMPLETED": "Completed", "CANCELLED": "Cancelled" }, "GENERALINFO": "General Information", "OBSERVATIONS": "Observations", "MANAGE": "Manage Trip", "NOSORTIES": "No trips recorded for this boat.", "SELECTSORTIES": "Select Sea Trips", "SUCCESS_ADD": "Trip added successfully.", "SUCCESS_UPDATE": "Trip updated successfully.", "SUCCESS_DELETE": "Trip deleted successfully." },
+  "EXPENSES": { "TITLE": "Expenses", "ADD": "Add Expense", "EDIT": "Edit Expense", "TYPE": "Expense Type", "AMOUNT": "Amount", "DATE": "Date", "DESCRIPTION": "Description", "NOEXPENSE": "No expenses recorded for this trip.", "TYPES": { "FUEL": "Fuel", "ICE": "Ice", "OIL_CHANGE": "Oil Change", "CREW_CNSS": "Crew CNSS", "CREW_BONUS": "Crew Bonus", "FOOD": "Food", "VMS": "VMS", "MISC": "Miscellaneous" }, "SUCCESS_ADD": "Expense added successfully", "SUCCESS_UPDATE": "Expense updated successfully" },
+  "POINTAGE": { "TITLE": "Crew Attendance", "CREW": "Manage Attendance", "PRESENT": "Present", "ABSENT": "Absent", "NOCREW": "No sailors are assigned to this boat.", "OBSERVATIONS": "Observations", "ADDOBS": "Add an observation...", "TOTAL": "Total", "SUCCESS_PRESENCE": "Presence recorded", "SUCCESS_ABSENCE": "Absence recorded", "SUCCESS_OBS": "Observations updated", "ERROR_ADD": "Error while saving attendance" },
+  "AVANCES": { "TITLE": "Salary Advances", "ADD": "Add Advance", "EDIT": "Edit Advance", "TOTAL": "Total Advances", "TOTAL_GENERAL": "Grand Total of Advances", "NO_AVANCES": "No advances for this sailor.", "SUCCESS_ADD": "Advance added successfully.", "SUCCESS_UPDATE": "Advance updated successfully.", "SUCCESS_DELETE": "Advance deleted successfully.", "AMOUNT_POSITIVE": "Amount must be a positive number.", "ADD_MODAL": { "TITLE": "Add a new advance" }, "EDIT_MODAL": { "TITLE": "Edit advance" }, "DELETE_CONFIRM_ITEM": "the advance of {{amount}} TND for {{name}}" },
+  "SALAIRES": { "AUTOCALCMESSAGE": "Salary calculation is performed automatically with each financial data update", "TITLE": "Salary Calculation", "CALCULER": "Calculate Salaries", "REVENU_TOTAL": "Total Revenue", "TOTAL_DEPENSES": "Total Expenses", "BENEFICE_NET": "Net Profit", "PART_PROPRIETAIRE": "Owner's Share (50%)", "PART_EQUIPAGE": "Crew's Share (50%)", "DEDUCTIONS": "Deductions", "NUITS": "Nights", "MARINS": "Sailors", "MONTANT_A_PARTAGER": "Net Amount to Share", "DETAILS_PAR_MARIN": "Details per Sailor", "SALAIRE_BASE": "Base Salary", "PRIME_NUITS": "Night Bonus", "SALAIRE_NET": "Net Salary", "DEJA_PAYE": "Already Paid", "RESTE_A_PAYER": "Remaining to be Paid", "PAYER": "Pay", "PAYE": "Paid", "ERROR_NO_SORTIE": "Please select at least one trip", "ERROR_NO_PARTS": "The sum of sailor shares is 0. Please define shares in the 'Sailors' section.", "CALCUL_SUCCESS_TITLE": "Calculation complete!", "PAYMENT_SUCCESS": "Payment recorded!", "PAYMENT_MODAL_TITLE": "Payment for {{name}}", "PAYMENT_MODAL_LABEL": "Amount to pay (Remaining: {{amount}} TND)", "PAYMENT_MODAL": { "ERROR_POSITIVE": "Amount must be positive.", "ERROR_EXCEED": "Amount cannot exceed the remaining balance." }, "TABS": { "OPEN_TRIPS": "Open Trips", "HISTORY": "History", "CALCULATED_TRIPS": "Calculated Trips" }, "NO_OPEN_TRIPS": "No completed trips are pending calculation.", "NO_CALCULATED_TRIPS": "No salary calculations have been performed yet.", "HISTORY": { "MODAL_TITLE": "Calculation Details for: {{destinations}}", "NO_DATA_FOUND_TITLE": "Details Not Found", "NO_DATA_FOUND_TEXT": "Details for this calculation were not found. This might be an old calculation. Do you want to mark this trip as 'open' to recalculate it?", "RECALCULATE_BTN": "Recalculate", "MOVED_FOR_RECALC": "The trip has been moved to the 'Open Trips' tab for recalculation." }, "RESULTS": { "TITLE": "Calculation Results", "CLOSE": "Close", "FINANCIAL_SUMMARY": "Financial Summary", "PROFIT_SHARING": "Profit Sharing" }, "DETAILS_MODAL": { "REVENUE_TITLE": "Revenue Details", "EXPENSE_TITLE": "Expense Details", "INVOICE_NUM": "Invoice No.", "CLIENT": "Client" } },
+  "SALAIRES_HISTORY": { "CALCULATED_ON": "Calculated on" },
+  "VENTES": { "TITLE": "Sales Management", "ADD_INVOICE": "New Invoice", "ADD_INVOICE_FOR_TRIP": "Add an invoice for this trip", "NO_INVOICES_FOR_TRIP": "No invoices recorded for this trip", "TRIP_TOTAL": "Total sales for the trip", "GENERAL_TOTAL": "Grand total of sales", "NO_TRIPS_AVAILABLE": "No sea trips are available.", "SUCCESS_ADD": "Invoice added successfully!", "SUCCESS_UPDATE": "Invoice updated successfully!", "SUCCESS_DELETE": "Invoice deleted successfully.", "DELETE_CONFIRM_ITEM": "invoice {{number}} ({{amount}} TND)", "ADD_MODAL": { "TITLE": "New Sales Invoice", "SELECT_TRIP": "Select a trip" }, "EDIT_MODAL": { "TITLE": "Edit Invoice" }, "DETAILS_MODAL": { "INVOICE_NUM": "Invoice No.", "CLIENT": "Client" } },
+  "FORM": { "ADD": "Add", "EDIT": "Edit", "DELETE": "Delete", "CANCEL": "Cancel", "SAVE": "Save", "REQUIRED": "This field is required.", "REQUIRED_FIELDS": "Please fill in all required fields.", "INVALID_PHONE": "Invalid phone number.", "INVALID_EMAIL": "Invalid email address." },
+  "MESSAGES": { "LOADING": "Loading...", "SAVING": "Saving...", "UPDATING": "Updating...", "DELETING": "Deleting...", "CALCULATING": "Calculating...", "LOADING_DETAILS": "Loading details...", "ADDING_SAILOR": "Adding sailor...", "SUCCESS": "Operation successful!", "ERROR_TITLE": "Error", "WARNING_TITLE": "Warning", "ERROR_GENERIC": "An unexpected error occurred. Please try again.", "AREYOUSURE": "Are you sure?", "CONFIRMDELETEMESSAGE": "You are about to delete", "IRREVERSIBLE": "This action cannot be undone.", "SAILOR_ADDED_SUCCESS": "Sailor {{name}} has been added successfully." },
+  "LANGUAGE": { "AR": "Arabic", "FR": "French", "EN": "English" },
+  "COMMON": { "UNKNOWN": "Unknown", "AMOUNT": "Amount", "AMOUNT_D_T": "Amount (TND)", "AMOUNT_IN_TND": "Amount in Tunisian Dinar", "DATE": "Date", "OK": "OK", "DESCRIPTION": "Description", "DETAILS": "Details", "DETAILS_OPTIONAL": "Description (optional)", "VIEW_DETAILS": "View Details" },
+  "MOCK_DATA": { "TITLE": "🎲 Mock Data Generator", "SUBTITLE": "Quickly create complete test data for your application.", "ITEM_1": "✓ 2 fishing boats", "ITEM_2": "✓ Several sailors with different shares", "ITEM_3": "✓ Multiple sea trips", "ITEM_4": "✓ Associated expenses, sales, and advances", "GENERATE_BUTTON": "Generate Data", "GENERATING_BUTTON": "Generating...", "CONFIRM_TITLE": "Generate mock data?", "CONFIRM_TEXT": "This will first delete all existing data before creating new test records.", "CONFIRM_BUTTON": "Yes, generate", "LOADING_TITLE": "Generating...", "LOADING_TEXT": "Please wait while the data is being created.", "SUCCESS_TITLE": "Success!", "SUCCESS_TEXT": "Mock data has been generated successfully.", "ERROR_TITLE": "Error" }
+}
+EOF
 
-# en.json
-sed -i'' '/"PLACEHOLDER": {/i \
-    "FUNCTION_TYPE": {\
-      "CAPITAINE": "Captain",\
-      "SECOND": "Second",\
-      "MECANICIEN": "Mechanic",\
-      "MATELOT": "Sailor"\
-    },
-' "$I18N_EN"
+# 5. src/assets/i18n/fr.json
+cat > /tmp/fr.json << 'EOF'
+{
+  "FACTURES": {
+    "TITLE": "Factures",
+    "NOFACTURE": "Aucune facture enregistrée pour cette sortie.",
+    "ADD": "Ajouter une facture"
+  },
+  "AUTH": { "WELCOME": "Bienvenue", "SIGN_IN": "Veuillez vous connecter à votre compte", "SIGNUP": "Remplissez les informations pour vous inscrire", "CREATE_ACCOUNT": "Créer un compte", "EMAIL": "Adresse e-mail", "PASSWORD": "Mot de passe", "LOGIN": "Se connecter", "NO_ACCOUNT": "Vous n'avez pas de compte ? S'inscrire", "HAVE_ACCOUNT": "Vous avez déjà un compte ? Se connecter" },
+  "DASHBOARD": { "TITLE": "Tableau de bord", "WELCOME": "Bienvenue sur votre tableau de bord", "ACTIVITIES": "Activités", "RECENT_ACTIVITIES": "Activité Récente", "NO_ACTIVITIES": "Aucune activité récente à afficher", "TOTAL_BOATS": "Bateaux au total", "TOTAL_SAILORS": "Marins au total", "ACTIVE_BOATS": "Bateaux Actifs", "MAINTENANCE": "En Maintenance", "BOAT_ADDED": "Bateau ajouté", "BOAT_UPDATED": "Bateau mis à jour", "SAILOR_ADDED": "Marin ajouté", "SAILOR_UPDATED": "Marin mis à jour", "TIME_AGO": { "NOW": "À l'instant", "MINUTES": "Il y a {{minutes}} min", "HOURS": "Il y a {{hours}}h", "DAYS": "Il y a {{days}}j" } },
+  "MENU": { "HOME": "Accueil", "BOATS": "Bateaux", "SORTIES": "Sorties en mer", "AVANCES": "Avances", "SALAIRES": "Salaires", "VENTES": "Ventes", "MOCK_DATA": "Données Test", "SELECT_BOAT_FIRST": "Sélectionnez un bateau pour accéder à cette section" },
+  "BOATS": { "TITLE": "Gestion des Bateaux", "BOAT": "Bateau", "ADD_BOAT": "Ajouter un Bateau", "EDIT_BOAT": "Modifier le Bateau", "DELETE": "Supprimer", "NAME": "Nom du bateau", "REGISTRATION": "Immatriculation", "ENGINE_TYPE": "Type de moteur", "POWER": "Puissance (CV)", "LENGTH": "Longueur (m)", "CAPACITY": "Capacité équipage", "CONSTRUCTION_DATE": "Date de construction", "PORT": "Port d'attache", "STATUS": "Statut", "ACTIVE": "Actif", "MAINTENANCE": "Maintenance", "INACTIVE": "Inactif", "NO_BOAT_SELECTED": "Aucun bateau n'est sélectionné", "NO_BOAT_SELECTED_DETAILS": "Veuillez d'abord sélectionner un bateau depuis la page 'Bateaux'.", "CLICK_TO_SELECT": "Cliquez pour en sélectionner un", "SELECTED_BOAT": "Bateau Actif", "SELECTED": "Sélectionné", "SEARCH": "Rechercher un bateau par nom...", "ACTIONS": "Actions", "VIEWCREW": "Voir l'équipage", "SELECT_INFO": "Veuillez sélectionner un bateau dans la liste pour continuer.", "CHANGE_SELECTION": "Changer de bateau", "SUCCESS_ADD": "Bateau ajouté avec succès.", "SUCCESS_UPDATE": "Bateau mis à jour avec succès.", "SUCCESS_DELETE": "Bateau supprimé avec succès.", "TOAST_SELECTED": "Bateau \"{{boatName}}\" sélectionné.", "TOAST_SELECTION_CLEARED": "Sélection du bateau annulée.", "BOAT_NAME_CONFIRM": "le bateau \"{{boatName}}\"" },
+  "SAILORS": { "TITLE": "Marins", "ADD_SAILOR": "Ajouter un Marin", "ADD_NEW_SAILOR": "Ajouter un nouveau marin", "EDIT_SAILOR": "Modifier le Marin", "FIRST_NAME": "Prénom", "LAST_NAME": "Nom", "FUNCTION": "Fonction", "PART": "Part", "SELECT_FUNCTION": "Sélectionner une fonction", "SELECT_SAILOR": "Sélectionner un marin", "PHONE": "Téléphone", "EMAIL": "Email", "ADDRESS": "Adresse", "BIRTH_DATE": "Date de naissance", "HIRE_DATE": "Date d'embauche", "LICENSE_NUMBER": "Numéro de permis", "CREW_OF": "Équipage du bateau", "BACK": "Retour", "ON_LEAVE": "En congé", "SUCCESS_ADD": "Marin ajouté avec succès.", "SUCCESS_UPDATE": "Marin mis à jour avec succès.", "SUCCESS_DELETE": "Marin supprimé avec succès.", "CAPITAINE": "Capitaine", "SECOND": "Second", "MECANICIEN": "Mécanicien", "MATELOT": "Matelot", "PLACEHOLDER": { "LASTNAME": "Entrez le nom", "FIRSTNAME": "Entrez le prénom", "PHONE": "Numéro de téléphone" }, "FUNCTION_TYPE": { "CAPITAINE": "Capitaine", "SECOND": "Second", "MECANICIEN": "Mécanicien", "MATELOT": "Matelot" } },
+  "SORTIES": { "TITLE": "Sorties en mer", "ADD": "Ajouter une Sortie", "EDIT": "Modifier la Sortie", "DETAILSTITLE": "Détails de la Sortie", "DESTINATION": "Destination", "DATEDEPART": "Date de départ", "DATERETOUR": "Date de retour", "STATUT": "Statut", "STATUS": { "EN-COURS": "En cours", "TERMINEE": "Terminée", "ANNULEE": "Annulée", "ONGOING": "En cours", "COMPLETED": "Terminée", "CANCELLED": "Annulée" }, "GENERALINFO": "Informations Générales", "OBSERVATIONS": "Observations", "MANAGE": "Gérer la sortie", "NOSORTIES": "Aucune sortie enregistrée pour ce bateau.", "SELECTSORTIES": "Sélectionner les sorties en mer", "SUCCESS_ADD": "Sortie ajoutée avec succès.", "SUCCESS_UPDATE": "Sortie modifiée avec succès.", "SUCCESS_DELETE": "Sortie supprimée avec succès." },
+  "EXPENSES": { "TITLE": "Dépenses", "ADD": "Ajouter une Dépense", "EDIT": "Modifier la Dépense", "TYPE": "Type de dépense", "AMOUNT": "Montant", "DATE": "Date", "DESCRIPTION": "Description", "NOEXPENSE": "Aucune dépense enregistrée pour cette sortie.", "TYPES": { "FUEL": "Carburant", "ICE": "Glace", "OIL_CHANGE": "Vidange", "CREW_CNSS": "CNSS Équipage", "CREW_BONUS": "Prime Équipage", "FOOD": "Alimentation", "VMS": "VMS", "MISC": "Divers" }, "SUCCESS_ADD": "Dépense ajoutée avec succès", "SUCCESS_UPDATE": "Dépense mise à jour avec succès" },
+  "POINTAGE": { "TITLE": "Pointage de l'Équipage", "CREW": "Gérer le pointage", "PRESENT": "Présent", "ABSENT": "Absent", "NOCREW": "Aucun marin n'est affecté à ce bateau.", "OBSERVATIONS": "Observations", "ADDOBS": "Ajouter une observation...", "TOTAL": "Total", "SUCCESS_PRESENCE": "Présence enregistrée", "SUCCESS_ABSENCE": "Absence enregistrée", "SUCCESS_OBS": "Observations mises à jour", "ERROR_ADD": "Erreur lors de l'enregistrement du pointage" },
+  "AVANCES": { "TITLE": "Avances sur Salaire", "ADD": "Ajouter une Avance", "EDIT": "Modifier l'Avance", "TOTAL": "Total Avances", "TOTAL_GENERAL": "Total Général des Avances", "NO_AVANCES": "Aucune avance pour ce marin.", "SUCCESS_ADD": "Avance ajoutée avec succès.", "SUCCESS_UPDATE": "Avance mise à jour avec succès.", "SUCCESS_DELETE": "Avance supprimée avec succès.", "AMOUNT_POSITIVE": "Le montant doit être un nombre positif.", "ADD_MODAL": { "TITLE": "Ajouter une nouvelle avance" }, "EDIT_MODAL": { "TITLE": "Modifier l'avance" }, "DELETE_CONFIRM_ITEM": "l'avance de {{amount}} DT pour {{name}}" },
+  "SALAIRES": { "AUTOCALCMESSAGE": "Le calcul des salaires se fait automatiquement à chaque mise à jour des données financières", "TITLE": "Calcul des Salaires", "CALCULER": "Calculer les Salaires", "REVENU_TOTAL": "Revenu Total", "TOTAL_DEPENSES": "Total des Dépenses", "BENEFICE_NET": "Bénéfice Net", "PART_PROPRIETAIRE": "Part Propriétaire (50%)", "PART_EQUIPAGE": "Part Équipage (50%)", "DEDUCTIONS": "Déductions", "NUITS": "Nuits", "MARINS": "Marins", "MONTANT_A_PARTAGER": "Montant Net à Partager", "DETAILS_PAR_MARIN": "Détails par Marin", "SALAIRE_BASE": "Salaire de Base", "PRIME_NUITS": "Prime de Nuits", "SALAIRE_NET": "Salaire Net", "DEJA_PAYE": "Déjà Payé", "RESTE_A_PAYER": "Reste à Payer", "PAYER": "Payer", "PAYE": "Payé", "ERROR_NO_SORTIE": "Veuillez sélectionner au moins une sortie", "ERROR_NO_PARTS": "La somme des parts des marins est de 0. Veuillez définir les parts dans la section 'Marins'.", "CALCUL_SUCCESS_TITLE": "Calcul terminé !", "PAYMENT_SUCCESS": "Paiement enregistré!", "PAYMENT_MODAL_TITLE": "Paiement pour {{name}}", "PAYMENT_MODAL_LABEL": "Montant à payer (Reste: {{amount}} DT)", "PAYMENT_MODAL": { "ERROR_POSITIVE": "Le montant doit être positif.", "ERROR_EXCEED": "Le montant ne peut pas dépasser le reste à payer." }, "TABS": { "OPEN_TRIPS": "Voyages Ouverts", "HISTORY": "Historique", "CALCULATED_TRIPS": "Voyages Calculés" }, "NO_OPEN_TRIPS": "Aucun voyage terminé n'est en attente de calcul.", "NO_CALCULATED_TRIPS": "Aucun calcul de salaire n'a encore été effectué.", "HISTORY": { "MODAL_TITLE": "Détails du Calcul pour : {{destinations}}", "NO_DATA_FOUND_TITLE": "Détails non trouvés", "NO_DATA_FOUND_TEXT": "Les détails pour ce calcul n'ont pas été trouvés. Il s'agit peut-être d'un ancien calcul. Voulez-vous marquer ce voyage comme 'ouvert' pour le recalculer ?", "RECALCULATE_BTN": "Recalculer", "MOVED_FOR_RECALC": "Le voyage a été déplacé vers l'onglet 'Voyages Ouverts'." }, "RESULTS": { "TITLE": "Résultats du Calcul", "CLOSE": "Fermer", "FINANCIAL_SUMMARY": "Résumé Financier", "PROFIT_SHARING": "Partage des Bénéfices" }, "DETAILS_MODAL": { "REVENUE_TITLE": "Détails des Revenus", "EXPENSE_TITLE": "Détails des Dépenses", "INVOICE_NUM": "N° Facture", "CLIENT": "Client" } },
+  "SALAIRES_HISTORY": { "CALCULATED_ON": "Calculé le" },
+  "VENTES": { "TITLE": "Gestion des Ventes", "ADD_INVOICE": "Nouvelle Facture", "ADD_INVOICE_FOR_TRIP": "Ajouter une facture pour cette sortie", "NO_INVOICES_FOR_TRIP": "Aucune facture enregistrée pour cette sortie", "TRIP_TOTAL": "Total des ventes pour la sortie", "GENERAL_TOTAL": "Total général des ventes", "NO_TRIPS_AVAILABLE": "Aucune sortie en mer n'est disponible.", "SUCCESS_ADD": "Facture ajoutée avec succès !", "SUCCESS_UPDATE": "Facture modifiée avec succès !", "SUCCESS_DELETE": "Facture supprimée avec succès.", "DELETE_CONFIRM_ITEM": "la facture {{number}} ({{amount}} DT)", "ADD_MODAL": { "TITLE": "Nouvelle Facture de Vente", "SELECT_TRIP": "Sélectionner une sortie" }, "EDIT_MODAL": { "TITLE": "Modifier la Facture" }, "DETAILS_MODAL": { "INVOICE_NUM": "N° Facture", "CLIENT": "Client" } },
+  "FORM": { "ADD": "Ajouter", "EDIT": "Modifier", "DELETE": "Supprimer", "CANCEL": "Annuler", "SAVE": "Enregistrer", "REQUIRED": "Ce champ est requis.", "REQUIRED_FIELDS": "Veuillez remplir tous les champs obligatoires.", "INVALID_PHONE": "Numéro de téléphone invalide.", "INVALID_EMAIL": "Adresse e-mail invalide." },
+  "MESSAGES": { "LOADING": "Chargement...", "SAVING": "Enregistrement...", "UPDATING": "Modification...", "DELETING": "Suppression...", "CALCULATING": "Calcul en cours...", "LOADING_DETAILS": "Chargement des détails...", "ADDING_SAILOR": "Ajout du marin...", "SUCCESS": "Opération réussie !", "ERROR_TITLE": "Erreur", "WARNING_TITLE": "Attention", "ERROR_GENERIC": "Une erreur inattendue est survenue. Veuillez réessayer.", "AREYOUSURE": "Êtes-vous sûr ?", "CONFIRMDELETEMESSAGE": "Vous êtes sur le point de supprimer", "IRREVERSIBLE": "Cette action est irréversible.", "SAILOR_ADDED_SUCCESS": "Le marin {{name}} a été ajouté avec succès." },
+  "LANGUAGE": { "AR": "Arabe", "FR": "Français", "EN": "Anglais" },
+  "COMMON": { "UNKNOWN": "Inconnu", "AMOUNT": "Montant", "AMOUNT_D_T": "Montant (DT)", "AMOUNT_IN_TND": "Montant en dinars tunisiens", "DATE": "Date", "OK": "OK", "DESCRIPTION": "Description", "DETAILS": "Détails", "DETAILS_OPTIONAL": "Description (optionnel)", "VIEW_DETAILS": "Voir Détails" },
+  "MOCK_DATA": { "TITLE": "🎲 Générateur de Données Fictives", "SUBTITLE": "Créez rapidement des données de test complètes pour votre application.", "ITEM_1": "✓ 2 bateaux de pêche", "ITEM_2": "✓ Plusieurs marins avec des parts différentes", "ITEM_3": "✓ Des sorties en mer multiples", "ITEM_4": "✓ Dépenses, ventes et avances associées", "GENERATE_BUTTON": "Générer les Données", "GENERATING_BUTTON": "Génération en cours...", "CONFIRM_TITLE": "Générer des données fictives ?", "CONFIRM_TEXT": "Cela va d'abord supprimer toutes les données existantes avant de créer de nouveaux enregistrements de test.", "CONFIRM_BUTTON": "Oui, générer", "LOADING_TITLE": "Génération en cours...", "LOADING_TEXT": "Veuillez patienter pendant la création des données.", "SUCCESS_TITLE": "Succès !", "SUCCESS_TEXT": "Les données de test ont été générées avec succès.", "ERROR_TITLE": "Erreur" }
+}
+EOF
 
-# ar.json
-sed -i'' '/"PLACEHOLDER": {/i \
-    "FUNCTION_TYPE": {\
-      "CAPITAINE": "قبطان",\
-      "SECOND": "مساعد قبطان",\
-      "MECANICIEN": "ميكانيكي",\
-      "MATELOT": "بحار"\
-    },
-' "$I18N_AR"
+# --- Application des modifications ---
 
-# --- Nettoyage et confirmation ---
-rm -f "$AVANCES_TS.bak" "$AVANCES_SCSS.bak"
-echo "✅ Modifications terminées avec succès !"
-echo "Le design de la popup a été amélioré et les traductions sont maintenant correctes."
+echo "Début de l'application des modifications (v8 - CSS Amélioré)..."
+
+replace_file "$SRC_DIR/app/avances/avances.component.ts" "/tmp/avances.component.ts"
+replace_file "$SRC_DIR/app/avances/avances.component.scss" "/tmp/avances.component.scss"
+# Les fichiers i18n restent inchangés par rapport à v5
+echo "Mise à jour des fichiers i18n ignorée (déjà à jour)."
+# replace_file "$SRC_DIR/assets/i18n/ar.json" "/tmp/ar.json"
+# replace_file "$SRC_DIR/assets/i18n/en.json" "/tmp/en.json"
+# replace_file "$SRC_DIR/assets/i18n/fr.json" "/tmp/fr.json"
+
+# Nettoyage des fichiers temporaires
+rm /tmp/avances.component.ts
+rm /tmp/avances.component.scss
+# rm /tmp/ar.json
+# rm /tmp/en.json
+# rm /tmp/fr.json
+
+echo "----------------------------------------"
+echo "✅ Modifications (v8 - CSS Amélioré) appliquées avec succès !"
+echo "Le popup utilise des styles CSS dédiés améliorés."
+echo "Les sauvegardes des fichiers originaux ont été créées avec le suffixe .bak_$TIMESTAMP"
+echo "N'oubliez pas de redémarrer 'ng serve' si nécessaire."
+echo "----------------------------------------"
+
+exit 0
