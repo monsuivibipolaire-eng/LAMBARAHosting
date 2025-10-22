@@ -6,6 +6,7 @@
 #             à un formulaire standard (labels au-dessus, espacement, etc.).
 # Supprime l'approche Tailwind inline.
 # Utilise 'cat' pour remplacer le contenu.
+# CORRIGÉ à nouveau : Utilise 'undefined' au lieu de 'null' pour calculSalaireId.
 
 # Variables
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -267,7 +268,7 @@ export class AvancesComponent implements OnInit {
           montant: formValues.montant,
           dateAvance: new Date(formValues.date),
           createdAt: new Date(),
-          calculSalaireId: undefined
+          calculSalaireId: undefined // CORRECTION : undefined au lieu de null
         };
         if (formValues.description && formValues.description.trim() !== '') {
           newAvance.description = formValues.description.trim();
@@ -1004,3 +1005,4 @@ echo "N'oubliez pas de redémarrer 'ng serve' si nécessaire."
 echo "----------------------------------------"
 
 exit 0
+

@@ -130,7 +130,7 @@ export class AvancesComponent implements OnInit {
       amountPlaceholder: this.translate.instant('COMMON.AMOUNT_IN_TND'),
       date: this.translate.instant('COMMON.DATE'),
       description: this.translate.instant('COMMON.DESCRIPTION'),
-      descriptionPlaceholder: this.translate.instant('COMMON.DESCRIPTION_OPTIONAL'),
+      descriptionPlaceholder: "",
       add: this.translate.instant('FORM.ADD'),
       cancel: this.translate.instant('FORM.CANCEL'),
       requiredFields: this.translate.instant('FORM.REQUIRED_FIELDS'),
@@ -214,7 +214,7 @@ export class AvancesComponent implements OnInit {
           montant: formValues.montant,
           dateAvance: new Date(formValues.date),
           createdAt: new Date(),
-          calculSalaireId: undefined // CORRECTION : undefined au lieu de null
+          calculSalaireId: undefined
         };
         if (formValues.description && formValues.description.trim() !== '') {
           newAvance.description = formValues.description.trim();
@@ -235,7 +235,7 @@ export class AvancesComponent implements OnInit {
       amount: this.translate.instant('COMMON.AMOUNT_D_T'),
       date: this.translate.instant('COMMON.DATE'),
       description: this.translate.instant('COMMON.DESCRIPTION'),
-      descriptionPlaceholder: this.translate.instant('COMMON.DESCRIPTION_OPTIONAL'),
+      descriptionPlaceholder: "",
       edit: this.translate.instant('FORM.EDIT'),
       cancel: this.translate.instant('FORM.CANCEL'),
       amountPositive: this.translate.instant('AVANCES.AMOUNT_POSITIVE'),
