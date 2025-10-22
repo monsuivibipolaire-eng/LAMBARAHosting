@@ -17,8 +17,8 @@
   </div>
   <div class="auth-box">
     <div class="auth-header">
-      <h1 class="auth-title">{{ (isLoginMode ? 'AUTH.WELCOME' : 'AUTH.CREATE_ACCOUNT') | translate }}</h1>
-      <p class="auth-subtitle">{{ (isLoginMode ? 'AUTH.SIGN_IN' : 'AUTH.SIGNUP') | translate }}</p>
+      <h1 class="auth-title">{{ 'AUTH.WELCOME' | translate }}</h1>
+      <p class="auth-subtitle">{{ 'AUTH.SIGN_IN' | translate }}</p>
     </div>
     <form [formGroup]="authForm" (ngSubmit)="onSubmit()" class="auth-form">
       <div class="form-group">
@@ -33,13 +33,10 @@
         <span class="error-message" *ngIf="authForm.get('password')?.hasError('required') && authForm.get('password')?.touched">{{ 'FORM.REQUIRED' | translate }}</span>
       </div>
       <button type="submit" class="auth-button" [disabled]="!authForm.valid || loading">
-        <span *ngIf="!loading">{{ (isLoginMode ? 'AUTH.LOGIN' : 'AUTH.SIGNUP') | translate }}</span>
+        <span *ngIf="!loading">{{ 'AUTH.LOGIN' | translate }}</span>
         <span *ngIf="loading">{{ 'MESSAGES.LOADING' | translate }}</span>
       </button>
       <div class="auth-error" *ngIf="error">{{ error }}</div>
     </form>
-    <div class="auth-footer">
-      <button class="toggle-button" (click)="toggleMode()">{{ (isLoginMode ? 'AUTH.NO_ACCOUNT' : 'AUTH.HAVE_ACCOUNT') | translate }}</button>
-    </div>
   </div>
 </div>

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Auth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, authState, User } from '@angular/fire/auth';
+import { Auth, signInWithEmailAndPassword, signOut, authState, User } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 
@@ -19,16 +19,6 @@ export class AuthService {
       this.router.navigate(['/dashboard']);
     } catch (error) {
       console.error('Login error:', error);
-      throw error;
-    }
-  }
-
-  async signup(email: string, password: string): Promise<void> {
-    try {
-      await createUserWithEmailAndPassword(this.auth, email, password);
-      this.router.navigate(['/dashboard']);
-    } catch (error) {
-      console.error('Signup error:', error);
       throw error;
     }
   }

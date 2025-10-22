@@ -15,11 +15,9 @@ import { TranslateModule } from '@ngx-translate/core';
 })
 export class AuthComponent implements OnInit {
   authForm!: FormGroup;
-  isLoginMode = true;
   loading = false;
   error: string = '';
   languageDropdownOpen = false;
-
   languages = [
     { code: 'ar', name: 'العربية', flag: '🇹🇳' },
     { code: 'fr', name: 'Français', flag: '🇫🇷' },
@@ -44,25 +42,13 @@ export class AuthComponent implements OnInit {
     });
   }
 
-  toggleMode(): void {
-    this.isLoginMode = !this.isLoginMode;
-    this.error = '';
-    this.authForm.reset();
-  }
-
   async onSubmit(): Promise<void> {
     if (this.authForm.valid) {
       this.loading = true;
       this.error = '';
-
       const { email, password } = this.authForm.value;
-
       try {
-        if (this.isLoginMode) {
-          await this.authService.login(email, password);
-        } else {
-          await this.authService.signup(email, password);
-        }
+        await this.authService.login(email, password);
         this.router.navigate(['/dashboard']);
       } catch (error: any) {
         this.error = error.message || 'Une erreur est survenue';
