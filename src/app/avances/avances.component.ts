@@ -45,6 +45,7 @@ export class AvancesComponent implements OnInit {
 
   loadData(): void {
     if (!this.selectedBoat) return;
+    this.loading = true; // S'assurer que le loading est bien actif
     combineLatest([
       this.marinService.getMarinsByBateau(this.selectedBoat.id!),
       this.avanceService.getUnsettledAvancesByBateau(this.selectedBoat.id!)
@@ -54,7 +55,7 @@ export class AvancesComponent implements OnInit {
       this.loading = false;
     });
   }
-
+  
   getMarinName(marinId: string): string {
     const marin = this.marins.find(m => m.id === marinId);
     return marin ? `${marin.prenom} ${marin.nom}` : this.translate.instant('COMMON.UNKNOWN');
@@ -101,116 +102,114 @@ export class AvancesComponent implements OnInit {
     return `${day}/${month}/${year}`;
   }
 
+  // ✅ AMÉLIORATION: Méthode entièrement revue pour un meilleur design
   async addAvance(): Promise<void> {
-  if (!this.selectedBoat) return;
+    if (!this.selectedBoat) return;
 
-  const marinsOptions = this.marins.reduce((acc, marin) => {
-    acc[marin.id!] = `${marin.prenom} ${marin.nom} - ${this.translate.instant('SAILORS.FUNCTION_TYPE.' + marin.fonction.toUpperCase())}`;
-    return acc;
-  }, {} as any);
+    const marinsOptions = this.marins.reduce((acc, marin) => {
+      // La traduction est maintenant correcte grâce aux clés ajoutées
+      const fonction = this.translate.instant('SAILORS.FUNCTION_TYPE.' + marin.fonction.toUpperCase());
+      acc[marin.id!] = `${marin.prenom} ${marin.nom} - ${fonction}`;
+      return acc;
+    }, {} as { [key: string]: string });
 
-  const t = {
-    title: this.translate.instant('AVANCES.ADD_MODAL.TITLE'),
-    sailor: this.translate.instant('SAILORS.TITLE'),
-    selectSailor: this.translate.instant('SAILORS.SELECT_SAILOR'),
-    amount: this.translate.instant('COMMON.AMOUNT_D_T'),
-    amountPlaceholder: this.translate.instant('COMMON.AMOUNT_IN_TND'),
-    date: this.translate.instant('COMMON.DATE'),
-    description: this.translate.instant('COMMON.DESCRIPTION'),
-    descriptionPlaceholder: this.translate.instant('COMMON.DESCRIPTION_OPTIONAL'),
-    add: this.translate.instant('FORM.ADD'),
-    cancel: this.translate.instant('FORM.CANCEL'),
-    requiredFields: this.translate.instant('FORM.REQUIRED_FIELDS'),
-    amountPositive: this.translate.instant('AVANCES.AMOUNT_POSITIVE')
-  };
+    const t = {
+      title: this.translate.instant('AVANCES.ADD_MODAL.TITLE'),
+      sailor: this.translate.instant('SAILORS.TITLE'),
+      selectSailor: this.translate.instant('SAILORS.SELECT_SAILOR'),
+      amount: this.translate.instant('COMMON.AMOUNT_D_T'),
+      amountPlaceholder: this.translate.instant('COMMON.AMOUNT_IN_TND'),
+      date: this.translate.instant('COMMON.DATE'),
+      description: this.translate.instant('COMMON.DESCRIPTION'),
+      descriptionPlaceholder: this.translate.instant('COMMON.DESCRIPTION_OPTIONAL'),
+      add: this.translate.instant('FORM.ADD'),
+      cancel: this.translate.instant('FORM.CANCEL'),
+      requiredFields: this.translate.instant('FORM.REQUIRED_FIELDS'),
+      amountPositive: this.translate.instant('AVANCES.AMOUNT_POSITIVE')
+    };
 
-  const { value: formValues } = await Swal.fire({
-    title: `<i class="swal-icon-money"></i> ${t.title}`,
-    html: `
-      <div class="swal-form">
-        <div class="form-group">
-          <label class="form-label"><i class="swal-icon-user"></i> ${t.sailor} <span class="required-star">*</span></label>
-          <select id="swal-marin" class="swal2-input">
-            <option value="">${t.selectSailor}</option>
-            ${Object.keys(marinsOptions).map(id => `<option value="${id}">${marinsOptions[id]}</option>`).join('')}
-          </select>
+    const { value: formValues } = await Swal.fire({
+      title: t.title,
+      html: `
+        <div class="swal-custom-form">
+          <div class="form-group">
+            <label class="form-label">${t.sailor} <span class="required-star">*</span></label>
+            <select id="swal-marin" class="custom-select">
+              <option value="">${t.selectSailor}</option>
+              ${Object.keys(marinsOptions).map(id => `<option value="${id}">${marinsOptions[id]}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">${t.amount} <span class="required-star">*</span></label>
+            <input id="swal-montant" type="number" class="custom-input" placeholder="0.00" step="0.01" min="0" />
+            <div class="input-helper">${t.amountPlaceholder}</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">${t.date} <span class="required-star">*</span></label>
+            <input id="swal-date" type="date" class="custom-input" value="${this.getTodayDate()}" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">${t.description}</label>
+            <textarea id="swal-description" class="custom-textarea" placeholder="${t.descriptionPlaceholder}"></textarea>
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label"><i class="swal-icon-cash"></i> ${t.amount} <span class="required-star">*</span></label>
-          <input id="swal-montant" type="number" class="swal2-input" placeholder="0.00" step="0.01" min="0" />
-          <div class="input-helper">${t.amountPlaceholder}</div>
-        </div>
-        <div class="form-group">
-          <label class="form-label"><i class="swal-icon-calendar"></i> ${t.date} <span class="required-star">*</span></label>
-          <input id="swal-date" type="date" class="swal2-input" value="${this.getTodayDate()}" />
-        </div>
-        <div class="form-group">
-          <label class="form-label"><i class="swal-icon-details"></i> ${t.description}</label>
-          <textarea id="swal-description" class="swal2-textarea" placeholder="${t.descriptionPlaceholder}"></textarea>
-        </div>
-      </div>
-    `,
-    focusConfirm: false,
-    showCancelButton: true,
-    confirmButtonText: t.add,
-    cancelButtonText: t.cancel,
-    confirmButtonColor: '#10b981',
-    preConfirm: () => {
-      const marinId = (document.getElementById('swal-marin') as HTMLSelectElement).value;
-      const montant = parseFloat((document.getElementById('swal-montant') as HTMLInputElement).value);
-      const date = (document.getElementById('swal-date') as HTMLInputElement).value;
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: t.add,
+      cancelButtonText: t.cancel,
+      confirmButtonColor: '#10b981',
+      customClass: {
+        popup: 'swal-wide-popup'
+      },
+      preConfirm: () => {
+        const marinId = (document.getElementById('swal-marin') as HTMLSelectElement).value;
+        const montant = parseFloat((document.getElementById('swal-montant') as HTMLInputElement).value);
+        const date = (document.getElementById('swal-date') as HTMLInputElement).value;
 
-      if (!marinId || !montant || !date) {
-        Swal.showValidationMessage(t.requiredFields);
-        return false;
+        if (!marinId || !montant || !date) {
+          Swal.showValidationMessage(t.requiredFields);
+          return false;
+        }
+        if (montant <= 0) {
+          Swal.showValidationMessage(t.amountPositive);
+          return false;
+        }
+        return {
+          marinId,
+          montant,
+          date,
+          description: (document.getElementById('swal-description') as HTMLTextAreaElement).value
+        };
       }
+    });
 
-      if (montant <= 0) {
-        Swal.showValidationMessage(t.amountPositive);
-        return false;
+    if (formValues) {
+      try {
+        this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
+        const newAvance: Omit<Avance, 'id'> = {
+          marinId: formValues.marinId,
+          bateauId: this.selectedBoat!.id!,
+          montant: formValues.montant,
+          dateAvance: new Date(formValues.date),
+          createdAt: new Date()
+        };
+        if (formValues.description && formValues.description.trim() !== '') {
+          newAvance.description = formValues.description.trim();
+        }
+        await this.avanceService.addAvance(newAvance);
+        this.alertService.success(this.translate.instant('AVANCES.SUCCESS_ADD'));
+      } catch (error) {
+        console.error("Erreur lors de l'ajout de l'avance:", error);
+        this.alertService.error();
       }
-
-      return {
-        marinId,
-        montant,
-        date,
-        description: (document.getElementById('swal-description') as HTMLTextAreaElement).value
-      };
-    }
-  });
-
-  if (formValues) {
-    try {
-      this.alertService.loading(this.translate.instant('MESSAGES.SAVING'));
-      
-      const newAvance: any = {
-        marinId: formValues.marinId,
-        bateauId: this.selectedBoat.id!,
-        montant: formValues.montant,
-        dateAvance: new Date(formValues.date),
-        createdAt: new Date() // ✅ AJOUT: Date de création
-      };
-
-      if (formValues.description && formValues.description.trim() !== '') {
-        newAvance.description = formValues.description.trim();
-      }
-
-      // ✅ CORRECTION: Attendre l'enregistrement
-      await this.avanceService.addAvance(newAvance);
-      
-      this.alertService.success(this.translate.instant('AVANCES.SUCCESS_ADD'));
-    } catch (error) {
-      console.error('Erreur lors de l\'ajout de l\'avance:', error);
-      this.alertService.error();
     }
   }
-}
-
 
   async editAvance(avance: Avance): Promise<void> {
     const t = {
         title: this.translate.instant('AVANCES.EDIT_MODAL.TITLE'),
-        amount: this.translate.instant('COMMON.AMOUNT_D T'),
+        amount: this.translate.instant('COMMON.AMOUNT_D_T'),
         date: this.translate.instant('COMMON.DATE'),
         description: this.translate.instant('COMMON.DESCRIPTION'),
         edit: this.translate.instant('FORM.EDIT'),
@@ -220,18 +219,18 @@ export class AvancesComponent implements OnInit {
     const { value: formValues } = await Swal.fire({
       title: t.title,
       html: `
-        <div class="swal-form">
+        <div class="swal-custom-form">
           <div class="form-group">
             <label class="form-label">${t.amount}</label>
-            <input id="swal-montant" type="number" class="swal2-input" value="${avance.montant}" step="0.01" min="0">
+            <input id="swal-montant" type="number" class="custom-input" value="${avance.montant}" step="0.01" min="0">
           </div>
           <div class="form-group">
             <label class="form-label">${t.date}</label>
-            <input id="swal-date" type="date" class="swal2-input" value="${this.formatDate(avance.dateAvance)}">
+            <input id="swal-date" type="date" class="custom-input" value="${this.formatDate(avance.dateAvance)}">
           </div>
           <div class="form-group">
             <label class="form-label">${t.description}</label>
-            <textarea id="swal-description" class="swal2-textarea">${avance.description || ''}</textarea>
+            <textarea id="swal-description" class="custom-textarea">${avance.description || ''}</textarea>
           </div>
         </div>`,
       focusConfirm: false,
@@ -239,6 +238,9 @@ export class AvancesComponent implements OnInit {
       confirmButtonText: t.edit,
       cancelButtonText: t.cancel,
       confirmButtonColor: '#f59e0b',
+      customClass: {
+        popup: 'swal-wide-popup'
+      },
       preConfirm: () => ({
         montant: parseFloat((document.getElementById('swal-montant') as HTMLInputElement).value),
         date: (document.getElementById('swal-date') as HTMLInputElement).value,
@@ -249,7 +251,7 @@ export class AvancesComponent implements OnInit {
     if (formValues) {
       try {
         this.alertService.loading();
-        const updateData: any = {
+        const updateData: Partial<Avance> = {
           montant: formValues.montant,
           dateAvance: new Date(formValues.date)
         };
