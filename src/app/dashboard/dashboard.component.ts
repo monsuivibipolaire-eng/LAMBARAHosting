@@ -14,7 +14,7 @@ import { User } from '@angular/fire/auth';
 export class DashboardComponent implements OnInit {
   userEmail?: string;
   selectedBoat: Bateau | null = null;
-
+  isSidebarOpen = false; // <-- DOIT ÊTRE PRÉSENT
   constructor(
     private authService: AuthService,
     private selectedBoatService: SelectedBoatService,
@@ -34,7 +34,9 @@ export class DashboardComponent implements OnInit {
       this.selectedBoat = boat;
     });
   }
-
+  toggleSidebar(): void {
+    this.isSidebarOpen = !this.isSidebarOpen;
+  }
   goToBoatSelection(): void {
     this.router.navigate(['/dashboard/bateaux']);
   }
